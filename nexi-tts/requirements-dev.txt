@@ -1,0 +1,5 @@
+-r requirements.txt
+ruff==0.11.13
+mypy==1.15.0
+mypy-extensions==1.1.0
+tomli==2.2.1; python_version < "3.11"

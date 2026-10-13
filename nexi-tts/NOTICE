@@ -1,0 +1,15 @@
+NEXI TTS is a local driver for upstream KittenML Kitten TTS Nano 0.8 int8.
+It is NOT a NEXI-trained or fine-tuned model.
+
+The character symbol table, phoneme tokenization, ONNX input construction,
+voice style selection, speed priors, and trailing-sample trim derive from:
+https://github.com/KittenML/KittenTTS/blob/0c61f684b54fe962e4b7c2fa0285ed75f64ad402/kittentts/onnx_model.py
+KittenML/KittenTTS is released under Apache-2.0; see LICENSE.
+Changes: offline verified asset loading, bounded punctuation-preserving chunks,
+lightweight number normalization, explicit CPU threads and memory options,
+validation, atomic streamed WAV writes, local API, tests and measurement tools.
+
+The upstream model card declares Apache-2.0 for the nano-int8 weights.
+The dependencies retain their own licenses, notably phonemizer and bundled
+eSpeak NG under GPL-3.0. Distributing a complete application requires reviewing
+those obligations separately from the Apache-2.0 model license.
