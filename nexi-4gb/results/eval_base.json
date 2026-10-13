@@ -1,0 +1,41 @@
+{
+  "label": "base",
+  "gguf": "base-merged-Q4_K_M.gguf",
+  "ctx": 4096,
+  "gguf_sha256": "82af45d96d089f10de17b10a65758672b0117602ef8182ff54dd9385760dfd9a",
+  "tasks": {
+    "tool": {
+      "n": 40,
+      "correct": 10,
+      "acc": 0.25,
+      "wall_s": 623
+    },
+    "cua": {
+      "n": 100,
+      "correct": 19,
+      "acc": 0.19,
+      "wall_s": 353,
+      "abstain_acc": 0.0,
+      "abstain_n": 37
+    },
+    "humaneval": {
+      "base_pass@1": 0.6,
+      "plus_pass@1": 0.567,
+      "limit": 30,
+      "wall_s": 298,
+      "returncode": 0,
+      "stdout_tail": "Greedy decoding ON (--greedy): setting bs=1, n_samples=1, temperature=0\nInitializing a decoder model: base ...\nSanitized code outputs will be saved to /home/ubuntu/repos/NEXI-Models-Drivers/nexi-4gb/results/evalplus/humaneval/base_openai_temp_0.0.jsonl\nRaw outputs will be saved to /home/ubuntu/repos/NEXI-Models-Drivers/nexi-4gb/results/evalplus/humaneval/base_openai_temp_0.0.raw.jsonl\nCodegen: HumanEval/0 @ base\nCodegen: HumanEval/1 @ base\nCodegen: HumanEval/2 @ base\nCodegen: HumanEval/3 @ base\nCodegen: HumanEval/4 @ base\nCodegen: HumanEval/5 @ base\nCodegen: HumanEval/6 @ base\nCodegen: HumanEval/7 @ base\nCodegen: HumanEval/8 @ base\nCodegen: HumanEval/9 @ base\nCodegen: HumanEval/10 @ base\nCodegen: HumanEval/11 @ base\nCodegen: HumanEval/12 @ base\nCodegen: HumanEval/13 @ base\nCodegen: HumanEval/14 @ base\nCodegen: HumanEval/15 @ base\nCodegen: HumanEval/16 @ base\nCodegen: HumanEval/17 @ base\nCodegen: HumanEval/18 @ base\nCodegen: HumanEval/19 @ base\nCodegen: HumanEval/20 @ base\nCodegen: HumanEval/21 @ base\nCodegen: HumanEval/22 @ base\nCodegen: HumanEval/23 @ base\nCodegen: HumanEval/24 @ base\nCodegen: HumanEval/25 @ base\nCodegen: HumanEval/26 @ base\nCodegen: HumanEval/27 @ base\nCodegen: HumanEval/28 @ base\nCodegen: HumanEval/29 @ base\nhumaneval \u2022100% \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501 30/30 \u2022 0:04:34\nComputing expected output...\nExpected outputs computed in 1.58s\nReading samples...\nhumaneval (base tests)\npass@1:\t0.600\nhumaneval+ (base + extra tests)\npass@1:\t0.567\n",
+      "stderr_tail": "\n0it [00:00, ?it/s]\n30it [00:00, 1506.97it/s]\n\n  0%|          | 0/30 [00:00<?, ?it/s]\n 40%|\u2588\u2588\u2588\u2588      | 12/30 [00:00<00:00, 73.79it/s]\n 67%|\u2588\u2588\u2588\u2588\u2588\u2588\u258b   | 20/30 [00:00<00:00, 52.81it/s]\n 97%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u258b| 29/30 [00:00<00:00, 64.32it/s]\n100%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588| 30/30 [00:02<00:00, 12.73it/s]\n"
+    },
+    "ifeval": {
+      "prompt_level_strict_acc": 0.6,
+      "inst_level_strict_acc": 0.6666666666666666,
+      "limit": 30,
+      "wall_s": 305,
+      "returncode": 0,
+      "stdout_tail": "local-chat-completions ({'model': 'base', 'base_url': 'http://127.0.0.1:8391/v1/chat/completions', 'num_concurrent': 1, 'tokenized_requests': False}), gen_kwargs: ({'temperature': 0, 'max_gen_toks': 768}), limit: 30.0, num_fewshot: None, batch_size: 1\n|Tasks |Version|Filter|n-shot|        Metric         |   |Value |   |Stderr|\n|------|------:|------|-----:|-----------------------|---|-----:|---|------|\n|ifeval|      4|none  |     0|inst_level_loose_acc   |\u2191  |0.7111|\u00b1  |   N/A|\n|      |       |none  |     0|inst_level_strict_acc  |\u2191  |0.6667|\u00b1  |   N/A|\n|      |       |none  |     0|prompt_level_loose_acc |\u2191  |0.6667|\u00b1  |0.0875|\n|      |       |none  |     0|prompt_level_strict_acc|\u2191  |0.6000|\u00b1  |0.0910|\n\n",
+      "stderr_tail": " [02:11<04:08, 13.79s/it]\nRequesting API:  43%|\u2588\u2588\u2588\u2588\u258e     | 13/30 [02:21<03:38, 12.85s/it]\nRequesting API:  47%|\u2588\u2588\u2588\u2588\u258b     | 14/30 [02:29<03:02, 11.41s/it]\nRequesting API:  50%|\u2588\u2588\u2588\u2588\u2588     | 15/30 [02:46<03:14, 12.99s/it]\nRequesting API:  53%|\u2588\u2588\u2588\u2588\u2588\u258e    | 16/30 [02:56<02:48, 12.00s/it]\nRequesting API:  57%|\u2588\u2588\u2588\u2588\u2588\u258b    | 17/30 [03:01<02:10, 10.04s/it]\nRequesting API:  60%|\u2588\u2588\u2588\u2588\u2588\u2588    | 18/30 [03:04<01:35,  7.98s/it]\nRequesting API:  63%|\u2588\u2588\u2588\u2588\u2588\u2588\u258e   | 19/30 [03:05<01:03,  5.81s/it]\nRequesting API:  67%|\u2588\u2588\u2588\u2588\u2588\u2588\u258b   | 20/30 [03:06<00:42,  4.26s/it]\nRequesting API:  70%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588   | 21/30 [03:16<00:54,  6.04s/it]\nRequesting API:  73%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u258e  | 22/30 [03:20<00:43,  5.40s/it]\nRequesting API:  77%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u258b  | 23/30 [03:24<00:35,  5.09s/it]\nRequesting API:  80%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588  | 24/30 [03:25<00:22,  3.70s/it]\nRequesting API:  83%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u258e | 25/30 [03:54<00:56, 11.28s/it]\nRequesting API:  87%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u258b | 26/30 [04:13<00:55, 13.80s/it]\nRequesting API:  90%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588 | 27/30 [04:18<00:33, 11.09s/it]\nRequesting API:  93%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u258e| 28/30 [04:47<00:32, 16.47s/it]\nRequesting API:  97%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u258b| 29/30 [04:49<00:12, 12.10s/it]\nRequesting API: 100%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588| 30/30 [04:55<00:00, 10.21s/it]\nRequesting API: 100%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588| 30/30 [04:55<00:00,  9.85s/it]\n2026-10-13:07:56:42 INFO     [loggers.evaluation_tracker:247] Saving results aggregated\n2026-10-13:07:56:42 INFO     [loggers.evaluation_tracker:119] Saving per-task samples to /home/ubuntu/repos/NEXI-Models-Drivers/nexi-4gb/results/ifeval_base/base/*.jsonl\n"
+    }
+  },
+  "server_peak_rss_kb": 2518372
+}
