@@ -38,9 +38,9 @@ Training run in progress.
 
 | Metric | nexi-4gb | nexi-8gb | nexi-16gb | nexi-24gb |
 |---|---:|---:|---:|---:|
-| Tool | 25.0% (n=40) | 33.3% (n=30) | 40.0% (n=20) | not run |
-| CUA | 19.0% (n=100) | 53.8% (n=80) | 62.0% (n=50) | not run |
-| HumanEval+ plus | 56.7% (n=30) | 95.0% (n=20) | 100.0% (n=10) | not run |
+| Tool | 25.0% (n=40) | 33.3% (n=30) | 40.0% (n=20) | 26.7% (n=15) |
+| CUA | 19.0% (n=100) | 53.8% (n=80) | 62.0% (n=50) | 45.0% (n=40) |
+| HumanEval+ plus | 56.7% (n=30) | 95.0% (n=20) | 100.0% (n=10) | 100.0% (n=10) |
 | IFEval prompt-strict | 60.0% (n=30) | 90.0% (n=20) | not run | not run |
 
 [^across-tiers]: n differs by tier and items are the first N of the same held-out sets.
