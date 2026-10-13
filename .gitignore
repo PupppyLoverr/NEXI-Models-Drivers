@@ -2,3 +2,12 @@
 *.safetensors
 __pycache__/
 .venv/
+models/
+outputs/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.onnx
+*.ckpt
+*.pt
+*.pth
