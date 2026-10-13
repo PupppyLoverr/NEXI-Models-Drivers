@@ -1,0 +1,23 @@
+{
+  "model": "Qwen/Qwen3.5-4B",
+  "gguf_file": "Qwen3.5-4B-UD-Q4_K_XL.gguf",
+  "gguf_bytes": 2912109728,
+  "sha256": "b252c5610a42ca82d20fe2a12813e9d069eed89292907e26c783eeb0bc961bc7",
+  "llama_cpp_tag": "b11580",
+  "llama_cpp_commit": "4413a192410fad1f054e9216114087a3e01527a0",
+  "ctx": 4096,
+  "threads": 8,
+  "pp512_tps": 146.133282,
+  "pp512_std": 5.392572,
+  "tg128_tps": 10.102752,
+  "tg128_std": 0.239615,
+  "peak_rss_kb_runs": [
+    3986080,
+    3986332
+  ],
+  "peak_rss_gb": 4.082,
+  "peak_rss_gib": 3.802,
+  "command": "/usr/bin/time -v /home/ubuntu/nexi-toolchain/llama.cpp/build/bin/llama-completion -m /home/ubuntu/nexi-models/nexi-8gb/Qwen3.5-4B-UD-Q4_K_XL.gguf -t 8 -ngl 0 -c 4096 -n 256 --temp 0 --seed 2026 -p 'Write a Python function that parses an ISO-8601 date string and returns a datetime object, with error handling and three unit tests.'",
+  "cpu": "Intel Xeon Platinum 8375C, 8 vCPU",
+  "date": "2026-10-13"
+}

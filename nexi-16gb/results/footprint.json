@@ -1,0 +1,21 @@
+{
+  "model": "google/gemma-4-12B-it",
+  "gguf_file": "gemma-4-12b-it-UD-Q4_K_XL.gguf",
+  "gguf_bytes": 7366423360,
+  "sha256": "90fd944d227e9d9b68e7e2c7d5b57b79d4c66ed521b0919fbbd932cf834f6f8e",
+  "llama_cpp_tag": "b11580",
+  "llama_cpp_commit": "4413a192410fad1f054e9216114087a3e01527a0",
+  "ctx": 4096,
+  "threads": 8,
+  "pp512_tps": null,
+  "pp512_std": null,
+  "tg128_tps": null,
+  "tg128_std": null,
+  "peak_rss_kb_runs": [],
+  "peak_rss_gb": null,
+  "peak_rss_gib": null,
+  "command": "/usr/bin/time -v /home/ubuntu/nexi-toolchain/llama.cpp/build/bin/llama-completion -m /home/ubuntu/nexi-models/nexi-16gb/gemma-4-12b-it-UD-Q4_K_XL.gguf -t 8 -ngl 0 -c 4096 -n 256 --temp 0 --seed 2026 -p 'Write a Python function that parses an ISO-8601 date string and returns a datetime object, with error handling and three unit tests.'",
+  "cpu": "Intel Xeon Platinum 8375C, 8 vCPU",
+  "date": "2026-10-13",
+  "measurement_error": "terminate called after throwing an instance of 'std::runtime_error'\n  what(): this custom template is not supported, try using --jinja\nCommand terminated by signal 6"
+}
