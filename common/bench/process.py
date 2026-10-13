@@ -106,7 +106,7 @@ def main() -> int:
     args.output.write_text(json.dumps(result, indent=2) + "\n")
     print(f"{result['status']}: {result['wall_seconds']:.3f}s, "
           f"{result['peak_rss_bytes'] / 1_000_000:.1f} MB peak RSS → {args.output}")
-    return result["exit_code"]
+    return int(result["exit_code"])
 
 
 if __name__ == "__main__":
