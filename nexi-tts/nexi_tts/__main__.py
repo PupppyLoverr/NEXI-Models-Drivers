@@ -7,6 +7,7 @@ import time
 from pathlib import Path
 
 from .assets import PROFILES, default_model_dir, download, profile_for, verify_assets
+from .text import CHUNK_CHARS
 
 
 def main() -> None:
@@ -18,6 +19,7 @@ def main() -> None:
         sub.add_argument("--model-dir", type=Path)
         if name in ("speak", "serve"):
             sub.add_argument("--threads", type=int, default=2)
+            sub.add_argument("--chunk-chars", type=int, default=CHUNK_CHARS)
         if name == "speak":
             text_group = sub.add_mutually_exclusive_group(required=True)
             text_group.add_argument("--text")
@@ -52,7 +54,9 @@ def main() -> None:
             from .driver import SAMPLE_RATE, Synthesizer
 
             start = time.perf_counter()
-            synth = Synthesizer(args.model_dir, args.threads, profile=args.profile)
+            synth = Synthesizer(
+                args.model_dir, args.threads, profile=args.profile, chunk_chars=args.chunk_chars
+            )
             loaded = time.perf_counter()
             text = (
                 args.text if args.text is not None else args.text_file.read_text(encoding="utf-8")
@@ -75,7 +79,13 @@ def main() -> None:
         elif args.command == "serve":
             from .server import serve
 
-            serve(args.model_dir, args.threads, args.port, profile=args.profile)
+            serve(
+                args.model_dir,
+                args.threads,
+                args.port,
+                profile=args.profile,
+                chunk_chars=args.chunk_chars,
+            )
     except (ValueError, OSError, RuntimeError) as error:
         print(f"nexi-tts: {error}", file=sys.stderr)
         raise SystemExit(2) from error

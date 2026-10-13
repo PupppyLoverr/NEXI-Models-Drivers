@@ -47,6 +47,11 @@ class DriverTests(unittest.TestCase):
                 Synthesizer(Path(directory))
             network.assert_not_called()
 
+    def test_invalid_chunk_limit_before_assets(self) -> None:
+        for chunk_chars in (0, 79, 181, True, 128.5):
+            with self.subTest(chunk_chars=chunk_chars), self.assertRaises(ValueError):
+                Synthesizer(chunk_chars=chunk_chars)
+
     def test_invalid_parameters_before_inference(self) -> None:
         synth = Synthesizer.__new__(Synthesizer)
         synth.voice_aliases = {"Jasper": "voice"}

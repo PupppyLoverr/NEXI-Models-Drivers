@@ -16,7 +16,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from .assets import default_model_dir, profile_for, verify_assets
-from .text import chunk_text, normalize, tokenize
+from .text import CHUNK_CHARS, chunk_text, normalize, tokenize
 
 SAMPLE_RATE = 24000
 Audio = NDArray[np.float32]
@@ -40,10 +40,22 @@ def wav_bytes(audio: Audio) -> bytes:
 
 class Synthesizer:
     def __init__(
-        self, model_dir: Path | str | None = None, threads: int = 2, *, profile: str = "nano"
+        self,
+        model_dir: Path | str | None = None,
+        threads: int = 2,
+        *,
+        profile: str = "nano",
+        chunk_chars: int = CHUNK_CHARS,
     ) -> None:
         if isinstance(threads, bool) or not isinstance(threads, int) or not 1 <= threads <= 8:
             raise ValueError("threads must be between one and eight")
+        if (
+            isinstance(chunk_chars, bool)
+            or not isinstance(chunk_chars, int)
+            or not 80 <= chunk_chars <= 180
+        ):
+            raise ValueError("chunk_chars must be an integer between 80 and 180")
+        self.chunk_chars = chunk_chars
         spec = profile_for(profile)
         self.profile = profile
         self.model_dir = Path(model_dir) if model_dir is not None else default_model_dir(profile)
@@ -100,7 +112,7 @@ class Synthesizer:
             raise ValueError("speed must be finite and between 0.5 and 2.0")
         cleaned = normalize(text)
         voice_id = self.voice_aliases[voice]
-        for chunk in chunk_text(cleaned, first_chunk_chars=first_chunk_chars):
+        for chunk in chunk_text(cleaned, self.chunk_chars, first_chunk_chars=first_chunk_chars):
             with self._lock:
                 phonemes = self.phonemizer.phonemize([chunk], njobs=1)[0]
                 tokens = tokenize(phonemes)

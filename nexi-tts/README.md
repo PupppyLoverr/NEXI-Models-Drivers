@@ -6,7 +6,7 @@ and **Mini** (80M, 81,548,122 asset bytes) for quality-first use. No cloud infer
 GPU, spaCy or PyTorch. This is **not a fine-tune**; the upstream ONNX family has no released
 training pipeline. See NOTICE for the pinned 0.8 frontend contract.
 
-Measured on Linux x86-64 / Xeon 8559C with two ONNX threads: **345 MB peak RSS**
+Original Nano baseline on Linux x86-64 / Xeon 8559C with two ONNX threads: **345 MB peak RSS**
 for a 10.15-second utterance, **349 MB** for an 81.2-second utterance;
 approximately **0.21–0.23 real-time factor**. These are complete process peaks,
 not weight sizes. See [BENCHMARKS.md](BENCHMARKS.md) and the committed JSON.
@@ -15,6 +15,11 @@ All eight presets generated real audio with Python networking blocked.
 Nano remains the compatible default. Upstream calls Mini its highest-quality
 ONNX model; that is a **published claim**, not our listener ranking. Neither a
 category-wide #1 result nor ElevenLabs-quality parity has been established.
+On a longer, same-text CPU stress test with the current 128-character bound,
+Nano peaked at **485 MB** and Mini at **741 MB** complete-process RSS. At an
+80-character first chunk, they peaked at **446 MB** and **712 MB**, respectively.
+Mini uses about twice as much synthesis time per second of generated audio.
+See [BENCHMARKS.md](BENCHMARKS.md) for paired timings and evidence.
 
 ## Quick start (Linux, Python 3.10–3.12)
 
@@ -53,7 +58,8 @@ tested separately from the development environment.
 
 Built-in voices: Bella, Jasper, Luna, Bruno, Rosie, Hugo, Kiki, Leo.
 Languages: English only (`en` or `en-us`). Output: 24 kHz mono PCM16 WAV.
-Speed: 0.5–2.0, multiplied by the upstream voice-specific speed prior.
+Speed: 0.5–2.0. Nano multiplies its stored voice-specific speed prior;
+Mini has no speed priors in its config and uses a neutral multiplier of 1.0.
 
 ## Python API
 
@@ -72,8 +78,13 @@ for chunk in tts.iter_audio("Sentence chunks are yielded incrementally."):
 Select the quality profile with `Synthesizer(profile="mini", threads=2)`.
 For faster first audio from a long response, use
 `tts.iter_audio(text, first_chunk_chars=80)`. Only the first chunk is shortened;
-later chunks retain the 180-character bound. This is **chunk-level streaming**,
+later chunks retain the default 128-character bound. This is **chunk-level streaming**,
 not an autoregressive within-sentence stream. Shorter chunks can change prosody.
+The default was reduced from 180 after a longer-sentence stress test showed much
+higher memory use. `chunk_chars=80..180` in Python / `--chunk-chars` in the CLI
+allows an explicit prosody/memory trade-off; larger chunks are not covered by
+the default-budget measurements. Peak RSS depends on phonemes, voice and speed,
+not just asset size, and no hard OS memory cap is imposed.
 
 ## Loopback HTTP API
 
@@ -87,8 +98,9 @@ curl -f http://127.0.0.1:8765/synthesize \
   --output api.wav
 ```
 
-`GET /health`, `GET /voices`, `POST /synthesize`. Sequential requests, resident
-model. Loopback only; no auth, CORS or public deployment. HTTP text limit 2,000
+`GET /health`, `GET /voices`, `POST /synthesize`. Health/voices identify the loaded
+profile. Requests are sequential with a resident model. Loopback only; no auth,
+CORS or public deployment. HTTP text limit 2,000
 characters; CLI/Python limit 20,000. Incremental chunked synthesis is available
 in Python and via `POST /stream`, not a continuous within-sentence protocol.
 
@@ -126,6 +138,10 @@ Run the same real-inference suite on Mini with `NEXI_TTS_PROFILE=mini`.
 Use `NEXI_TTS_OUTPUT_DIR=results/upgrade/mini/integration` to keep separate evidence.
 Benchmark supports `--profile mini`, `--text-file tests/fixtures/everyday.txt`
 and `--first-chunk-chars 80` for comparable first-audio measurements.
+The opt-in suite runs all eight voices, speed changes, challenge text, real
+loopback WAV/PCM HTTP, and a measured <1 GB process-budget assertion. Python
+networking is denied in the inference checks; the HTTP check necessarily allows
+loopback sockets and separately forbids asset fetches.
 
 Unit tests use only local fixtures/loopback HTTP; real inference benchmarks
 run in fresh subprocesses with Python sockets disabled. WAVs and weights are

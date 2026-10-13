@@ -3,11 +3,15 @@
 from __future__ import annotations
 
 import hashlib
+import http.client
 import json
 import os
+import socket
+import threading
 import time
 import unittest
 import wave
+from http.server import HTTPServer
 from pathlib import Path
 from unittest.mock import patch
 
@@ -15,6 +19,7 @@ import numpy as np
 
 from nexi_tts.benchmark import deny_network, hardware, peak_rss_bytes
 from nexi_tts.driver import SAMPLE_RATE, Synthesizer, wav_bytes
+from nexi_tts.server import handler_for
 from nexi_tts.text import normalize
 
 
@@ -22,6 +27,8 @@ from nexi_tts.text import normalize
 class RealInferenceTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
+        cls.original_socket = socket.socket
+        cls.original_connect = socket.create_connection
         cls.guard = patch("socket.socket", deny_network)
         cls.connections = patch("socket.create_connection", deny_network)
         cls.guard.start()
@@ -38,6 +45,7 @@ class RealInferenceTests(unittest.TestCase):
             "hardware": hardware(),
             "python_network_guard": True,
             "profile": self.profile,
+            "chunk_chars": self.synth.chunk_chars,
         }
         runs: list[dict[str, object]] = []
         durations: dict[float, float] = {}
@@ -99,6 +107,86 @@ class RealInferenceTests(unittest.TestCase):
 
     def test_model_is_cpu_only(self) -> None:
         self.assertEqual(self.synth.session.get_providers(), ["CPUExecutionProvider"])
+
+    def test_real_loopback_stream_and_wav(self) -> None:
+        output_dir = Path(os.environ.get("NEXI_TTS_OUTPUT_DIR", "results/integration"))
+        output_dir.mkdir(parents=True, exist_ok=True)
+        text = Path("tests/fixtures/everyday.txt").read_text(encoding="utf-8")
+        results: list[dict[str, object]] = []
+        # Loopback HTTP needs sockets; asset fetches remain prohibited in this check.
+        with (
+            patch("socket.socket", self.original_socket),
+            patch("socket.create_connection", type(self).original_connect),
+            patch("urllib.request.urlopen", side_effect=RuntimeError("Asset fetch forbidden")),
+        ):
+            server = HTTPServer(("127.0.0.1", 0), handler_for(self.synth))
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            try:
+                for route in ("/synthesize", "/stream"):
+                    client = http.client.HTTPConnection("127.0.0.1", server.server_port, timeout=30)
+                    try:
+                        started = time.perf_counter()
+                        client.request(
+                            "POST",
+                            route,
+                            body=json.dumps({"text": text}),
+                            headers={"Content-Type": "application/json"},
+                        )
+                        response = client.getresponse()
+                        self.assertEqual(response.status, 200)
+                        first = response.read(2)
+                        first_byte_seconds = time.perf_counter() - started
+                        body = first + response.read()
+                        complete_seconds = time.perf_counter() - started
+                        if route == "/stream":
+                            self.assertEqual(response.getheader("X-Audio-Format"), "pcm_s16le")
+                            self.assertEqual(len(body) % 2, 0)
+                            audio = np.frombuffer(body, dtype="<i2").astype(np.float32) / 32767
+                            self.assertGreater(audio.size, SAMPLE_RATE)
+                            raw = wav_bytes(audio)
+                            name = "http-stream.wav"
+                        else:
+                            self.assertEqual(response.getheader("Content-Type"), "audio/wav")
+                            self.assertTrue(body.startswith(b"RIFF"))
+                            raw = body
+                            name = "http-full.wav"
+                        (output_dir / name).write_bytes(raw)
+                        results.append(
+                            {
+                                "route": route,
+                                "time_to_first_body_bytes_seconds": first_byte_seconds,
+                                "complete_seconds": complete_seconds,
+                                "response_bytes": len(body),
+                                "wav_file": name,
+                                "wav_sha256": hashlib.sha256(raw).hexdigest(),
+                            }
+                        )
+                    finally:
+                        client.close()
+            finally:
+                server.shutdown()
+                server.server_close()
+                thread.join()
+        (output_dir / "http.json").write_text(
+            json.dumps(
+                {
+                    "profile": self.profile,
+                    "chunk_chars": self.synth.chunk_chars,
+                    "hardware": hardware(),
+                    "text": text,
+                    "asset_fetch_guard": True,
+                    "python_socket_guard": False,
+                    "note": "Loopback sockets allowed; resident model, sequential requests, one sample each",
+                    "runs": results,
+                },
+                indent=2,
+            )
+            + "\n"
+        )
+
+    def test_z_measured_process_budget(self) -> None:
+        self.assertLess(peak_rss_bytes(), 1_000_000_000)
 
     def test_invalid_requests_with_real_instance(self) -> None:
         for text, kwargs in [

@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any
 
 from .assets import PROFILES, default_model_dir, profile_for
+from .text import CHUNK_CHARS
 
 TEXT = (
     "Hello. I am your local voice assistant. Everything you hear is generated on this device, "
@@ -44,7 +45,9 @@ def worker(args: argparse.Namespace) -> dict[str, Any]:
     from .driver import SAMPLE_RATE, Synthesizer, pcm16
 
     imported = time.perf_counter()
-    synth = Synthesizer(args.model_dir, args.threads, profile=args.profile)
+    synth = Synthesizer(
+        args.model_dir, args.threads, profile=args.profile, chunk_chars=args.chunk_chars
+    )
     loaded = time.perf_counter()
     import wave
 
@@ -140,6 +143,7 @@ def main() -> None:
     parser.add_argument("--processes", type=int, default=3)
     parser.add_argument("--warm-runs", type=int, default=2)
     parser.add_argument("--threads", type=int, default=2)
+    parser.add_argument("--chunk-chars", type=int, default=CHUNK_CHARS)
     parser.add_argument("--voice", default="Jasper")
     inputs = parser.add_mutually_exclusive_group()
     inputs.add_argument("--long", action="store_true")
@@ -156,8 +160,10 @@ def main() -> None:
         parser.error("Use 1-10 processes and 0-20 warm runs")
     if not 1 <= args.threads <= 8:
         parser.error("Use 1-8 ONNX threads")
-    if args.first_chunk_chars is not None and not 2 <= args.first_chunk_chars <= 180:
-        parser.error("Use 2-180 first-chunk characters")
+    if not 80 <= args.chunk_chars <= 180:
+        parser.error("Use 80-180 chunk characters")
+    if args.first_chunk_chars is not None and not 2 <= args.first_chunk_chars <= args.chunk_chars:
+        parser.error(f"Use 2-{args.chunk_chars} first-chunk characters")
     args.output_dir.mkdir(parents=True, exist_ok=True)
     if args.worker:
         print(json.dumps(worker(args)))
@@ -179,6 +185,8 @@ def main() -> None:
             str(args.output_dir.resolve()),
             "--threads",
             str(args.threads),
+            "--chunk-chars",
+            str(args.chunk_chars),
             "--warm-runs",
             str(args.warm_runs),
             "--voice",
@@ -224,7 +232,7 @@ def main() -> None:
             "speed": 1.0,
             "language": "en",
             "sample_rate": 24000,
-            "chunk_chars": 180,
+            "chunk_chars": args.chunk_chars,
             "first_chunk_chars": args.first_chunk_chars,
             "openblas_threads": 1,
             "cold_definition": "new interpreter, new model session; OS file cache NOT flushed",

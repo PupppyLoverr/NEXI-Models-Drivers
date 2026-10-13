@@ -43,6 +43,7 @@ class RequestTests(unittest.TestCase):
 class HTTPTests(unittest.TestCase):
     def setUp(self) -> None:
         self.synth = Mock()
+        self.synth.profile = "mini"
         self.synth.voices = ["Jasper"]
         self.synth.synthesize.return_value = np.zeros(2400, dtype=np.float32)
         self.server = HTTPServer(("127.0.0.1", 0), handler_for(self.synth))
@@ -61,7 +62,7 @@ class HTTPTests(unittest.TestCase):
             self.client.request("GET", endpoint)
             response = self.client.getresponse()
             self.assertEqual(response.status, 200)
-            self.assertIsInstance(json.loads(response.read()), dict)
+            self.assertEqual(json.loads(response.read())["profile"], "mini")
         self.synth.synthesize.assert_not_called()
 
     def test_wav_response(self) -> None:

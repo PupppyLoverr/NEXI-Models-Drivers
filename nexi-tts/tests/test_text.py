@@ -46,6 +46,7 @@ class TextTests(unittest.TestCase):
             "-3.04, +1.20": "minus three point zero four, plus one point two zero",
             "12.5%": "twelve point five percent",
             "1kg and 2.5 kg": "one kilogram and two point five kilograms",
+            "-1kg and +1mL": "minus one kilogram and plus one milliliter",
             "24kHz, 2 GB": "twenty-four kilohertz, two gigabytes",
         }
         for text, expected in cases.items():

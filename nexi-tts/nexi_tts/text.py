@@ -8,7 +8,7 @@ import unicodedata
 from num2words import num2words
 
 MAX_TEXT_CHARS = 20000
-CHUNK_CHARS = 180
+CHUNK_CHARS = 128
 MAX_TOKENS = 510
 SYMBOLS = (
     "$"
@@ -80,7 +80,11 @@ def normalize(text: str) -> str:
     def unit_words(match: re.Match[str]) -> str:
         raw, unit = match.groups()
         singular, plural = UNITS[unit]
-        return number_words(raw) + " " + (singular if float(raw.replace(",", "")) == 1 else plural)
+        return (
+            number_words(raw)
+            + " "
+            + (singular if abs(float(raw.replace(",", ""))) == 1 else plural)
+        )
 
     text = re.sub(
         rf"(?<![\w.])([-+]?{NUMBER})\s*({'|'.join(UNITS)})(?!\w)",

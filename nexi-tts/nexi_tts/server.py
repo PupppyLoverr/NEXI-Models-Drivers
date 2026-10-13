@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from .driver import SAMPLE_RATE, Synthesizer, pcm16, wav_bytes
+from .text import CHUNK_CHARS
 
 MAX_BODY_BYTES = 32768
 MAX_HTTP_TEXT_CHARS = 2000
@@ -62,13 +63,21 @@ def handler_for(synth: Synthesizer) -> type[BaseHTTPRequestHandler]:
 
         def do_GET(self) -> None:
             if self.path == "/health":
-                self.json_response(200, {"status": "ok", "local": True})
+                self.json_response(200, {"status": "ok", "local": True, "profile": synth.profile})
             elif self.path == "/voices":
                 self.json_response(
-                    200, {"voices": synth.voices, "languages": ["en"], "sample_rate": SAMPLE_RATE}
+                    200,
+                    {
+                        "voices": synth.voices,
+                        "languages": ["en"],
+                        "sample_rate": SAMPLE_RATE,
+                        "profile": synth.profile,
+                    },
                 )
             else:
-                self.json_response(404, {"error": "Use /health, /voices, or POST /synthesize"})
+                self.json_response(
+                    404, {"error": "Use /health, /voices, POST /synthesize or /stream"}
+                )
 
         def do_POST(self) -> None:
             if self.path not in ("/synthesize", "/stream"):
@@ -137,10 +146,17 @@ def handler_for(synth: Synthesizer) -> type[BaseHTTPRequestHandler]:
     return Handler
 
 
-def serve(model_dir: Path, threads: int, port: int, *, profile: str = "nano") -> None:
+def serve(
+    model_dir: Path,
+    threads: int,
+    port: int,
+    *,
+    profile: str = "nano",
+    chunk_chars: int = CHUNK_CHARS,
+) -> None:
     if not 1 <= port <= 65535:
         raise ValueError("port must be between 1 and 65535")
-    synth = Synthesizer(model_dir, threads, profile=profile)
+    synth = Synthesizer(model_dir, threads, profile=profile, chunk_chars=chunk_chars)
     with HTTPServer(("127.0.0.1", port), handler_for(synth)) as server:
         print(
             f"Local TTS ready on 127.0.0.1:{port}; sequential requests, no public authentication",

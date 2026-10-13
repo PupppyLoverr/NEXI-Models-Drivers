@@ -1,0 +1,248 @@
+{
+  "schema_version": 2,
+  "measured_at_utc": "2026-10-13T07:48:43.775191+00:00",
+  "hardware": {
+    "platform": "Linux-6.8.0-1061-aws-x86_64-with-glibc2.35",
+    "python": "3.10.12 (main, Jun 22 2026, 18:55:27) [GCC 11.4.0]",
+    "logical_cpus": 8,
+    "gpu_used": false,
+    "cpu_model": "INTEL(R) XEON(R) PLATINUM 8559C",
+    "mem_total_bytes": 33653952512
+  },
+  "configuration": {
+    "profile": "mini",
+    "repository": "KittenML/kitten-tts-mini-0.8",
+    "revision": "c02725660cea441db4c383af69f1f26f5cd00947",
+    "provider": "CPUExecutionProvider",
+    "onnx_intra_threads": 2,
+    "onnx_inter_threads": 1,
+    "execution": "sequential",
+    "cpu_memory_arena": false,
+    "memory_pattern": false,
+    "voice": "Jasper",
+    "speed": 1.0,
+    "language": "en",
+    "sample_rate": 24000,
+    "chunk_chars": 180,
+    "first_chunk_chars": null,
+    "openblas_threads": 1,
+    "cold_definition": "new interpreter, new model session; OS file cache NOT flushed",
+    "warm_definition": "same process and model session, sequential subsequent requests",
+    "memory_definition": "process ru_maxrss, including Python/native runtime/phonemizer, not total machine RAM"
+  },
+  "packages": {
+    "numpy": "1.26.4",
+    "onnxruntime": "1.22.1",
+    "phonemizer": "3.3.0",
+    "espeakng-loader": "0.2.4",
+    "num2words": "0.5.14"
+  },
+  "disk": {
+    "model_onnx_bytes": 78268016,
+    "assets_total_bytes": 81548122,
+    "files": {
+      "kitten_tts_mini_v0_8.onnx": {
+        "bytes": 78268016,
+        "sha256": "0f5bbae4fc4800c98dbc544a87ecfa79510de2fb8222db30d12e5bfe9177df91"
+      },
+      "voices.npz": {
+        "bytes": 3278902,
+        "sha256": "40ad2638952b77b7b2f30127e2608e169fc69dd256b53bd8aaa3409a33193c42"
+      },
+      "config.json": {
+        "bytes": 470,
+        "sha256": "6b160bc9b19e24ecb21e84bc14f8a7da21fdf47ec72d42450bc5cf514b61804a"
+      },
+      "README.md": {
+        "bytes": 734,
+        "sha256": "cab0af19aa75f409684d165407c32a0d845cc8fc660606c379f4b0663f87abae"
+      }
+    }
+  },
+  "summary": {
+    "max_process_peak_rss_bytes": 544755712,
+    "median_cold_synthesis_seconds": 3.7099239539999758,
+    "median_cold_load_seconds": 0.628984206000041,
+    "median_cold_import_load_first_audio_seconds": 1.0018187950000197,
+    "median_cold_rtf": 0.4696106270886045,
+    "median_warm_synthesis_seconds": 3.5953939700000035,
+    "median_warm_first_chunk_seconds": 0.3168520165000075,
+    "median_warm_rtf": 0.4551131607594941
+  },
+  "runs": [
+    {
+      "import_seconds": 0.051578399999982594,
+      "load_verify_and_frontend_seconds": 0.6066792459999988,
+      "cold_import_load_to_first_audio_seconds": 0.9727496200000019,
+      "process_peak_rss_bytes": 529240064,
+      "python_network_guard": true,
+      "measurements": [
+        {
+          "phase": "cold_model_first_request",
+          "text": "Hello. I am your local voice assistant. Everything you hear is generated on this device, without sending your text to the cloud.",
+          "text_chars": 128,
+          "audio_seconds": 7.9,
+          "synthesis_and_wav_seconds": 3.5949573249999958,
+          "first_chunk_seconds": 0.3144919740000205,
+          "real_time_factor": 0.4550578892405058,
+          "process_peak_rss_bytes_so_far": 520998912,
+          "waveform_rms": 0.1025986372860185,
+          "waveform_peak": 0.6381976008415222,
+          "clipped_samples": 0,
+          "wav_file": "run-0-0.wav",
+          "wav_bytes": 379244,
+          "wav_sha256": "8b13987ea1aa74f885b9209b6b62c82d58296fcc205cffcad52e611a9574562a"
+        },
+        {
+          "phase": "warm_model_request",
+          "text": "Hello. I am your local voice assistant. Everything you hear is generated on this device, without sending your text to the cloud.",
+          "text_chars": 128,
+          "audio_seconds": 7.9,
+          "synthesis_and_wav_seconds": 3.56058966300003,
+          "first_chunk_seconds": 0.32040100900002244,
+          "real_time_factor": 0.4507075522784848,
+          "process_peak_rss_bytes_so_far": 529240064,
+          "waveform_rms": 0.10253829294153155,
+          "waveform_peak": 0.6305448412895203,
+          "clipped_samples": 0,
+          "wav_file": "run-0-1.wav",
+          "wav_bytes": 379244,
+          "wav_sha256": "3df90632472f8ef48c9e90dbd6cb25ff6306c278a24511adea12545bb2b24e75"
+        },
+        {
+          "phase": "warm_model_request",
+          "text": "Hello. I am your local voice assistant. Everything you hear is generated on this device, without sending your text to the cloud.",
+          "text_chars": 128,
+          "audio_seconds": 7.9,
+          "synthesis_and_wav_seconds": 3.5807087430000024,
+          "first_chunk_seconds": 0.30630759899997884,
+          "real_time_factor": 0.45325427126582307,
+          "process_peak_rss_bytes_so_far": 529240064,
+          "waveform_rms": 0.10258823869139329,
+          "waveform_peak": 0.6355380415916443,
+          "clipped_samples": 0,
+          "wav_file": "run-0-2.wav",
+          "wav_bytes": 379244,
+          "wav_sha256": "35cd9c4afd728b1802cea5cdb1903e5fbe39243ad713aef5437f37e025219434"
+        }
+      ],
+      "fresh_subprocess_wall_seconds": 11.538221488000033
+    },
+    {
+      "import_seconds": 0.056133789000000434,
+      "load_verify_and_frontend_seconds": 0.628984206000041,
+      "cold_import_load_to_first_audio_seconds": 1.0018187950000197,
+      "process_peak_rss_bytes": 544755712,
+      "python_network_guard": true,
+      "measurements": [
+        {
+          "phase": "cold_model_first_request",
+          "text": "Hello. I am your local voice assistant. Everything you hear is generated on this device, without sending your text to the cloud.",
+          "text_chars": 128,
+          "audio_seconds": 7.9,
+          "synthesis_and_wav_seconds": 3.7099239539999758,
+          "first_chunk_seconds": 0.31670079999997824,
+          "real_time_factor": 0.4696106270886045,
+          "process_peak_rss_bytes_so_far": 518643712,
+          "waveform_rms": 0.10281638129082035,
+          "waveform_peak": 0.6467689275741577,
+          "clipped_samples": 0,
+          "wav_file": "run-1-0.wav",
+          "wav_bytes": 379244,
+          "wav_sha256": "4727d0e84262f8b920e33bc658c7fdfd5e4ec203f46342838f491c607ac665ef"
+        },
+        {
+          "phase": "warm_model_request",
+          "text": "Hello. I am your local voice assistant. Everything you hear is generated on this device, without sending your text to the cloud.",
+          "text_chars": 128,
+          "audio_seconds": 7.9,
+          "synthesis_and_wav_seconds": 3.6100791970000046,
+          "first_chunk_seconds": 0.3144605150000075,
+          "real_time_factor": 0.4569720502531651,
+          "process_peak_rss_bytes_so_far": 518643712,
+          "waveform_rms": 0.10262404571196011,
+          "waveform_peak": 0.6204519271850586,
+          "clipped_samples": 0,
+          "wav_file": "run-1-1.wav",
+          "wav_bytes": 379244,
+          "wav_sha256": "a836707a16372e4f14aae18098d5a3c46097d6678c2f4d78ecbeabfa74595ddf"
+        },
+        {
+          "phase": "warm_model_request",
+          "text": "Hello. I am your local voice assistant. Everything you hear is generated on this device, without sending your text to the cloud.",
+          "text_chars": 128,
+          "audio_seconds": 7.9,
+          "synthesis_and_wav_seconds": 3.694470475000003,
+          "first_chunk_seconds": 0.31671870400003854,
+          "real_time_factor": 0.46765449050632946,
+          "process_peak_rss_bytes_so_far": 544755712,
+          "waveform_rms": 0.10252037405669671,
+          "waveform_peak": 0.6094558238983154,
+          "clipped_samples": 0,
+          "wav_file": "run-1-2.wav",
+          "wav_bytes": 379244,
+          "wav_sha256": "cf920427b94c1008146020e7ffa775b02ae1fa094cf5ace706a9b802c389dcab"
+        }
+      ],
+      "fresh_subprocess_wall_seconds": 11.829603566000003
+    },
+    {
+      "import_seconds": 0.04436859800000548,
+      "load_verify_and_frontend_seconds": 0.6594913050000173,
+      "cold_import_load_to_first_audio_seconds": 1.0182047030000376,
+      "process_peak_rss_bytes": 542687232,
+      "python_network_guard": true,
+      "measurements": [
+        {
+          "phase": "cold_model_first_request",
+          "text": "Hello. I am your local voice assistant. Everything you hear is generated on this device, without sending your text to the cloud.",
+          "text_chars": 128,
+          "audio_seconds": 7.9,
+          "synthesis_and_wav_seconds": 3.715686665000021,
+          "first_chunk_seconds": 0.31434480000001486,
+          "real_time_factor": 0.47034008417721784,
+          "process_peak_rss_bytes_so_far": 536637440,
+          "waveform_rms": 0.10270462933559452,
+          "waveform_peak": 0.6284574866294861,
+          "clipped_samples": 0,
+          "wav_file": "run-2-0.wav",
+          "wav_bytes": 379244,
+          "wav_sha256": "d4a193cd2bf6eaf551a898ac200eade0f82301e787e8a58838c4fdb0659195b4"
+        },
+        {
+          "phase": "warm_model_request",
+          "text": "Hello. I am your local voice assistant. Everything you hear is generated on this device, without sending your text to the cloud.",
+          "text_chars": 128,
+          "audio_seconds": 7.9,
+          "synthesis_and_wav_seconds": 3.5324801909999906,
+          "first_chunk_seconds": 0.3258655159999648,
+          "real_time_factor": 0.4471493912658216,
+          "process_peak_rss_bytes_so_far": 536637440,
+          "waveform_rms": 0.10278953164281034,
+          "waveform_peak": 0.6224375367164612,
+          "clipped_samples": 0,
+          "wav_file": "run-2-1.wav",
+          "wav_bytes": 379244,
+          "wav_sha256": "b472810ab48a9cffe43e2b9b0570a0a3745bb43831ea64f057f7012e32b9511e"
+        },
+        {
+          "phase": "warm_model_request",
+          "text": "Hello. I am your local voice assistant. Everything you hear is generated on this device, without sending your text to the cloud.",
+          "text_chars": 128,
+          "audio_seconds": 7.9,
+          "synthesis_and_wav_seconds": 3.670318695999981,
+          "first_chunk_seconds": 0.31698532899997645,
+          "real_time_factor": 0.46459730329113685,
+          "process_peak_rss_bytes_so_far": 542687232,
+          "waveform_rms": 0.10257311978363545,
+          "waveform_peak": 0.6590176820755005,
+          "clipped_samples": 0,
+          "wav_file": "run-2-2.wav",
+          "wav_bytes": 379244,
+          "wav_sha256": "4ddd2030722abe334e5fa1b74767e45a63342bd7c78b120e6267023aebac2997"
+        }
+      ],
+      "fresh_subprocess_wall_seconds": 11.763794086000019
+    }
+  ]
+}
