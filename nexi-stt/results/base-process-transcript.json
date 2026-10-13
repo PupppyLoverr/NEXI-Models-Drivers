@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "text": "And so my fellow Americans, ask not what your country can do for you, ask what you can do for your country.",
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 11.0,
+      "text": "And so my fellow Americans, ask not what your country can do for you, ask what you can do for your country.",
+      "no_speech_probability": 0.01789463497698307
+    }
+  ],
+  "language": "en",
+  "audio_seconds": 11.0,
+  "speech_seconds_after_vad": 11.0,
+  "transcribe_seconds": 0.9398931590001212,
+  "real_time_factor": 0.08544483263637465,
+  "config": {
+    "device": "cpu",
+    "compute_type": "int8",
+    "threads": 4,
+    "beam_size": 1,
+    "temperature": 0.0,
+    "vad": true,
+    "word_timestamps": false,
+    "hotwords": "",
+    "condition_on_previous_text": false
+  },
+  "model": {
+    "upstream": "Systran/faster-whisper-base.en",
+    "revision": "3d3d5dee26484f91867d81cb899cfcf72b96be6c",
+    "license": "MIT",
+    "provenance": "upstream weights, not a NEXI fine-tune"
+  },
+  "model_load_seconds": 0.9311422360001416
+}

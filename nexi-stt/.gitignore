@@ -8,3 +8,5 @@ fixtures/*.wav
 .pytest_cache/
 __pycache__/
 *.pyc
+results/*.strace
+results/*-gnu-time.txt

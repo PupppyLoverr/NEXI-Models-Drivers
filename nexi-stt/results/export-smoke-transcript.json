@@ -1,0 +1,169 @@
+{
+  "schema_version": 1,
+  "text": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country",
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 10.56,
+      "text": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country",
+      "no_speech_probability": 0.07191699743270874,
+      "words": [
+        {
+          "start": 0.0,
+          "end": 0.74,
+          "text": " And",
+          "probability": 0.5785543918609619
+        },
+        {
+          "start": 0.74,
+          "end": 1.08,
+          "text": " so",
+          "probability": 0.9701882004737854
+        },
+        {
+          "start": 1.08,
+          "end": 1.48,
+          "text": " my",
+          "probability": 0.784699559211731
+        },
+        {
+          "start": 1.48,
+          "end": 1.76,
+          "text": " fellow",
+          "probability": 0.9987623691558838
+        },
+        {
+          "start": 1.76,
+          "end": 2.3,
+          "text": " Americans",
+          "probability": 0.9341253042221069
+        },
+        {
+          "start": 2.3,
+          "end": 3.88,
+          "text": " ask",
+          "probability": 0.810650646686554
+        },
+        {
+          "start": 3.88,
+          "end": 4.56,
+          "text": " not",
+          "probability": 0.9071691036224365
+        },
+        {
+          "start": 4.56,
+          "end": 5.7,
+          "text": " what",
+          "probability": 0.8957059979438782
+        },
+        {
+          "start": 5.7,
+          "end": 6.04,
+          "text": " your",
+          "probability": 0.9872257113456726
+        },
+        {
+          "start": 6.04,
+          "end": 6.34,
+          "text": " country",
+          "probability": 0.9966652989387512
+        },
+        {
+          "start": 6.34,
+          "end": 6.76,
+          "text": " can",
+          "probability": 0.9947062134742737
+        },
+        {
+          "start": 6.76,
+          "end": 7.02,
+          "text": " do",
+          "probability": 0.9984521865844727
+        },
+        {
+          "start": 7.02,
+          "end": 7.26,
+          "text": " for",
+          "probability": 0.9894629120826721
+        },
+        {
+          "start": 7.26,
+          "end": 8.26,
+          "text": " you",
+          "probability": 0.9918904304504395
+        },
+        {
+          "start": 8.26,
+          "end": 8.66,
+          "text": " ask",
+          "probability": 0.7756397128105164
+        },
+        {
+          "start": 8.66,
+          "end": 8.94,
+          "text": " what",
+          "probability": 0.9905016422271729
+        },
+        {
+          "start": 8.94,
+          "end": 9.28,
+          "text": " you",
+          "probability": 0.9938883185386658
+        },
+        {
+          "start": 9.28,
+          "end": 9.5,
+          "text": " can",
+          "probability": 0.9967207312583923
+        },
+        {
+          "start": 9.5,
+          "end": 9.72,
+          "text": " do",
+          "probability": 0.9971627593040466
+        },
+        {
+          "start": 9.72,
+          "end": 9.92,
+          "text": " for",
+          "probability": 0.9977166652679443
+        },
+        {
+          "start": 9.92,
+          "end": 10.22,
+          "text": " your",
+          "probability": 0.9937937259674072
+        },
+        {
+          "start": 10.22,
+          "end": 10.56,
+          "text": " country",
+          "probability": 0.9986288547515869
+        }
+      ]
+    }
+  ],
+  "language": "en",
+  "audio_seconds": 11.0,
+  "speech_seconds_after_vad": 11.0,
+  "transcribe_seconds": 0.683966345999977,
+  "real_time_factor": 0.06217875872727063,
+  "config": {
+    "device": "cpu",
+    "compute_type": "int8",
+    "threads": 4,
+    "beam_size": 1,
+    "temperature": 0.0,
+    "vad": true,
+    "word_timestamps": true,
+    "hotwords": "",
+    "condition_on_previous_text": false
+  },
+  "model": {
+    "upstream": "local Whisper export",
+    "revision": "a8f99100f208f0ef1f6d49690c5da8d3b653d4cbc71a5899ddd7337e019b5d61",
+    "license": "MIT upstream; verify rights/consent for your training data",
+    "provenance": "user-generated local export; quality requires held-out evaluation"
+  },
+  "model_load_seconds": 0.5797289730000443
+}

@@ -1,0 +1,9 @@
+{
+  "command": "strace -f -e trace=network -o results/offline-network.strace .venv/bin/python -m nexi_stt transcribe fixtures/jfk.wav --model models/tiny.en --words --output results/offline-proof-transcript.json",
+  "exit_code": 0,
+  "network_syscalls_observed": 0,
+  "method": "Linux strace network syscall filter, follows all threads",
+  "scope": "one complete model load + actual word-timestamp transcription; not API server",
+  "trace_sha256": "11ff650b55f9bfdfc730ba4bd6ffe4655fc845d3fd016577dfeae0c89e70fd7e",
+  "note": "Trace reports only successful thread/process exits. Local API intentionally uses loopback sockets; no cloud inference."
+}

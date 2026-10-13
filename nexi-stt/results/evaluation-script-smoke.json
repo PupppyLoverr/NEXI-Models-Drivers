@@ -1,0 +1,58 @@
+{
+  "word_errors": 0,
+  "reference_words": 22,
+  "corpus_wer": 0.0,
+  "records": [
+    {
+      "wav": "jfk.wav",
+      "reference": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country",
+      "result": {
+        "schema_version": 1,
+        "text": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country.",
+        "segments": [
+          {
+            "start": 0.0,
+            "end": 7.54,
+            "text": "And so my fellow Americans ask not what your country can do for you",
+            "no_speech_probability": 0.06345739215612411
+          },
+          {
+            "start": 7.54,
+            "end": 10.8,
+            "text": "ask what you can do for your country.",
+            "no_speech_probability": 0.06345739215612411
+          }
+        ],
+        "language": "en",
+        "audio_seconds": 11.0,
+        "speech_seconds_after_vad": 11.0,
+        "transcribe_seconds": 0.6160753220000288,
+        "real_time_factor": 0.05600684745454807,
+        "config": {
+          "device": "cpu",
+          "compute_type": "int8",
+          "threads": 4,
+          "beam_size": 1,
+          "temperature": 0.0,
+          "vad": true,
+          "word_timestamps": false,
+          "hotwords": "",
+          "condition_on_previous_text": false
+        },
+        "model": {
+          "upstream": "Systran/faster-whisper-tiny.en",
+          "revision": "0d3d19a32d3338f10357c0889762bd8d64bbdeba",
+          "license": "MIT",
+          "provenance": "upstream weights, not a NEXI fine-tune"
+        }
+      },
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 22,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      }
+    }
+  ],
+  "warning": "Use held-out speakers/audio. Training-set WER is not generalization."
+}

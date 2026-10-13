@@ -1,0 +1,32 @@
+{
+  "base": {
+    "upstream": "openai/whisper-tiny.en",
+    "revision": "87c7102498dcde7456f24cfd30239ca606ed9063",
+    "license": "MIT",
+    "provenance": "upstream weights, not a NEXI fine-tune"
+  },
+  "config": {
+    "seed": 13,
+    "steps": 1,
+    "gradient_accumulation": 4,
+    "learning_rate": 1e-05,
+    "threads": 4,
+    "freeze_encoder": false,
+    "gradient_checkpointing": true
+  },
+  "examples": 1,
+  "losses": [
+    0.5515764355659485
+  ],
+  "training_and_save_seconds": 6.548662300999979,
+  "peak_rss_bytes": 1409179648,
+  "platform": "linux",
+  "python": "3.10.12 (main, Jun 22 2026, 18:55:27) [GCC 11.4.0]",
+  "torch": "2.6.0+cpu",
+  "cpu_threads": 4,
+  "device": "cpu",
+  "dtype": "float32",
+  "checkpoint_sha256": "a8f99100f208f0ef1f6d49690c5da8d3b653d4cbc71a5899ddd7337e019b5d61",
+  "data_sha256": "dd4f095ec853713f03aa48b7059df47360088146fcc822459dfdb9bdfae7bf74",
+  "warning": "Training loss is not accuracy. No held-out evaluation or quality claim."
+}
