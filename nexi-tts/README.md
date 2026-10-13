@@ -5,6 +5,12 @@ Runnable text → WAV using **upstream Kitten TTS Nano 0.8 int8** (15M parameter
 or PyTorch. This is **not a fine-tune**; the upstream ONNX family has no released
 training pipeline. See NOTICE for the pinned 0.8 frontend contract.
 
+Measured on Linux x86-64 / Xeon 8559C with two ONNX threads: **345 MB peak RSS**
+for a 10.15-second utterance, **349 MB** for an 81.2-second utterance;
+approximately **0.21–0.23 real-time factor**. These are complete process peaks,
+not weight sizes. See [BENCHMARKS.md](BENCHMARKS.md) and the committed JSON.
+All eight presets generated real audio with Python networking blocked.
+
 ## Quick start (Linux, Python 3.10–3.12)
 
 ```bash
@@ -22,6 +28,9 @@ Assets are pinned to Hugging Face revision
 `84781d74e29ee25217551556398b42f80593a813` with SHA-256/size verification.
 Inference never downloads missing assets. `--model-dir PATH` is available on
 every command; `--text-file PATH` accepts UTF-8 text for `speak`.
+The output's parent directory must already exist. `setup.sh` can use
+`PYTHON=python3.12` and `VENV_DIR=.venv-runtime`; a clean runtime-only install was
+tested separately from the development environment.
 
 Built-in voices: Bella, Jasper, Luna, Bruno, Rosie, Hugo, Kiki, Leo.
 Languages: English only (`en` or `en-us`). Output: 24 kHz mono PCM16 WAV.
@@ -65,6 +74,8 @@ in Python, not a continuous within-sentence streaming protocol.
 .venv/bin/python -m unittest discover -s tests -v
 .venv/bin/ruff check nexi_tts tests
 .venv/bin/mypy nexi_tts
+NEXI_TTS_INTEGRATION=1 OPENBLAS_NUM_THREADS=1 .venv/bin/python \
+  -m unittest discover -s tests -p test_integration.py -v
 .venv/bin/python -m nexi_tts.benchmark --output-dir results/short
 .venv/bin/python -m nexi_tts.benchmark --output-dir results/long --long --processes 1 --warm-runs 1
 ```
@@ -81,3 +92,7 @@ English preset voices only: no voice cloning, emotions, multilingual promise,
 or claim of ElevenLabs-equivalent quality. Numbers are lightly normalized;
 spell out currencies, dates, identifiers and unusual units yourself.
 Linux x86-64 is tested; other OS/CPU combinations are not yet verified.
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the pinned frontend, licenses, and
+**real, separate Pocket TTS fine-tuning route**; [USE_CASES.md](USE_CASES.md) for
+integration patterns. No trained adapter or custom voice is included.

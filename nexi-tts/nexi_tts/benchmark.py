@@ -137,7 +137,7 @@ def main() -> None:
     parser.add_argument("--run-id", type=int, default=0, help=argparse.SUPPRESS)
     args = parser.parse_args()
     if sys.platform not in ("linux", "darwin"):
-        parser.error("Peak RSS benchmark uses POSIX resource; Windows inference still works")
+        parser.error("Peak RSS benchmark requires POSIX resource; Windows is unverified")
     if not 1 <= args.processes <= 10 or not 0 <= args.warm_runs <= 20:
         parser.error("Use 1-10 processes and 0-20 warm runs")
     args.output_dir.mkdir(parents=True, exist_ok=True)
