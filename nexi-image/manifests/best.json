@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "model": "black-forest-labs/FLUX.2-klein-4B Q8_0",
+  "family": "flux2",
+  "budget_bytes": 6000000000,
+  "width": 512,
+  "steps": 4,
+  "guidance": 1,
+  "sampler": "euler",
+  "scheduler": "flux2",
+  "prepare": "none",
+  "quantization": "q8_0",
+  "files": [
+    {
+      "repo": "leejet/FLUX.2-klein-4B-GGUF",
+      "revision": "3b1f5a9dc3abb32238b053aeb3d823c30afdacbd",
+      "path": "model.gguf",
+      "url": "https://huggingface.co/leejet/FLUX.2-klein-4B-GGUF/resolve/3b1f5a9dc3abb32238b053aeb3d823c30afdacbd/flux-2-klein-4b-Q8_0.gguf",
+      "bytes": 4300629440,
+      "sha256": "0bba6951258ec8f92d51114a8fa13e66828297bfff58a738f52729b3ef66fa28",
+      "training_only": false,
+      "source_only": false
+    },
+    {
+      "repo": "unsloth/Qwen3-4B-GGUF",
+      "revision": "22c9fc8a8c7700b76a1789366280a6a5a1ad1120",
+      "path": "text.gguf",
+      "url": "https://huggingface.co/unsloth/Qwen3-4B-GGUF/resolve/22c9fc8a8c7700b76a1789366280a6a5a1ad1120/Qwen3-4B-Q4_K_M.gguf",
+      "bytes": 2497281312,
+      "sha256": "f6f851777709861056efcdad3af01da38b31223a3ba26e61a4f8bf3a2195813a",
+      "training_only": false,
+      "source_only": false
+    },
+    {
+      "repo": "black-forest-labs/FLUX.2-small-decoder",
+      "revision": "a3efc24f613ef42d9428af62fdbd6f5fd8856c4a",
+      "path": "vae.safetensors",
+      "url": "https://huggingface.co/black-forest-labs/FLUX.2-small-decoder/resolve/a3efc24f613ef42d9428af62fdbd6f5fd8856c4a/full_encoder_small_decoder.safetensors",
+      "bytes": 249519092,
+      "sha256": "ea4273f02d1fafbf8e1d1c2cf6018ed8748652eb0bf34f2dd91171f16f15ab62",
+      "training_only": false,
+      "source_only": false
+    }
+  ]
+}

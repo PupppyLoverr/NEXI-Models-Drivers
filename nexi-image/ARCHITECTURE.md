@@ -1,5 +1,32 @@
 # Architecture
 
+## Native tier profiles
+
+`nexi_image.tiers` adds three explicit profiles described in `TIERS.md` and pinned
+by `manifests/{small,medium,best}.json`. It reuses immutable downloads and the
+existing native runtime pin; inference never downloads. Small converts BK's
+sparse Diffusers U-Net to the native original-SD tensor layout using
+`convert_bk`; medium streams quantization of the official four-step Lightning
+checkpoint. Derived artifacts have local build receipts checked at inference.
+Best uses published quantized Klein/Qwen weights and the full encoder/small
+decoder. All native processes use disk-backed parameters, flash attention,
+CPU-only execution, explicit seeds and tiled VAE processing.
+
+Small/medium editing uses img2img and optional native latent masks; best sends
+actual image references to FLUX.2's instruction-editing conditioner. Aspect-fit
+staging and EXIF normalization are explicit. Optional final compositing preserves
+unselected RGB pixels exactly on the staged canvas; for best this is an output
+operation, not trained mask conditioning. Native output is staged, verified and
+atomically moved; failed inference cannot reuse an old image as evidence.
+
+`wait4` captures complete child peak RSS; `/proc` sampling records live parent
+and child RSS every 50 ms. Summing the parent and child's individual peaks gives
+a conservative upper bound, not an exactly simultaneous peak. Neither metric
+includes OS/page-cache/other-app requirements. The wrapper currently measures on
+Linux only; alternative native platforms have not been verified.
+
+## Original isolated Diffusers route
+
 ## Primary profile: BK-SDM-Tiny / TAESD
 
 ```text

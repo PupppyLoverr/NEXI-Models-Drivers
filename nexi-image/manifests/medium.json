@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "model": "ByteDance/SDXL-Lightning 4-step Q8_0",
+  "family": "sdxl",
+  "budget_bytes": 4000000000,
+  "width": 512,
+  "steps": 4,
+  "guidance": 1,
+  "sampler": "euler",
+  "scheduler": "sgm_uniform",
+  "prepare": "quantize",
+  "quantization": "q8_0",
+  "files": [
+    {
+      "repo": "ByteDance/SDXL-Lightning",
+      "revision": "c9a24f48e1c025556787b0c58dd67a091ece2e44",
+      "path": "source.safetensors",
+      "url": "https://huggingface.co/ByteDance/SDXL-Lightning/resolve/c9a24f48e1c025556787b0c58dd67a091ece2e44/sdxl_lightning_4step.safetensors",
+      "bytes": 6938040682,
+      "sha256": "e0d996ee0013e79d9d3561f50fcafb9a17e3ff07b780358e3b66d67932c4d490",
+      "training_only": false,
+      "source_only": true
+    }
+  ]
+}
