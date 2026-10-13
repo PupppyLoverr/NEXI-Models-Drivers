@@ -1,5 +1,26 @@
 # NEXI Image driver
 
+## Three generation/editing variants
+
+See [TIERS.md](TIERS.md) for the `small` (1 GB workload target), `medium`
+(1–4 GB target), and editing-focused `best` (6 GB target) native profiles,
+including setup, CLI/API, masks, licences and measurement boundaries. They use
+quantized BK-SDM, SDXL-Lightning and FLUX.2 Klein 4B respectively, with disk-backed
+parameters. They are upstream-based profiles, not NEXI-trained or demonstrated
+OpenAI/Nano Banana equivalents. Model storage is separate from RAM.
+
+```bash
+bash setup.sh
+bash setup_native.sh
+.venv/bin/python -m nexi_image.tiers download --tier best
+.venv/bin/python -m nexi_image.tiers generate --tier best \
+  --prompt 'A red ceramic mug on a wooden table' --output outputs/mug.png
+.venv/bin/python -m nexi_image.tiers edit --tier best --image outputs/mug.png \
+  --prompt 'Change the mug to blue, preserve the scene' --output outputs/edit.png
+```
+
+## Original Diffusers baseline and LoRA route
+
 Real, local text-to-image generation using **upstream BK-SDM-Tiny**, not a NEXI
 finetune. A compressed U-Net, CLIP text conditioning, DDIM sampler and TAESD
 decoder run sequentially in separate CPU processes. No random test checkpoint.

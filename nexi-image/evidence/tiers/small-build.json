@@ -1,0 +1,12 @@
+{
+  "manifest_sha256": "47efbbabb6f7b403cff7e7cf30daa218e464748f4b43c2a55ac4532d8571ea27",
+  "runtime_revision": "d637cfb935feb2254898a8f1524046c958f3df80",
+  "binary_sha256": "f83f75d92c8aebba31479a20e734f5980619a19c266acf4ca1b81403139bbfa1",
+  "output": {
+    "path": "model.gguf",
+    "bytes": 576639264,
+    "sha256": "b9e4a2d627edb90eec8226b4c671fe81b452e512447cf8a1070bdde7bee2c3a1"
+  },
+  "download_bytes": 902751460,
+  "quantization": "q4_0"
+}

@@ -1,8 +1,65 @@
 # Benchmarks: measured locally versus published upstream
 
-## Result and interpretation
+## Three native tiers
 
-**The strict 1 GB total-RAM goal was not met.** The smallest observed BK worker
+The new generation/editing profiles are documented in [TIERS.md](TIERS.md).
+Their native quantization/disk-backed measurements supersede the original
+Diffusers path's RAM-target failure **for those tested native profiles only**.
+The original measurements below remain valid for the original Python/default
+SD1.5 paths, not a statement that every new variant fails the target.
+
+Same host as below: Xeon Platinum 8559C, four threads, CPU only, ~32 GB RAM,
+native `d637cfb`, disk-backed params, flash attention and VAE tiling. Runs were
+serial, each a fresh native process with warm model files after checksum
+verification. "Bound" is the parent's peak RSS plus the native child's `wait4`
+peak (a conservative upper bound, not simultaneous PSS); OS, page cache and
+other apps are excluded. Model bytes are runtime files only.
+
+| Tier / run | Size | Wall incl. verify | Child peak | Bound | Target | Model bytes |
+|---|---:|---:|---:|---:|---:|---:|
+| small generate | 256², 10 steps | 69.65s | 566,984,704 | 591,007,744 | 1,000,000,000 | 586,432,556 |
+| small masked img2img, strength 0.8 | 256² | 62.63s | 567,513,088 | 592,928,768 | 1,000,000,000 | 586,432,556 |
+| medium generate | 512², 4 steps | 151.50s | 3,253,653,504 | 3,280,564,224 | 4,000,000,000 | 4,180,187,168 |
+| medium masked regenerate, strength 1 | 512² | 202.54s | 3,257,712,640 | 3,288,256,512 | 4,000,000,000 | 4,180,187,168 |
+| best generate | 512², 4 steps | 349.58s | 4,808,568,832 | 4,835,377,152 | 6,000,000,000 | 7,047,429,844 |
+| best instruction edit, one reference | 512² | 553.64s | 5,110,194,176 | 5,138,604,032 | 6,000,000,000 | 7,047,429,844 |
+| best instruction edit plus mask | 512² | 578.04s | 5,106,216,960 | 5,137,698,816 | 6,000,000,000 | 7,047,429,844 |
+
+All seven runs were within their workload targets under these boundaries. A repeat
+generation for each tier (seed 42, same prompt/config) produced identical RGB
+pixel hashes; small/medium PNG files were byte-identical too. Repeat peaks were
+within 0.1% of the first run. Masked lower-tier edits changed zero pixels where
+the mask was black (small: 0/28,287; medium and best: 0/113,919) after compositing.
+
+Qualitative observations, one prompt each, not a benchmark score:
+
+- small: generated a red bowl-like vessel rather than a clear mug. Masked
+  editing with strength 0.8 did **not** turn it blue and introduced a grainy
+  patch. Treat small editing as weak.
+- medium: generated a recognisable red mug with handle and a "NEXI" label, plus
+  garbled small print. Masked strength-one regeneration produced a pale blue mug
+  but a visible rectangular seam and duplicated table/background structure. Use
+  tight, object-shaped masks; a hard box mask is a poor default.
+- best: generated a clean red mug with a legible "NEXI" plate. The unmasked
+  instruction edit changed it to blue while keeping shape, plate, table and
+  lighting closely aligned. This is the only tier that showed convincing editing.
+  The optional rectangular mask preserved all black-mask pixels exactly; a
+  fragment of the original red handle remained outside the mask, demonstrating
+  why selections must cover the whole object.
+
+Not measured: cold cache, other resolutions, multiple references, mobile/GPU,
+a prompt suite, or any comparison with OpenAI/Nano Banana outputs. Reproduce
+with `.venv/bin/python -m nexi_image.benchmark_tiers` after provisioning.
+
+Portable measured reports, conversion receipts and hash/pixel assertions are
+committed under [evidence/tiers/](evidence/tiers/), including
+[checks.json](evidence/tiers/checks.json). Input paths are reduced to basenames;
+their SHA-256 hashes are unchanged. Generated PNGs are not committed and remain
+in `outputs/`; the before/after best-tier example is delivered separately.
+
+## Original baseline result and interpretation
+
+**The original baseline did not meet the strict 1 GB total-RAM goal.** The smallest observed BK worker
 peak was **1,082,589,184 bytes (1.008 GiB)** with sequential CFG on the cup
 prompt. The apple reached 1,085,317,120 bytes and its repeat reached
 1,142,714,368 bytes. A live Python parent, OS and filesystem cache are

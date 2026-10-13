@@ -1,0 +1,70 @@
+{
+  "schema": 2,
+  "tier": "small",
+  "model": "nota-ai/bk-sdm-tiny Q4_0",
+  "mode": "edit",
+  "config": {
+    "prompt": "A studio photograph of a blue ceramic coffee mug on a wooden table, soft daylight",
+    "width": 256,
+    "height": 256,
+    "steps": 10,
+    "seed": 42,
+    "threads": 4,
+    "strength": 0.8,
+    "masked": true,
+    "reference_count": 1
+  },
+  "runtime_revision": "d637cfb935feb2254898a8f1524046c958f3df80",
+  "runtime_version": "stable-diffusion.cpp version master-959-d637cfb, commit d637cfb",
+  "binary_sha256": "f83f75d92c8aebba31479a20e734f5980619a19c266acf4ca1b81403139bbfa1",
+  "manifest_sha256": "47efbbabb6f7b403cff7e7cf30daa218e464748f4b43c2a55ac4532d8571ea27",
+  "runtime_files": [
+    {
+      "repo": "madebyollin/taesd",
+      "revision": "614f76814bbe30edbe2e627ace1c2234c81a2c0e",
+      "path": "taesd.safetensors",
+      "url": "https://huggingface.co/madebyollin/taesd/resolve/614f76814bbe30edbe2e627ace1c2234c81a2c0e/diffusion_pytorch_model.safetensors",
+      "bytes": 9793292,
+      "sha256": "db169d69145ec4ff064e49d99c95fa05d3eb04ee453de35824a6d0f325513549",
+      "training_only": false,
+      "source_only": false
+    },
+    {
+      "path": "model.gguf",
+      "bytes": 576639264,
+      "sha256": "b9e4a2d627edb90eec8226b4c671fe81b452e512447cf8a1070bdde7bee2c3a1"
+    }
+  ],
+  "model_disk_bytes": 586432556,
+  "inputs": [
+    {
+      "path": "small-generate.png",
+      "sha256": "95c691d7904ad3f786470b477efb5162719cedbb399750bfca9ddea156157f98"
+    },
+    {
+      "path": "small-mask.png",
+      "sha256": "393174a7be58ea091a43c8e256347157e0cc445751191530d23370816ab62a71"
+    }
+  ],
+  "output_bytes": 87850,
+  "output_sha256": "08053c35deeb496eee72adc48b9f57bb9241ad64355762f1bff3899c5ab5d97f",
+  "output_rgb_sha256": "5d373948ccb0178a45cc9370fc78490f358264231d7eee6f75fb9fcb411ca023",
+  "hardware": {
+    "platform": "Linux-6.8.0-1061-aws-x86_64-with-glibc2.35",
+    "machine": "x86_64",
+    "logical_cpus": 8,
+    "cpu_model": "INTEL(R) XEON(R) PLATINUM 8559C"
+  },
+  "cache_state": "fresh process; warm files after verification; serial inference",
+  "child_peak_rss_bytes": 567513088,
+  "sampled_parent_peak_rss_bytes": 24702976,
+  "sampled_tree_peak_rss_bytes": 593039360,
+  "parent_peak_rss_bytes": 25415680,
+  "sampling_interval_seconds": 0.05,
+  "conservative_peak_rss_bound_bytes": 592928768,
+  "ram_target_bytes": 1000000000,
+  "fits_ram_target_conservative": true,
+  "rss_scope": "single native child plus calling Python process; excludes OS/page cache/other apps",
+  "native_wall_seconds": 61.95022279400018,
+  "total_wall_seconds": 62.634098602999984
+}

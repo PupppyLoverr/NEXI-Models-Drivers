@@ -1,0 +1,57 @@
+{
+  "schema": 1,
+  "hardware": "Linux x86_64; Intel Xeon Platinum 8559C; four CPU threads; no GPU",
+  "cache_state": "fresh processes, page cache warm after verification",
+  "tiers": {
+    "small": {
+      "seed": 42,
+      "generation_rgb_sha256": "243a75f58d8458952d50805b3bd1bb475afb6c7d018bb196d86113f1be4d9432",
+      "repeat_rgb_sha256": "243a75f58d8458952d50805b3bd1bb475afb6c7d018bb196d86113f1be4d9432",
+      "seed_pixels_identical": true,
+      "masked_edit_report": "small-edit.json",
+      "edit_source_sha256_matches_generation": true,
+      "mask_pixels": {
+        "zero_mask_pixels": 28287,
+        "changed_zero_mask_pixels": 0,
+        "changed_selected_pixels": 36602
+      },
+      "generation_fits_ram_target": true,
+      "masked_edit_fits_ram_target": true
+    },
+    "medium": {
+      "seed": 42,
+      "generation_rgb_sha256": "421e76950fa5b1af950af8eaeed3fa241af48e5e3ec56e36a1aa2a21c7fe6d8f",
+      "repeat_rgb_sha256": "421e76950fa5b1af950af8eaeed3fa241af48e5e3ec56e36a1aa2a21c7fe6d8f",
+      "seed_pixels_identical": true,
+      "masked_edit_report": "medium-edit.json",
+      "edit_source_sha256_matches_generation": true,
+      "mask_pixels": {
+        "zero_mask_pixels": 113919,
+        "changed_zero_mask_pixels": 0,
+        "changed_selected_pixels": 148216
+      },
+      "generation_fits_ram_target": true,
+      "masked_edit_fits_ram_target": true
+    },
+    "best": {
+      "seed": 42,
+      "generation_rgb_sha256": "070110faeb8a500e2b559b25270abaf1ae8aa7f91823390aa955a7476d6369a0",
+      "repeat_rgb_sha256": "070110faeb8a500e2b559b25270abaf1ae8aa7f91823390aa955a7476d6369a0",
+      "seed_pixels_identical": true,
+      "masked_edit_report": "best-edit-masked.json",
+      "edit_source_sha256_matches_generation": true,
+      "mask_pixels": {
+        "zero_mask_pixels": 113919,
+        "changed_zero_mask_pixels": 0,
+        "changed_selected_pixels": 148224
+      },
+      "generation_fits_ram_target": true,
+      "masked_edit_fits_ram_target": true,
+      "unmasked_instruction_edit": {
+        "report": "best-edit.json",
+        "edit_source_sha256_matches_generation": true,
+        "fits_ram_target": true
+      }
+    }
+  }
+}

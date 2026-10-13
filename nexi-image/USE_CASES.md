@@ -1,5 +1,26 @@
 # Use cases and boundaries
 
+## Native generation/editing tiers
+
+The three variants in `TIERS.md` cover different workloads:
+
+- `small`: memory-conscious 256px local previews and basic img2img/selected-region
+  regeneration. This is a compact draft model, not a high-end instruction editor.
+- `medium`: sharper 512px general-purpose drafts using four-step SDXL-Lightning,
+  plus description-driven masked regeneration. Text/logo fidelity is not
+  guaranteed and local redraw can change shape or texture.
+- `best`: reference-conditioned semantic changes such as changing a mug's colour
+  while preserving its scene; native multi-reference conditioning is also exposed.
+  The measured examples establish a single-object edit, not general identity,
+  typography, multi-reference or cloud-quality equivalence.
+
+An optional black/white mask preserves unselected pixels exactly on the staged
+output canvas in every tier. Bigger canvases/additional references may miss the
+measured workload RAM targets. The profiles are local, upstream-based and subject
+to their model licences; no unrestricted/uncensored model finetune is promised.
+
+## Original lightweight Diffusers route
+
 ## Reasonable uses
 
 - Private, offline 256px concept previews, backgrounds and creative sketches
@@ -20,8 +41,10 @@ precise shape/colour fidelity remains limited.
 
 ## Unsuitable uses
 
-- Claiming a sub-1-GB total-memory device application: the smallest tested
-  worker alone exceeded 1 GB, before the parent and OS.
+- Claiming that the original Python BK route fits a sub-1-GB total-memory
+  device: its smallest tested worker alone exceeded 1 GB, before the parent
+  and OS. Even the native small tier's ~0.59 GB workload measurement excludes
+  operating-system and cache memory.
 - Production print assets, faithful typography, exact diagrams, consistent
   characters, photorealistic faces, or cloud-service-equivalent image quality.
 - Evidence of real events, identification, medical/security decision-making,
@@ -32,8 +55,9 @@ precise shape/colour fidelity remains limited.
 
 ## Choosing a profile
 
-Use **BK + FP16 + ten steps** for the smallest verified useful preview in this
-implementation. TAESD trades reconstruction quality for a small decoder. More
+Use the native `small` profile for the lowest measured workload RSS; use the
+original **BK + FP16 + ten steps** route if you need its working LoRA adapter
+training/inference. TAESD trades reconstruction quality for a small decoder. More
 steps/resolution or the original VAE may improve quality, but those inference
 profiles have not been validated here and increase compute/memory.
 

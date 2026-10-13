@@ -1,0 +1,85 @@
+{
+  "schema": 2,
+  "tier": "best",
+  "model": "black-forest-labs/FLUX.2-klein-4B Q8_0",
+  "mode": "edit",
+  "config": {
+    "prompt": "Change the red ceramic mug to blue ceramic. Keep the NEXI engraving, mug shape, wooden table, lighting and camera angle unchanged.",
+    "width": 512,
+    "height": 512,
+    "steps": 4,
+    "seed": 42,
+    "threads": 4,
+    "strength": null,
+    "masked": true,
+    "reference_count": 1
+  },
+  "runtime_revision": "d637cfb935feb2254898a8f1524046c958f3df80",
+  "runtime_version": "stable-diffusion.cpp version master-959-d637cfb, commit d637cfb",
+  "binary_sha256": "f83f75d92c8aebba31479a20e734f5980619a19c266acf4ca1b81403139bbfa1",
+  "manifest_sha256": "b544b2347f17cbd79f33dee849c57d4d67bb53f7d3733455f2867df360ce908f",
+  "runtime_files": [
+    {
+      "repo": "leejet/FLUX.2-klein-4B-GGUF",
+      "revision": "3b1f5a9dc3abb32238b053aeb3d823c30afdacbd",
+      "path": "model.gguf",
+      "url": "https://huggingface.co/leejet/FLUX.2-klein-4B-GGUF/resolve/3b1f5a9dc3abb32238b053aeb3d823c30afdacbd/flux-2-klein-4b-Q8_0.gguf",
+      "bytes": 4300629440,
+      "sha256": "0bba6951258ec8f92d51114a8fa13e66828297bfff58a738f52729b3ef66fa28",
+      "training_only": false,
+      "source_only": false
+    },
+    {
+      "repo": "unsloth/Qwen3-4B-GGUF",
+      "revision": "22c9fc8a8c7700b76a1789366280a6a5a1ad1120",
+      "path": "text.gguf",
+      "url": "https://huggingface.co/unsloth/Qwen3-4B-GGUF/resolve/22c9fc8a8c7700b76a1789366280a6a5a1ad1120/Qwen3-4B-Q4_K_M.gguf",
+      "bytes": 2497281312,
+      "sha256": "f6f851777709861056efcdad3af01da38b31223a3ba26e61a4f8bf3a2195813a",
+      "training_only": false,
+      "source_only": false
+    },
+    {
+      "repo": "black-forest-labs/FLUX.2-small-decoder",
+      "revision": "a3efc24f613ef42d9428af62fdbd6f5fd8856c4a",
+      "path": "vae.safetensors",
+      "url": "https://huggingface.co/black-forest-labs/FLUX.2-small-decoder/resolve/a3efc24f613ef42d9428af62fdbd6f5fd8856c4a/full_encoder_small_decoder.safetensors",
+      "bytes": 249519092,
+      "sha256": "ea4273f02d1fafbf8e1d1c2cf6018ed8748652eb0bf34f2dd91171f16f15ab62",
+      "training_only": false,
+      "source_only": false
+    }
+  ],
+  "model_disk_bytes": 7047429844,
+  "inputs": [
+    {
+      "path": "best-generate.png",
+      "sha256": "bfb6d9d00e920a5d1778d45bba011cea327760290080d5484fc856945ca562d4"
+    },
+    {
+      "path": "best-mask.png",
+      "sha256": "889c700731676632c13fc6bdc6fe3d8fe30ac20ff1b802df0519ddd2bb1706ef"
+    }
+  ],
+  "output_bytes": 251326,
+  "output_sha256": "273ff3fe5882cb3b817f45dbc13a21552782f7c2ea613c5263f2ea9ed3a46ad3",
+  "output_rgb_sha256": "ce4ada440b913c5e36f7faf640185ee331a62b3f77d0787f741a8ab9616fef49",
+  "hardware": {
+    "platform": "Linux-6.8.0-1061-aws-x86_64-with-glibc2.35",
+    "machine": "x86_64",
+    "logical_cpus": 8,
+    "cpu_model": "INTEL(R) XEON(R) PLATINUM 8559C"
+  },
+  "cache_state": "fresh process; warm files after verification; serial inference",
+  "child_peak_rss_bytes": 5106216960,
+  "sampled_parent_peak_rss_bytes": 27336704,
+  "sampled_tree_peak_rss_bytes": 5134340096,
+  "parent_peak_rss_bytes": 31481856,
+  "sampling_interval_seconds": 0.05,
+  "conservative_peak_rss_bound_bytes": 5137698816,
+  "ram_target_bytes": 6000000000,
+  "fits_ram_target_conservative": true,
+  "rss_scope": "single native child plus calling Python process; excludes OS/page cache/other apps",
+  "native_wall_seconds": 573.0520431909999,
+  "total_wall_seconds": 578.0375225630005
+}
