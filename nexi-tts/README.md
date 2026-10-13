@@ -70,7 +70,7 @@ in Python, not a continuous within-sentence streaming protocol.
 ## Validation / benchmark
 
 ```bash
-.venv/bin/python -m pip install -r requirements-dev.txt
+.venv/bin/python -m pip install --require-hashes -r requirements-dev.txt
 .venv/bin/python -m unittest discover -s tests -v
 .venv/bin/ruff check nexi_tts tests
 .venv/bin/mypy nexi_tts
