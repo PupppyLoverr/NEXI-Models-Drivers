@@ -16,3 +16,26 @@ Footprints and throughput are measured on the 8-vCPU Intel Xeon Platinum 8375C
 CPU box; these are CPU numbers only.
 
 Status: M1 — base footprints measured. M2 (in progress): CPU LoRA fine-tuning on 32 GB / 8 vCPU Linux VMs (no GPU).
+
+## Local speech and image drivers
+
+Each modality has an independent setup and explicitly downloaded, pinned model assets.
+Inference is local after setup; no cloud inference subscription or API key is required.
+
+| Folder / guide | Architecture | Use cases | Benchmarks and comparisons |
+|---|---|---|---|
+| [nexi-stt — dictation](nexi-stt/README.md) | [Architecture](nexi-stt/ARCHITECTURE.md) | [Use cases](nexi-stt/USE_CASES.md) | [Benchmarks](nexi-stt/BENCHMARKS.md) |
+| [nexi-tts — speech synthesis](nexi-tts/README.md) | [Architecture](nexi-tts/ARCHITECTURE.md) | [Use cases](nexi-tts/USE_CASES.md) | [Benchmarks](nexi-tts/BENCHMARKS.md) |
+| [nexi-image — text-to-image](nexi-image/README.md) | [Architecture](nexi-image/ARCHITECTURE.md) | [Use cases](nexi-image/USE_CASES.md) | [Benchmarks](nexi-image/BENCHMARKS.md) |
+
+These are NEXI drivers around identified upstream pretrained models, not newly trained
+foundation models. Adaptation/fine-tuning instructions are in each guide; training
+memory is separate from inference memory. Published cloud-product quality claims are
+not evidence that these small local models match Wispr Flow or ElevenLabs.
+
+The [process benchmark harness](common/bench/README.md) records fresh-process wall time
+and peak system RSS without an ML dependency. Each modality's benchmark table identifies
+its input, hardware, settings and model revision and separates measurements here from
+published comparison figures. **Checkpoint size, total system RAM, and GPU VRAM are
+different quantities.** In particular, image generation must not be advertised as a
+sub-1-GB runtime just because its quantized weights fit in a sub-1-GB file.
