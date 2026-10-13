@@ -1,6 +1,9 @@
 import importlib.util
+import json
+import os
 from pathlib import Path
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -19,6 +22,7 @@ class ProcessBenchmarkTests(unittest.TestCase):
             file = root / "weights.bin"
             file.write_bytes(b"12345")
             (root / "link.bin").symlink_to(file)
+            os.link(file, root / "hard-link.bin")
             self.assertEqual(bench.asset_bytes([root, file]), 5)
 
     def test_missing_assets_fail_before_inference(self) -> None:
@@ -42,6 +46,30 @@ class ProcessBenchmarkTests(unittest.TestCase):
                                "/usr/bin/time", [], "test")
         self.assertEqual(result["status"], "failed")
         self.assertEqual(result["exit_code"], 7)
+
+    @unittest.skipUnless(sys.platform == "linux" and shutil.which("/usr/bin/time"), "GNU time required")
+    def test_cli_preserves_failure_and_writes_result(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / "result.json"
+            completed = subprocess.run(
+                [sys.executable, str(Path(__file__).with_name("process.py")),
+                 "--output", str(output), "--", sys.executable,
+                 "-c", "raise SystemExit(7)"],
+                capture_output=True, text=True, check=False,
+            )
+            self.assertEqual(completed.returncode, 7)
+            self.assertEqual(json.loads(output.read_text())["status"], "failed")
+
+    def test_cli_rejects_missing_output_parent(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            completed = subprocess.run(
+                [sys.executable, str(Path(__file__).with_name("process.py")),
+                 "--output", str(Path(temporary) / "missing" / "result.json"),
+                 "--time-binary", sys.executable, "--", sys.executable],
+                capture_output=True, text=True, check=False,
+            )
+            self.assertEqual(completed.returncode, 2)
+            self.assertIn("Output parent directory must already exist", completed.stderr)
 
 
 if __name__ == "__main__":
