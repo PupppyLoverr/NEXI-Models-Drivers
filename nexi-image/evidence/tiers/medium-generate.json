@@ -1,0 +1,51 @@
+{
+  "schema": 2,
+  "tier": "medium",
+  "model": "ByteDance/SDXL-Lightning 4-step Q8_0",
+  "mode": "generate",
+  "config": {
+    "prompt": "A studio photograph of a red ceramic coffee mug on a wooden table, soft daylight, a small engraved label reading NEXI",
+    "width": 512,
+    "height": 512,
+    "steps": 4,
+    "seed": 42,
+    "threads": 4,
+    "strength": null,
+    "masked": false,
+    "reference_count": 0
+  },
+  "runtime_revision": "d637cfb935feb2254898a8f1524046c958f3df80",
+  "runtime_version": "stable-diffusion.cpp version master-959-d637cfb, commit d637cfb",
+  "binary_sha256": "f83f75d92c8aebba31479a20e734f5980619a19c266acf4ca1b81403139bbfa1",
+  "manifest_sha256": "0870196b4f426d7931668143ea48d6c2e2c77200a66e4de3e814d12ab0f2d1e8",
+  "runtime_files": [
+    {
+      "path": "model.gguf",
+      "bytes": 4180187168,
+      "sha256": "da144a6181de71c6628fb5e9b43bf10367f7c870e773f696e08a5c8e69a31a74"
+    }
+  ],
+  "model_disk_bytes": 4180187168,
+  "inputs": [],
+  "output_bytes": 404935,
+  "output_sha256": "3a7cbb28b3f0eb5c792c18493e76a3c1a071e82cbc14b286c3444b8188db233d",
+  "output_rgb_sha256": "421e76950fa5b1af950af8eaeed3fa241af48e5e3ec56e36a1aa2a21c7fe6d8f",
+  "hardware": {
+    "platform": "Linux-6.8.0-1061-aws-x86_64-with-glibc2.35",
+    "machine": "x86_64",
+    "logical_cpus": 8,
+    "cpu_model": "INTEL(R) XEON(R) PLATINUM 8559C"
+  },
+  "cache_state": "fresh process; warm page cache after verification; no concurrent inference",
+  "child_peak_rss_bytes": 3253653504,
+  "sampled_parent_peak_rss_bytes": 19283968,
+  "sampled_tree_peak_rss_bytes": 3273580544,
+  "parent_peak_rss_bytes": 26910720,
+  "sampling_interval_seconds": 0.05,
+  "conservative_peak_rss_bound_bytes": 3280564224,
+  "ram_target_bytes": 4000000000,
+  "fits_ram_target_conservative": true,
+  "rss_scope": "single native child plus calling Python process; excludes OS/page cache/other apps",
+  "native_wall_seconds": 148.24833956600014,
+  "total_wall_seconds": 151.50027138300038
+}

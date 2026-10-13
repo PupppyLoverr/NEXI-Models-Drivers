@@ -27,7 +27,7 @@ Linux only; alternative native platforms have not been verified.
 
 ## Original isolated Diffusers route
 
-## Primary profile: BK-SDM-Tiny / TAESD
+## Original baseline: BK-SDM-Tiny / TAESD
 
 ```text
 explicit download -> revision/size/SHA-256 manifest -> local model directory
@@ -115,6 +115,7 @@ lower-RAM guarantee or a production quality option.
 ## Not implemented
 
 No mobile packaging, GUI, HTTP server, safety checker, prompt moderation,
-ControlNet/inpainting, quantized BK training, image upscaling, or cloud fallback.
+ControlNet/dedicated inpainting finetune, quantized BK training, image upscaling,
+or cloud fallback.
 No multi-device benchmark, FID/CLIP evaluation, or useful trained adapter is
 claimed. No upstream weights have been renamed as a NEXI finetune.

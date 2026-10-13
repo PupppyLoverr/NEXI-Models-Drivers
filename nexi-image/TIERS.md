@@ -132,6 +132,11 @@ new output does not masquerade as an existing image's success.
 
 ## Measurement boundaries
 
+Measured results (all within their workload targets on the test host) and
+qualitative observations are in [BENCHMARKS.md](BENCHMARKS.md#three-native-tiers).
+In short: small ~0.59 GB, medium ~3.29 GB, best ~5.14 GB conservative bound;
+only `best` produced convincing edits in the tested sample.
+
 After provisioning, reproduce serial generation, real masked editing and pixel
 seed-repeat checks with:
 
