@@ -1,0 +1,407 @@
+{
+  "schema_version": 1,
+  "measured_at_utc": "2026-10-13T06:48:24.469599+00:00",
+  "hardware": {
+    "cpu": "INTEL(R) XEON(R) PLATINUM 8559C",
+    "logical_cpus": 8,
+    "platform": "Linux-6.8.0-1061-aws-x86_64-with-glibc2.35",
+    "machine": "x86_64",
+    "gpu": "none used; forced CPU"
+  },
+  "software": {
+    "faster-whisper": "1.2.1",
+    "ctranslate2": "4.6.0",
+    "av": "16.0.1",
+    "onnxruntime": "1.23.2",
+    "numpy": "2.2.6"
+  },
+  "python": "3.10.12",
+  "wav": {
+    "name": "jfk.wav",
+    "bytes": 352078,
+    "sha256": "59dfb9a4acb36fe2a2affc14bacbee2920ff435cb13cc314a08c13f66ba7860e"
+  },
+  "reference": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country\n",
+  "model_disk_bytes": 147770840,
+  "model_disk_definition": "logical model-directory bytes, including manifest",
+  "cold_definition": "fresh interpreter/model each run; OS file cache NOT flushed",
+  "warm_definition": "same model/process, after first transcription; first call excluded",
+  "rss_definition": "kernel ru_maxrss of whole worker process, not model alone",
+  "cold_runs": [
+    {
+      "load_seconds": 0.9257023049999589,
+      "results": [
+        {
+          "schema_version": 1,
+          "text": "And so my fellow Americans, ask not what your country can do for you, ask what you can do for your country.",
+          "segments": [
+            {
+              "start": 0.0,
+              "end": 11.0,
+              "text": "And so my fellow Americans, ask not what your country can do for you, ask what you can do for your country.",
+              "no_speech_probability": 0.01789463497698307
+            }
+          ],
+          "language": "en",
+          "audio_seconds": 11.0,
+          "speech_seconds_after_vad": 11.0,
+          "transcribe_seconds": 0.9340769589999809,
+          "real_time_factor": 0.08491608718181644,
+          "config": {
+            "device": "cpu",
+            "compute_type": "int8",
+            "threads": 4,
+            "beam_size": 1,
+            "temperature": 0.0,
+            "vad": true,
+            "word_timestamps": false,
+            "hotwords": "",
+            "condition_on_previous_text": false
+          },
+          "model": {
+            "upstream": "Systran/faster-whisper-base.en",
+            "revision": "3d3d5dee26484f91867d81cb899cfcf72b96be6c",
+            "license": "MIT",
+            "provenance": "upstream weights, not a NEXI fine-tune"
+          },
+          "quality": {
+            "word_errors": 0,
+            "reference_words": 22,
+            "wer": 0.0,
+            "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+          }
+        }
+      ],
+      "worker_seconds": 1.860413400000084,
+      "peak_rss_bytes": 403173376,
+      "subprocess_wall_seconds": 2.002066457000069,
+      "command": [
+        "/home/ubuntu/repos/NEXI-Models-Drivers/nexi-stt/.venv/bin/python",
+        "-m",
+        "nexi_stt.benchmark",
+        "--worker",
+        "--model",
+        "models/base.en",
+        "--wav",
+        "fixtures/jfk.wav",
+        "--threads",
+        "4",
+        "--repeats",
+        "1"
+      ]
+    },
+    {
+      "load_seconds": 0.4750867779999908,
+      "results": [
+        {
+          "schema_version": 1,
+          "text": "And so my fellow Americans, ask not what your country can do for you, ask what you can do for your country.",
+          "segments": [
+            {
+              "start": 0.0,
+              "end": 11.0,
+              "text": "And so my fellow Americans, ask not what your country can do for you, ask what you can do for your country.",
+              "no_speech_probability": 0.01789463497698307
+            }
+          ],
+          "language": "en",
+          "audio_seconds": 11.0,
+          "speech_seconds_after_vad": 11.0,
+          "transcribe_seconds": 0.8220470009999872,
+          "real_time_factor": 0.07473154554545337,
+          "config": {
+            "device": "cpu",
+            "compute_type": "int8",
+            "threads": 4,
+            "beam_size": 1,
+            "temperature": 0.0,
+            "vad": true,
+            "word_timestamps": false,
+            "hotwords": "",
+            "condition_on_previous_text": false
+          },
+          "model": {
+            "upstream": "Systran/faster-whisper-base.en",
+            "revision": "3d3d5dee26484f91867d81cb899cfcf72b96be6c",
+            "license": "MIT",
+            "provenance": "upstream weights, not a NEXI fine-tune"
+          },
+          "quality": {
+            "word_errors": 0,
+            "reference_words": 22,
+            "wer": 0.0,
+            "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+          }
+        }
+      ],
+      "worker_seconds": 1.297793560999935,
+      "peak_rss_bytes": 406315008,
+      "subprocess_wall_seconds": 1.4129334300000664,
+      "command": [
+        "/home/ubuntu/repos/NEXI-Models-Drivers/nexi-stt/.venv/bin/python",
+        "-m",
+        "nexi_stt.benchmark",
+        "--worker",
+        "--model",
+        "models/base.en",
+        "--wav",
+        "fixtures/jfk.wav",
+        "--threads",
+        "4",
+        "--repeats",
+        "1"
+      ]
+    },
+    {
+      "load_seconds": 0.8800687189999508,
+      "results": [
+        {
+          "schema_version": 1,
+          "text": "And so my fellow Americans, ask not what your country can do for you, ask what you can do for your country.",
+          "segments": [
+            {
+              "start": 0.0,
+              "end": 11.0,
+              "text": "And so my fellow Americans, ask not what your country can do for you, ask what you can do for your country.",
+              "no_speech_probability": 0.01789463497698307
+            }
+          ],
+          "language": "en",
+          "audio_seconds": 11.0,
+          "speech_seconds_after_vad": 11.0,
+          "transcribe_seconds": 0.9746643279999034,
+          "real_time_factor": 0.08860584799999122,
+          "config": {
+            "device": "cpu",
+            "compute_type": "int8",
+            "threads": 4,
+            "beam_size": 1,
+            "temperature": 0.0,
+            "vad": true,
+            "word_timestamps": false,
+            "hotwords": "",
+            "condition_on_previous_text": false
+          },
+          "model": {
+            "upstream": "Systran/faster-whisper-base.en",
+            "revision": "3d3d5dee26484f91867d81cb899cfcf72b96be6c",
+            "license": "MIT",
+            "provenance": "upstream weights, not a NEXI fine-tune"
+          },
+          "quality": {
+            "word_errors": 0,
+            "reference_words": 22,
+            "wer": 0.0,
+            "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+          }
+        }
+      ],
+      "worker_seconds": 1.8553666440000143,
+      "peak_rss_bytes": 404213760,
+      "subprocess_wall_seconds": 2.053499428000009,
+      "command": [
+        "/home/ubuntu/repos/NEXI-Models-Drivers/nexi-stt/.venv/bin/python",
+        "-m",
+        "nexi_stt.benchmark",
+        "--worker",
+        "--model",
+        "models/base.en",
+        "--wav",
+        "fixtures/jfk.wav",
+        "--threads",
+        "4",
+        "--repeats",
+        "1"
+      ]
+    }
+  ],
+  "warm_process": {
+    "load_seconds": 0.537112191999995,
+    "results": [
+      {
+        "schema_version": 1,
+        "text": "And so my fellow Americans, ask not what your country can do for you, ask what you can do for your country.",
+        "segments": [
+          {
+            "start": 0.0,
+            "end": 11.0,
+            "text": "And so my fellow Americans, ask not what your country can do for you, ask what you can do for your country.",
+            "no_speech_probability": 0.01789463497698307
+          }
+        ],
+        "language": "en",
+        "audio_seconds": 11.0,
+        "speech_seconds_after_vad": 11.0,
+        "transcribe_seconds": 0.8181441140000061,
+        "real_time_factor": 0.0743767376363642,
+        "config": {
+          "device": "cpu",
+          "compute_type": "int8",
+          "threads": 4,
+          "beam_size": 1,
+          "temperature": 0.0,
+          "vad": true,
+          "word_timestamps": false,
+          "hotwords": "",
+          "condition_on_previous_text": false
+        },
+        "model": {
+          "upstream": "Systran/faster-whisper-base.en",
+          "revision": "3d3d5dee26484f91867d81cb899cfcf72b96be6c",
+          "license": "MIT",
+          "provenance": "upstream weights, not a NEXI fine-tune"
+        },
+        "quality": {
+          "word_errors": 0,
+          "reference_words": 22,
+          "wer": 0.0,
+          "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+        }
+      },
+      {
+        "schema_version": 1,
+        "text": "And so my fellow Americans, ask not what your country can do for you, ask what you can do for your country.",
+        "segments": [
+          {
+            "start": 0.0,
+            "end": 11.0,
+            "text": "And so my fellow Americans, ask not what your country can do for you, ask what you can do for your country.",
+            "no_speech_probability": 0.01789463497698307
+          }
+        ],
+        "language": "en",
+        "audio_seconds": 11.0,
+        "speech_seconds_after_vad": 11.0,
+        "transcribe_seconds": 0.8011613660000876,
+        "real_time_factor": 0.07283285145455341,
+        "config": {
+          "device": "cpu",
+          "compute_type": "int8",
+          "threads": 4,
+          "beam_size": 1,
+          "temperature": 0.0,
+          "vad": true,
+          "word_timestamps": false,
+          "hotwords": "",
+          "condition_on_previous_text": false
+        },
+        "model": {
+          "upstream": "Systran/faster-whisper-base.en",
+          "revision": "3d3d5dee26484f91867d81cb899cfcf72b96be6c",
+          "license": "MIT",
+          "provenance": "upstream weights, not a NEXI fine-tune"
+        },
+        "quality": {
+          "word_errors": 0,
+          "reference_words": 22,
+          "wer": 0.0,
+          "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+        }
+      },
+      {
+        "schema_version": 1,
+        "text": "And so my fellow Americans, ask not what your country can do for you, ask what you can do for your country.",
+        "segments": [
+          {
+            "start": 0.0,
+            "end": 11.0,
+            "text": "And so my fellow Americans, ask not what your country can do for you, ask what you can do for your country.",
+            "no_speech_probability": 0.01789463497698307
+          }
+        ],
+        "language": "en",
+        "audio_seconds": 11.0,
+        "speech_seconds_after_vad": 11.0,
+        "transcribe_seconds": 0.9254979930000218,
+        "real_time_factor": 0.08413618118182016,
+        "config": {
+          "device": "cpu",
+          "compute_type": "int8",
+          "threads": 4,
+          "beam_size": 1,
+          "temperature": 0.0,
+          "vad": true,
+          "word_timestamps": false,
+          "hotwords": "",
+          "condition_on_previous_text": false
+        },
+        "model": {
+          "upstream": "Systran/faster-whisper-base.en",
+          "revision": "3d3d5dee26484f91867d81cb899cfcf72b96be6c",
+          "license": "MIT",
+          "provenance": "upstream weights, not a NEXI fine-tune"
+        },
+        "quality": {
+          "word_errors": 0,
+          "reference_words": 22,
+          "wer": 0.0,
+          "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+        }
+      },
+      {
+        "schema_version": 1,
+        "text": "And so my fellow Americans, ask not what your country can do for you, ask what you can do for your country.",
+        "segments": [
+          {
+            "start": 0.0,
+            "end": 11.0,
+            "text": "And so my fellow Americans, ask not what your country can do for you, ask what you can do for your country.",
+            "no_speech_probability": 0.01789463497698307
+          }
+        ],
+        "language": "en",
+        "audio_seconds": 11.0,
+        "speech_seconds_after_vad": 11.0,
+        "transcribe_seconds": 0.7928091630000154,
+        "real_time_factor": 0.07207356027272867,
+        "config": {
+          "device": "cpu",
+          "compute_type": "int8",
+          "threads": 4,
+          "beam_size": 1,
+          "temperature": 0.0,
+          "vad": true,
+          "word_timestamps": false,
+          "hotwords": "",
+          "condition_on_previous_text": false
+        },
+        "model": {
+          "upstream": "Systran/faster-whisper-base.en",
+          "revision": "3d3d5dee26484f91867d81cb899cfcf72b96be6c",
+          "license": "MIT",
+          "provenance": "upstream weights, not a NEXI fine-tune"
+        },
+        "quality": {
+          "word_errors": 0,
+          "reference_words": 22,
+          "wer": 0.0,
+          "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+        }
+      }
+    ],
+    "worker_seconds": 3.8757831230000193,
+    "peak_rss_bytes": 431403008,
+    "subprocess_wall_seconds": 3.9845420950000516,
+    "command": [
+      "/home/ubuntu/repos/NEXI-Models-Drivers/nexi-stt/.venv/bin/python",
+      "-m",
+      "nexi_stt.benchmark",
+      "--worker",
+      "--model",
+      "models/base.en",
+      "--wav",
+      "fixtures/jfk.wav",
+      "--threads",
+      "4",
+      "--repeats",
+      "4"
+    ]
+  },
+  "summary": {
+    "cold_process_wall_seconds_median": 2.002066457000069,
+    "cold_transcribe_seconds_median": 0.9340769589999809,
+    "warm_transcribe_seconds_median": 0.8011613660000876,
+    "peak_rss_bytes": 431403008,
+    "transcripts_identical": true
+  }
+}

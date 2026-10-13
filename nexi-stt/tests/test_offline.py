@@ -213,10 +213,13 @@ def test_http_contract_and_boundaries() -> None:
             == 403
         )
         assert request("POST", "/transcribe", b"", {"Content-Type": "audio/wav"})[0] == 413
-        assert (
-            request("POST", "/transcribe?words=yes", wav_data(), {"Content-Type": "audio/wav"})[0]
-            == 400
-        )
+        for query in ("words=yes", "words=", "vad=", "unknown=", "vad=1&vad=1"):
+            assert (
+                request("POST", f"/transcribe?{query}", wav_data(), {"Content-Type": "audio/wav"})[
+                    0
+                ]
+                == 400
+            )
         status, payload = request(
             "POST",
             "/transcribe?words=1&vad=0",

@@ -1,0 +1,34 @@
+{
+  "measured_at_utc": "2026-10-13T06:56:12.362939+00:00",
+  "note": ".venv includes developer test/lint/typecheck packages, not minimal inference-only setup; .venv-training includes CPU torch and export dependencies",
+  "directories": {
+    ".venv": {
+      "logical_bytes_no_symlinks": 583196273,
+      "definition": "Logical regular-file bytes excluding symlinks; not filesystem allocated blocks"
+    },
+    ".venv-training": {
+      "logical_bytes_no_symlinks": 1292236762,
+      "definition": "Logical regular-file bytes excluding symlinks; not filesystem allocated blocks"
+    },
+    "models/tiny.en": {
+      "logical_bytes_no_symlinks": 78091923,
+      "definition": "Logical regular-file bytes excluding symlinks; not filesystem allocated blocks"
+    },
+    "models/base.en": {
+      "logical_bytes_no_symlinks": 147770840,
+      "definition": "Logical regular-file bytes excluding symlinks; not filesystem allocated blocks"
+    },
+    "models/training-tiny.en": {
+      "logical_bytes_no_symlinks": 155002038,
+      "definition": "Logical regular-file bytes excluding symlinks; not filesystem allocated blocks"
+    },
+    "training-output/smoke-hf": {
+      "logical_bytes_no_symlinks": 156546673,
+      "definition": "Logical regular-file bytes excluding symlinks; not filesystem allocated blocks"
+    },
+    "training-output/smoke-ct2": {
+      "logical_bytes_no_symlinks": 45204032,
+      "definition": "Logical regular-file bytes excluding symlinks; not filesystem allocated blocks"
+    }
+  }
+}

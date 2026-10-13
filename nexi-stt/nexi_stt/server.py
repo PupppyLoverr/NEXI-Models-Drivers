@@ -58,7 +58,7 @@ def handler_for(driver: Driver) -> type[BaseHTTPRequestHandler]:
                 if not 0 < length <= MAX_BYTES:
                     self.respond(413, {"error": "Body must be >0 and <=10 MiB"})
                     return
-                query = parse_qs(url.query)
+                query = parse_qs(url.query, keep_blank_values=True)
                 if set(query) - {"words", "vad"} or any(
                     values not in (["0"], ["1"]) for values in query.values()
                 ):
