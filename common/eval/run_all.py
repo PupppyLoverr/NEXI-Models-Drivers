@@ -1,6 +1,6 @@
 """NEXI eval harness (lead-authored). Serves a GGUF with llama-server and scores held-out tool-call + computer-use sets;
 optionally runs EvalPlus HumanEval+ and IFEval (lm-eval) against the same server.
-usage: python run_all.py --gguf X --label L --out-dir results [--ctx 4096] [--tasks tool,cua,humaneval,ifeval] [--limit-humaneval N]"""
+usage: python run_all.py --gguf X --label L --out-dir results [--ctx 4096] [--tasks tool,cua,humaneval,ifeval] [--limit-humaneval N] [--limit-tool N] [--limit-cua N] [--limit-ifeval N]"""
 import argparse, ast, collections, hashlib, json, os, re, subprocess, sys, threading, time, urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -66,8 +66,9 @@ def chat(messages, max_tokens):
         return json.load(r)["choices"][0]["message"].get("content") or ""
 
 
-def run_set(name, path, grader, max_tokens, items_f):
+def run_set(name, path, grader, max_tokens, items_f, limit=0):
     rows = [json.loads(l) for l in open(path)]
+    rows = rows[:limit] if limit else rows
     ok, extra, t0 = 0, collections.Counter(), time.time()
     for i, r in enumerate(rows):
         ref = r["messages"][-1]["content"]
@@ -88,6 +89,8 @@ def main():
     ap.add_argument("--gguf", required=True); ap.add_argument("--label", required=True)
     ap.add_argument("--out-dir", required=True); ap.add_argument("--ctx", type=int, default=4096)
     ap.add_argument("--tasks", default="tool,cua,humaneval,ifeval"); ap.add_argument("--limit-humaneval", type=int, default=0)
+    ap.add_argument("--limit-tool", type=int, default=0); ap.add_argument("--limit-cua", type=int, default=0)
+    ap.add_argument("--limit-ifeval", type=int, default=100)
     a = ap.parse_args()
     os.makedirs(a.out_dir, exist_ok=True)
     srv = subprocess.Popen([LLAMA, "-m", a.gguf, "-t", str(os.cpu_count()), "-ngl", "0", "-c", str(a.ctx), "--port", str(PORT),
@@ -105,9 +108,9 @@ def main():
     try:
         with open(os.path.join(a.out_dir, f"eval_{a.label}_items.jsonl"), "w") as f:
             if "tool" in tasks:
-                out["tasks"]["tool"] = run_set("tool", os.path.join(DATA, "eval_tool.jsonl"), grade_tool, 512, f)
+                out["tasks"]["tool"] = run_set("tool", os.path.join(DATA, "eval_tool.jsonl"), grade_tool, 512, f, a.limit_tool)
             if "cua" in tasks:
-                out["tasks"]["cua"] = run_set("cua", os.path.join(DATA, "eval_cua.jsonl"), grade_cua, 8, f)
+                out["tasks"]["cua"] = run_set("cua", os.path.join(DATA, "eval_cua.jsonl"), grade_cua, 8, f, a.limit_cua)
         env = dict(os.environ, OPENAI_API_KEY="none")
         if "humaneval" in tasks:
             t0 = time.time()
@@ -125,10 +128,10 @@ def main():
             t0 = time.time()
             p = subprocess.run([sys.executable, "-m", "lm_eval", "--model", "local-chat-completions", "--model_args",
                                 f"model={a.label},base_url={URL}/v1/chat/completions,num_concurrent=1,tokenized_requests=False",
-                                "--tasks", "ifeval", "--limit", "100", "--apply_chat_template", "--gen_kwargs", "temperature=0,max_gen_toks=768",
+                                "--tasks", "ifeval", "--limit", str(a.limit_ifeval), "--apply_chat_template", "--gen_kwargs", "temperature=0,max_gen_toks=768",
                                 "--output_path", os.path.join(a.out_dir, f"ifeval_{a.label}")], env=env, capture_output=True, text=True)
             m = re.search(r"prompt_level_strict_acc\|[^|]*\|[^|]*\|[^|]*\|\s*([0-9.]+)", p.stdout)
-            out["tasks"]["ifeval"] = {"prompt_level_strict_acc": float(m.group(1)) if m else None, "limit": 100,
+            out["tasks"]["ifeval"] = {"prompt_level_strict_acc": float(m.group(1)) if m else None, "limit": a.limit_ifeval,
                                       "wall_s": round(time.time() - t0), "returncode": p.returncode,
                                       "stdout_tail": p.stdout[-1500:], "stderr_tail": p.stderr[-1500:]}
         hwm = [l for l in open(f"/proc/{srv.pid}/status") if l.startswith("VmHWM")]
