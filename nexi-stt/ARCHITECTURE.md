@@ -8,7 +8,7 @@ explicit download -> immutable HTTPS URL -> bytes+SHA256 verification
 
 PCM16 WAV bytes -> size/header/duration validation -> local PyAV resample/downmix
                -> bundled Silero ONNX VAD (default on)
-               -> Whisper tiny.en/base.en, CT2 CPU int8, greedy decoding
+               -> Whisper tiny.en/base.en, CT2 CPU int8, beam=1 or beam=5
                -> exhaust lazy segment generator -> text/segments/optional words
                -> JSON/text CLI or synchronous loopback HTTP response
 ```
@@ -17,7 +17,8 @@ The original downloadable SYSTRAN CT2 weights occupy ~78 MB/~148 MB including
 tokenizer/metadata and use half-precision storage. **Runtime CPU int8 is not a
 claim that those downloaded files are already int8.** Custom export writes
 int8 storage. The `Driver` holds one model and one worker; CPU thread count is
-configurable (default 4). Decode parameters are beam size 1, best-of 1,
+configurable (default 4). Decode profiles are `fast` (beam=1, default) and
+`balanced` (beam=5). More search is not a guarantee of better WER. Both use best-of 1,
 temperature 0, English transcription, no previous-text conditioning, optional
 hotwords and word timestamps. Accuracy/latency differ from beam-5 published
 benchmarks. Segment timings are mapped back through VAD to the original audio.
@@ -34,9 +35,37 @@ user-supplied export or malicious local replacement of both assets and manifest.
 
 Input limits bound audio decoding/feature memory: 10 MiB, 120 seconds, 1–2
 channels, 8–48 kHz, PCM16 only. Validation checks actual frame bytes, rejecting
-truncation rather than trusting just the header. Inference processes complete
-clips; it does not generate live partial hypotheses, microphone endpoint events,
-speaker diarization, contextual LLM rewrites or system-wide text insertion.
+truncation rather than trusting just the header. WAV inference processes complete
+clips; it does not generate live partial hypotheses, speaker diarization,
+contextual LLM rewrites or system-wide text insertion.
+
+## PCM utterance dictation
+
+```text
+explicit host PCM16 mono 16 kHz stream
+    -> 512-sample frames (32 ms), <=1023 bytes pending input
+    -> pinned Silero VAD ONNX session with recurrent h/c state and 64-sample context
+    -> 320-ms bounded pre-roll; finalize on 1200-ms silence / max 20 s / EOF
+    -> one local WAV utterance -> same warm CPU Driver (no redundant batch VAD)
+    -> final JSONL event with stream-absolute segment/word timestamp offsets
+```
+
+The endpoint buffer is capped to <=640,000 PCM bytes at default 20 seconds
+(<=960,000 at configurable 30 seconds), plus 10 pre-roll frames and one pending
+frame. This is an audio-buffer bound, **not** total process RSS. Silence before
+speech occupies only the pre-roll ring, not an unbounded recording. The Silero
+adapter follows the pinned faster-whisper 1.2.1 `silero_vad_v6.onnx` tensor names
+and state shapes; a real fixture test matches its frame classifications against
+the upstream batch VAD. Upgrading that dependency requires rerunning the check.
+
+Whisper still decodes whole utterances. There are no speculative/partial results,
+speaker tracking or automatic sentence merging. Short endpoint pauses can harm
+accuracy by removing context; default 1200 ms avoided extra errors on the JFK
+regression whereas 600 ms did not. Continuous speech is hard-cut at the length
+cap, with no overlap; boundary words may be lost. EOF zero-pads the final frame
+(<32-ms timestamp rounding). Calls are synchronous: input backpressure can fill
+a capture queue on a slow host. The application must own capture permissions,
+queue/overrun policy and user-initiated recording. No microphone was tested.
 
 ## Local API and privacy
 
@@ -112,8 +141,18 @@ through complete real load/transcription. The HTTP API intentionally has
 loopback traffic and is outside that proof. Unit tests verify malformed inputs,
 missing assets/no auto-download, hashes, manifest paths, download atomicity,
 lazy generator consumption, CPU/local-files-only flags, vocabulary limits,
-HTTP rejection paths and WER math. Real-model regressions separately verify
-silence, empty WAV, hint/word timestamps and HTTP transcription.
+HTTP rejection paths, profile/VAD bounds, streaming short reads, buffer caps,
+EOF/sample validation, absolute timestamp offsets and WER math. Real-model
+regressions separately verify silence, synthetic noise, empty WAV, hint/word
+timestamps, HTTP profiles, endpoint events and stateful VAD parity.
+
+The corpus evaluator accepts explicit local JSONL, separates speech WER from
+empty-reference non-speech false positives, and reports corpus latency and
+process peak RSS. Optional preparations use pinned sample data or a SHA256-checked
+LibriSpeech archive. `prepare_test_clean.py` never extracts arbitrary tar paths:
+it reads only bounded regular transcript/audio members, selects five clips per
+speaker by stable filename hash, and writes flat local WAV filenames. Evaluation
+JSON includes references/transcripts; treat private corpora's reports as sensitive.
 
 ## Why Whisper now; streaming alternatives
 

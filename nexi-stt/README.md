@@ -1,6 +1,7 @@
 # NEXI-STT — local CPU dictation backend
 
-A runnable English speech-to-text CLI and loopback HTTP API using **upstream
+A runnable English speech-to-text CLI, pause-delimited PCM dictation interface,
+and loopback HTTP API using **upstream
 Whisper tiny.en/base.en through faster-whisper/CTranslate2, CPU int8**. No cloud
 service, account, telemetry, automatic model download, or external FFmpeg
 executable is needed for inference. This is a driver, **not a new NEXI-trained
@@ -16,8 +17,8 @@ See [BENCHMARKS.md](BENCHMARKS.md) for cold starts, exact configuration and evid
 
 Validated: Ubuntu 22.04, Linux x86_64, CPython 3.10.12, no GPU. Other platforms
 are untested; suitable wheels and CPU int8 support must be available. An internet
-connection is used for package installation and **only the explicit `download`
-command** for assets. Afterward all transcribe/serve/train/export/evaluate commands
+connection is used for package installation and **only explicit download steps**
+for assets. Afterward all transcribe/serve/dictate/train/export/evaluate commands
 use local files. Run from this folder:
 
 ```bash
@@ -47,6 +48,8 @@ is idempotent, but requires network if files are missing or corrupt.
 # Approximate word timestamps and SOFT vocabulary hints:
 .venv/bin/python -m nexi_stt transcribe fixtures/jfk.wav --model models/tiny.en \
   --threads 4 --words --hotwords 'Americans country' --output transcript.json
+# Beam-5 decoding (test your data; more search is not always more accurate):
+.venv/bin/python -m nexi_stt transcribe fixtures/jfk.wav --model models/base.en --profile balanced
 ```
 
 Example actual output:
@@ -57,7 +60,8 @@ Example actual output:
 Input is uncompressed **PCM16 WAV**, mono/stereo, 8–48 kHz, >0–120 seconds and
 at most 10 MiB. PyAV downmixes/resamples to 16 kHz locally. Empty, truncated,
 unsupported and oversized inputs are rejected. Split longer recordings into
-utterances; this is batch dictation, not incremental streaming. JSON includes
+utterances, or use the bounded PCM interface below. WAV transcription is batch
+inference, not incremental token streaming. JSON includes
 `text`, `segments`, `audio_seconds`, `transcribe_seconds`, `real_time_factor`,
 `config`, and model provenance. `--words` adds word timestamps/probabilities;
 these are estimates, not calibrated confidence scores or forced alignment.
@@ -69,6 +73,38 @@ The real 10-second digital-silence regression returns empty text/segments; a
 zero-frame WAV is rejected before inference. Vocabulary hints (`--hotwords`,
 <=400 characters, no control characters) bias decoding; they are not hard
 constraints, a personal dictionary product, or a substitute for fine-tuning.
+`--vad-silence-ms 100–3000` adjusts batch VAD segmentation (default 2000).
+`--profile fast` uses beam=1 (default); `balanced` uses beam=5. Both stay
+deterministic with temperature=0 and previous-text conditioning disabled.
+
+## Pause-delimited dictation from PCM
+
+```bash
+# Local raw signed little-endian PCM16, mono, 16 kHz; JSONL final utterance events:
+.venv/bin/python -m nexi_stt dictate --pcm recording.pcm --model models/tiny.en --words
+# An explicitly initiated host capture process can pipe PCM to stdin:
+# capture-program-outputting-pcm | .venv/bin/python -m nexi_stt dictate --model models/tiny.en
+```
+
+The Python integration is `nexi_stt.dictation.stream(driver, binary_input)`.
+It consumes 32-ms audio frames using stateful bundled Silero VAD, retains 320 ms
+of pre-roll, and finalizes after **1200 ms of detected silence** by default.
+Use `--pause-ms 200–3000` to trade turnaround for context; shorter pauses can
+split a sentence and reduce Whisper accuracy. `--max-utterance-seconds 1–30`
+caps memory/continuous speech (default 20). No full recording is retained.
+At EOF it flushes the last utterance. Odd-byte PCM tails fail instead of
+silently dropping samples. Trailing partial frames are zero-padded, so endpoint
+timestamps can round up by <32 ms.
+
+Each `event="final"` includes absolute stream segment/word timestamps,
+`stream_start_seconds`, `stream_end_seconds`, and `reason` (`pause`,
+`max_duration`, `end_of_stream`). Speech-triggered but empty ASR events are
+possible; pure silence produces no events. This is **utterance streaming around
+batch Whisper**, not native incremental ASR or partial captions. Continuous
+speech is hard-cut at the cap, without overlap; a word at the cut can be lost.
+Inference is synchronous and backpressures the source; a native capture host
+must manage its own device queue/overrun policy. Microphone acquisition and
+permissions are still outside the driver and were not tested here.
 
 ## Local HTTP API
 
@@ -81,7 +117,8 @@ curl -H 'Content-Type: audio/wav' -H 'X-STT-Hotwords: Americans country' \
 ```
 
 `POST /transcribe` accepts raw WAV bytes, not multipart data or a server-side file
-path. Optional query parameters are `words=0|1` and `vad=0|1`. Responses use the
+path. Optional query parameters are `words=0|1`, `vad=0|1`,
+`profile=fast|balanced`, and `vad_silence_ms=100..3000`. Responses use the
 CLI's JSON shape. Errors: 400 invalid WAV/parameters, 403 browser Origin, 413
 missing/oversized body, 415 unsupported content type, 500 local inference error.
 The server binds **only 127.0.0.1**, loads one warm model, processes one request
@@ -141,6 +178,47 @@ an automatic validation loop, training resumption, large dataset tooling or a
 production training service. Domain quality requires held-out speakers, accents,
 noise, names, punctuation and silence tests. See [ARCHITECTURE.md](ARCHITECTURE.md).
 
+### Reproducible small evaluation (not a leaderboard)
+
+```bash
+# OPTIONAL preparation dependency, not part of runtime:
+.venv/bin/python -m pip install -r requirements-evaluation.txt
+# Explicit, SHA256-verified 9.2 MB dataset acquisition:
+.venv/bin/python -m nexi_stt download --preset sample-librispeech --destination fixtures/eval-source
+.venv/bin/python scripts/prepare_eval.py
+.venv/bin/python scripts/evaluate.py --model models/tiny.en --data fixtures/evaluation.jsonl \
+  --profile fast --output results/librispeech-tiny-fast.json
+```
+
+This includes 73 read-speech clips from **one speaker**, plus 10-second digital
+silence and seeded synthetic white noise. Run tiny/base and fast/balanced on the
+same manifest, serially. Rows with `kind="non_speech"` and empty `text` are scored
+as false-positive controls, not WER. Reports include peak process RSS,
+median/p95 per-clip inference, total RTF, corpus WER and model/data provenance.
+The sample is not a standard full LibriSpeech score, multi-accent dictation
+evaluation, or evidence of a category ranking. See [BENCHMARKS.md](BENCHMARKS.md).
+
+For a broader read-speech proxy, prepare the fixed **200-clip, 40-speaker**
+test-clean subset (five clips per speaker selected by archive-member-path SHA256, not WER).
+No additional dependency beyond the runtime is needed for this preparation:
+
+```bash
+mkdir -p fixtures/test-source
+# Explicit optional 346,663,984-byte dataset download; inference does not do this:
+curl -fL https://www.openslr.org/resources/12/test-clean.tar.gz \
+  -o fixtures/test-source/test-clean.tar.gz
+.venv/bin/python scripts/prepare_test_clean.py --archive fixtures/test-source/test-clean.tar.gz \
+  --sha256 39fde525e59672dc6d1551919b1478f724438a95aa55f874b576be21967e6c23
+.venv/bin/python scripts/evaluate.py --model models/tiny.en --data fixtures/test-clean.jsonl \
+  --output results/test-clean-tiny-fast.json
+.venv/bin/python scripts/evaluate.py --model models/base.en --data fixtures/test-clean.jsonl \
+  --output results/test-clean-base-fast.json
+```
+
+This is a subset result, **not full test-clean WER or real microphone dictation**.
+The archive checksum is mandatory; preparation reads selected flat audio members
+without arbitrary archive extraction. Both WAV data and the archive are ignored.
+
 ## Reproduce validation
 
 ```bash
@@ -151,13 +229,15 @@ noise, names, punctuation and silence tests. See [ARCHITECTURE.md](ARCHITECTURE.
 .venv/bin/python -m pytest -q
 .venv/bin/python scripts/regression.py --model models/tiny.en --wav fixtures/jfk.wav \
   --output results/tiny-regressions.json
+.venv/bin/python scripts/dictation_regression.py --model models/tiny.en --wav fixtures/jfk.wav \
+  --reference fixtures/jfk.reference.txt --output results/dictation-regressions.json
 .venv/bin/python -m nexi_stt.benchmark --model models/tiny.en --wav fixtures/jfk.wav \
   --reference fixtures/jfk.reference.txt --output results/tiny-jfk-benchmark.json
 .venv/bin/python -m nexi_stt.benchmark --model models/base.en --wav fixtures/jfk.wav \
   --reference fixtures/jfk.reference.txt --output results/base-jfk-benchmark.json
 ```
 
-The 21 offline unit tests need no weights, internet, torch or ASR imports. Actual
+The 25 offline unit tests need no weights, internet, torch or ASR imports. Actual
 model regressions and measured transcripts are separately recorded under
 `results/`. Weights, WAVs, virtualenvs and trained checkpoints are ignored and
 not committed. [USE_CASES.md](USE_CASES.md) describes appropriate integrations.
@@ -185,3 +265,8 @@ an application. Training data needs its own rights/consent. The demo WAV is a
 pinned whisper.cpp repository sample of JFK's inaugural-address excerpt, not
 a collected private recording. [BENCHMARKS.md](BENCHMARKS.md) links comparative
 research, including Moonshine, sherpa-onnx and Wispr Flow.
+Optional evaluation uses [LibriSpeech](https://www.openslr.org/12), CC BY 4.0:
+Vassil Panayotov, Guoguo Chen, Daniel Povey and Sanjeev Khudanpur, *LibriSpeech:
+An ASR corpus based on public domain audio books*, ICASSP 2015. The small
+Hugging Face dummy dataset is a repackaged subset, not newly collected data.
+Preparation uses Apache-2.0 [Apache Arrow](https://github.com/apache/arrow/blob/main/LICENSE.txt).

@@ -1,0 +1,1152 @@
+{
+  "measured_at_utc": "2026-10-13T07:51:50.124113+00:00",
+  "hardware": {
+    "cpu": "INTEL(R) XEON(R) PLATINUM 8559C",
+    "logical_cpus": 8,
+    "platform": "Linux-6.8.0-1061-aws-x86_64-with-glibc2.35",
+    "machine": "x86_64",
+    "gpu": "none used; forced CPU"
+  },
+  "manifest_sha256": "0f1937bd75b77b052d95255d3b40a0621960011c96cdb59c7a1c3d2d02815779",
+  "platform": "Linux-6.8.0-1061-aws-x86_64-with-glibc2.35",
+  "python": "3.10.12",
+  "threads": 4,
+  "profile": "fast",
+  "model": {
+    "upstream": "Systran/faster-whisper-base.en",
+    "revision": "3d3d5dee26484f91867d81cb899cfcf72b96be6c",
+    "license": "MIT",
+    "provenance": "upstream weights, not a NEXI fine-tune"
+  },
+  "peak_process_rss_bytes": 443973632,
+  "timing_definition": "One freshly loaded process; first clip is cold-call, subsequent clips reuse the model; times exclude model load. Serial runs, OS cache not flushed.",
+  "audio_seconds": 501.03487500000006,
+  "median_transcribe_seconds": 0.3883921789999931,
+  "p95_transcribe_seconds_nearest_rank": 0.4672342479999543,
+  "total_transcribe_seconds": 29.488787763000346,
+  "total_real_time_factor": 0.05885575881918468,
+  "speech_clips": 73,
+  "non_speech_clips": 2,
+  "non_speech_false_positives": 0,
+  "word_errors": 114,
+  "reference_words": 1150,
+  "corpus_wer": 0.09913043478260869,
+  "records": [
+    {
+      "wav": "eval/1272-128104-0000.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "MISTER QUILTER IS THE APOSTLE OF THE MIDDLE CLASSES AND WE ARE GLAD TO WELCOME HIS GOSPEL",
+      "hypothesis": "Mr. Quilter is the apostle of the middle classes, and we are glad to welcome his gospel.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 17,
+        "wer": 0.058823529411764705,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 5.855,
+      "transcribe_seconds": 0.44883714800005237
+    },
+    {
+      "wav": "eval/1272-128104-0001.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "NOR IS MISTER QUILTER'S MANNER LESS INTERESTING THAN HIS MATTER",
+      "hypothesis": "Nor is Mr. Quilter's manner less interesting than his matter.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 10,
+        "wer": 0.1,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 4.815,
+      "transcribe_seconds": 0.38376934699999765
+    },
+    {
+      "wav": "eval/1272-128104-0002.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "HE TELLS US THAT AT THIS FESTIVE SEASON OF THE YEAR WITH CHRISTMAS AND ROAST BEEF LOOMING BEFORE US SIMILES DRAWN FROM EATING AND ITS RESULTS OCCUR MOST READILY TO THE MIND",
+      "hypothesis": "He tells us that at this festive season of the year, with Christmas and roast beef looming before us, similes drawn from eating and its results occur most readily to the mind.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 32,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 12.485,
+      "transcribe_seconds": 0.44786499200006347
+    },
+    {
+      "wav": "eval/1272-128104-0003.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "HE HAS GRAVE DOUBTS WHETHER SIR FREDERICK LEIGHTON'S WORK IS REALLY GREEK AFTER ALL AND CAN DISCOVER IN IT BUT LITTLE OF ROCKY ITHACA",
+      "hypothesis": "He has grieved doubts whether Sir Frederick Layton's work is really Greek after all and can discover in it but little of rocky Ithaca.",
+      "quality": {
+        "word_errors": 2,
+        "reference_words": 24,
+        "wer": 0.08333333333333333,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 9.9,
+      "transcribe_seconds": 0.3973386999999775
+    },
+    {
+      "wav": "eval/1272-128104-0004.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "LINNELL'S PICTURES ARE A SORT OF UP GUARDS AND AT EM PAINTINGS AND MASON'S EXQUISITE IDYLLS ARE AS NATIONAL AS A JINGO POEM MISTER BIRKET FOSTER'S LANDSCAPES SMILE AT ONE MUCH IN THE SAME WAY THAT MISTER CARKER USED TO FLASH HIS TEETH AND MISTER JOHN COLLIER GIVES HIS SITTER A CHEERFUL SLAP ON THE BACK BEFORE HE SAYS LIKE A SHAMPOOER IN A TURKISH BATH NEXT MAN",
+      "hypothesis": "Lynille's pictures are a sort of up guards and atom paintings, and Mason's exquisite idols are as national as a jingo poem. Mr. Burkett Foster's landscapes smile at one much in the same way that Mr. Carker used to flash his teeth, and Mr. John Collier gives his sitter a cheerful slap on the back before he says like a shampoo or a Turkish bath. Next man.",
+      "quality": {
+        "word_errors": 10,
+        "reference_words": 68,
+        "wer": 0.14705882352941177,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 29.4,
+      "transcribe_seconds": 0.8205320249999204
+    },
+    {
+      "wav": "eval/1272-128104-0005.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "IT IS OBVIOUSLY UNNECESSARY FOR US TO POINT OUT HOW LUMINOUS THESE CRITICISMS ARE HOW DELICATE IN EXPRESSION",
+      "hypothesis": "It is obviously unnecessary for us to point out how luminous these criticisms are, how delicate in expression.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 18,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 9.01,
+      "transcribe_seconds": 0.38119349500004773
+    },
+    {
+      "wav": "eval/1272-128104-0006.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "ON THE GENERAL PRINCIPLES OF ART MISTER QUILTER WRITES WITH EQUAL LUCIDITY",
+      "hypothesis": "Under general principles of art, Mr. Quilter writes with equal lucidity.",
+      "quality": {
+        "word_errors": 3,
+        "reference_words": 12,
+        "wer": 0.25,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 5.64,
+      "transcribe_seconds": 0.3810568860000103
+    },
+    {
+      "wav": "eval/1272-128104-0007.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "PAINTING HE TELLS US IS OF A DIFFERENT QUALITY TO MATHEMATICS AND FINISH IN ART IS ADDING MORE FACT",
+      "hypothesis": "Painting, he tells us, is of a different quality to mathematics, and finish in art is adding more factors.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 19,
+        "wer": 0.05263157894736842,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 9.24,
+      "transcribe_seconds": 0.40171044300006997
+    },
+    {
+      "wav": "eval/1272-128104-0008.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "AS FOR ETCHINGS THEY ARE OF TWO KINDS BRITISH AND FOREIGN",
+      "hypothesis": "As for etchings, there are two kinds, British and foreign.",
+      "quality": {
+        "word_errors": 2,
+        "reference_words": 11,
+        "wer": 0.18181818181818182,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 5.12,
+      "transcribe_seconds": 0.40772581800001717
+    },
+    {
+      "wav": "eval/1272-128104-0009.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "HE LAMENTS MOST BITTERLY THE DIVORCE THAT HAS BEEN MADE BETWEEN DECORATIVE ART AND WHAT WE USUALLY CALL PICTURES MAKES THE CUSTOMARY APPEAL TO THE LAST JUDGMENT AND REMINDS US THAT IN THE GREAT DAYS OF ART MICHAEL ANGELO WAS THE FURNISHING UPHOLSTERER",
+      "hypothesis": "He laments most bitterly the divorce that has been made between decorative art and what we usually call pictures makes the customary appeal to the last judgment and reminds us that in the great days of art Michelangelo was the finishing upholster",
+      "quality": {
+        "word_errors": 4,
+        "reference_words": 43,
+        "wer": 0.09302325581395349,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 18.29,
+      "transcribe_seconds": 0.4672342479999543
+    },
+    {
+      "wav": "eval/1272-128104-0010.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "NEAR THE FIRE AND THE ORNAMENTS FRED BROUGHT HOME FROM INDIA ON THE MANTEL BOARD",
+      "hypothesis": "near the fire, and the ornaments Fred brought home from India on the mental board.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 15,
+        "wer": 0.06666666666666667,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 5.6,
+      "transcribe_seconds": 0.3949313280000979
+    },
+    {
+      "wav": "eval/1272-128104-0011.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "IN FACT HE IS QUITE SEVERE ON MISTER RUSKIN FOR NOT RECOGNISING THAT A PICTURE SHOULD DENOTE THE FRAILTY OF MAN AND REMARKS WITH PLEASING COURTESY AND FELICITOUS GRACE THAT MANY PHASES OF FEELING",
+      "hypothesis": "In fact, he is quite severe on Mr. Ruskin for not recognizing that a picture should denote the frailty of man. And remarks was pleasing courtesy in Phyllis of this grace that many phases of feeling",
+      "quality": {
+        "word_errors": 7,
+        "reference_words": 34,
+        "wer": 0.20588235294117646,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 15.115,
+      "transcribe_seconds": 0.4592732229999683
+    },
+    {
+      "wav": "eval/1272-128104-0012.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "ONLY UNFORTUNATELY HIS OWN WORK NEVER DOES GET GOOD",
+      "hypothesis": "only unfortunately his own work never does get good.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 9,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 5.38,
+      "transcribe_seconds": 0.36740111899996464
+    },
+    {
+      "wav": "eval/1272-128104-0013.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "MISTER QUILTER HAS MISSED HIS CHANCE FOR HE HAS FAILED EVEN TO MAKE HIMSELF THE TUPPER OF PAINTING",
+      "hypothesis": "Mr. Quilter has missed his chance, for he has failed even to make himself the Tupper of painting.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 18,
+        "wer": 0.05555555555555555,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 7.1,
+      "transcribe_seconds": 0.4215866649999498
+    },
+    {
+      "wav": "eval/1272-128104-0014.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "BY HARRY QUILTER M A",
+      "hypothesis": "by Harry Quilter MA.",
+      "quality": {
+        "word_errors": 2,
+        "reference_words": 5,
+        "wer": 0.4,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 2.245,
+      "transcribe_seconds": 0.3632162110000081
+    },
+    {
+      "wav": "eval/1272-135031-0000.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "BECAUSE YOU WERE SLEEPING INSTEAD OF CONQUERING THE LOVELY ROSE PRINCESS HAS BECOME A FIDDLE WITHOUT A BOW WHILE POOR SHAGGY SITS THERE A COOING DOVE",
+      "hypothesis": "Because you were sleeping instead of conquering, the lovely rose princess has become a fiddle without a bow, while poor Shaggy sits there, accuing dove.",
+      "quality": {
+        "word_errors": 2,
+        "reference_words": 26,
+        "wer": 0.07692307692307693,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 10.885,
+      "transcribe_seconds": 0.41331819200001974
+    },
+    {
+      "wav": "eval/1272-135031-0001.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "HE HAS GONE AND GONE FOR GOOD ANSWERED POLYCHROME WHO HAD MANAGED TO SQUEEZE INTO THE ROOM BESIDE THE DRAGON AND HAD WITNESSED THE OCCURRENCES WITH MUCH INTEREST",
+      "hypothesis": "He has gone and gone for good,\" answered Polychrome, who had managed to squeeze into the room beside the dragon and had witnessed the occurrences with much interest.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 28,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 11.13,
+      "transcribe_seconds": 0.434445328000038
+    },
+    {
+      "wav": "eval/1272-135031-0002.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "I HAVE REMAINED A PRISONER ONLY BECAUSE I WISHED TO BE ONE AND WITH THIS HE STEPPED FORWARD AND BURST THE STOUT CHAINS AS EASILY AS IF THEY HAD BEEN THREADS",
+      "hypothesis": "I have remained a prisoner only because I wish to be one. And with this he stepped forward and burst the stout chains as easily as if they had been threads.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 31,
+        "wer": 0.03225806451612903,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 11.475,
+      "transcribe_seconds": 0.43703612499996325
+    },
+    {
+      "wav": "eval/1272-135031-0003.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "THE LITTLE GIRL HAD BEEN ASLEEP BUT SHE HEARD THE RAPS AND OPENED THE DOOR",
+      "hypothesis": "The little girl had been asleep, but she heard the raps and opened the door.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 15,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 4.755,
+      "transcribe_seconds": 0.38181225599998925
+    },
+    {
+      "wav": "eval/1272-135031-0004.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "THE KING HAS FLED IN DISGRACE AND YOUR FRIENDS ARE ASKING FOR YOU",
+      "hypothesis": "The king has flooded disgrace and your friends are asking for you.",
+      "quality": {
+        "word_errors": 2,
+        "reference_words": 13,
+        "wer": 0.15384615384615385,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 4.225,
+      "transcribe_seconds": 0.3687367999999651
+    },
+    {
+      "wav": "eval/1272-135031-0005.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "I BEGGED RUGGEDO LONG AGO TO SEND HIM AWAY BUT HE WOULD NOT DO SO",
+      "hypothesis": "I begged Rugged out long ago to send him away but he would not do so.",
+      "quality": {
+        "word_errors": 2,
+        "reference_words": 15,
+        "wer": 0.13333333333333333,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 4.625,
+      "transcribe_seconds": 0.4610565820000829
+    },
+    {
+      "wav": "eval/1272-135031-0006.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "I ALSO OFFERED TO HELP YOUR BROTHER TO ESCAPE BUT HE WOULD NOT GO",
+      "hypothesis": "I also offered to help your brother to escape, but he would not go.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 14,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 4.09,
+      "transcribe_seconds": 0.36909629799993127
+    },
+    {
+      "wav": "eval/1272-135031-0007.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "HE EATS AND SLEEPS VERY STEADILY REPLIED THE NEW KING",
+      "hypothesis": "He eats and sleeps very steadily, replied the new king.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 10,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 4.055,
+      "transcribe_seconds": 0.3739279090000309
+    },
+    {
+      "wav": "eval/1272-135031-0008.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "I HOPE HE DOESN'T WORK TOO HARD SAID SHAGGY",
+      "hypothesis": "I hope it doesn't work too hard since Shaggy.",
+      "quality": {
+        "word_errors": 2,
+        "reference_words": 9,
+        "wer": 0.2222222222222222,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 3.67,
+      "transcribe_seconds": 0.3900917490000211
+    },
+    {
+      "wav": "eval/1272-135031-0009.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "HE DOESN'T WORK AT ALL",
+      "hypothesis": "He doesn't work at all.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 5,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 1.91,
+      "transcribe_seconds": 0.39551106600004005
+    },
+    {
+      "wav": "eval/1272-135031-0010.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "IN FACT THERE IS NOTHING HE CAN DO IN THESE DOMINIONS AS WELL AS OUR NOMES WHOSE NUMBERS ARE SO GREAT THAT IT WORRIES US TO KEEP THEM ALL BUSY",
+      "hypothesis": "In fact, there is nothing he can do in these dominions as well as our gnomes, whose numbers are so great that it worries us to keep them all busy.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 30,
+        "wer": 0.03333333333333333,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 8.995,
+      "transcribe_seconds": 0.4458749490000855
+    },
+    {
+      "wav": "eval/1272-135031-0011.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "NOT EXACTLY RETURNED KALIKO",
+      "hypothesis": "Not exactly, we've turned Calico.",
+      "quality": {
+        "word_errors": 3,
+        "reference_words": 4,
+        "wer": 0.75,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 3.18,
+      "transcribe_seconds": 0.36589730499997586
+    },
+    {
+      "wav": "eval/1272-135031-0012.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "WHERE IS MY BROTHER NOW",
+      "hypothesis": "Where is my brother now?",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 5,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 2.04,
+      "transcribe_seconds": 0.35427793499991367
+    },
+    {
+      "wav": "eval/1272-135031-0013.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "INQUIRED SHAGGY IN THE METAL FOREST",
+      "hypothesis": "inquired Shaggy in the metal forest.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 6,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 3.7,
+      "transcribe_seconds": 0.38910868200002824
+    },
+    {
+      "wav": "eval/1272-135031-0014.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "WHERE IS THAT",
+      "hypothesis": "Where is that?",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 3,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 1.74,
+      "transcribe_seconds": 0.3276928239999961
+    },
+    {
+      "wav": "eval/1272-135031-0015.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "THE METAL FOREST IS IN THE GREAT DOMED CAVERN THE LARGEST IN ALL OUR DOMINIONS REPLIED KALIKO",
+      "hypothesis": "The Middle Forest is in the Great Doned Cavern, the largest in all our dominions, replied Calico.",
+      "quality": {
+        "word_errors": 3,
+        "reference_words": 17,
+        "wer": 0.17647058823529413,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 7.375,
+      "transcribe_seconds": 0.37502161200006867
+    },
+    {
+      "wav": "eval/1272-135031-0016.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "KALIKO HESITATED",
+      "hypothesis": "Calico hesitated.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 2,
+        "wer": 0.5,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 2.28,
+      "transcribe_seconds": 0.3456414139999424
+    },
+    {
+      "wav": "eval/1272-135031-0017.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "HOWEVER IF WE LOOK SHARP WE MAY BE ABLE TO DISCOVER ONE OF THESE SECRET WAYS",
+      "hypothesis": "However, if we look sharp, we may be able to discover one of these secret ways.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 16,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 6.86,
+      "transcribe_seconds": 0.3774653310000531
+    },
+    {
+      "wav": "eval/1272-135031-0018.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "OH NO I'M QUITE SURE HE DIDN'T",
+      "hypothesis": "Oh no, I'm quite sure he didn't.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 7,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 2.4449375,
+      "transcribe_seconds": 0.35492159800003265
+    },
+    {
+      "wav": "eval/1272-135031-0019.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "THAT'S FUNNY REMARKED BETSY THOUGHTFULLY",
+      "hypothesis": "That's funny. Remark to bed see you thoughtfully",
+      "quality": {
+        "word_errors": 5,
+        "reference_words": 5,
+        "wer": 1.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 3.525,
+      "transcribe_seconds": 0.3544992930000035
+    },
+    {
+      "wav": "eval/1272-135031-0020.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "I DON'T BELIEVE ANN KNEW ANY MAGIC OR SHE'D HAVE WORKED IT BEFORE",
+      "hypothesis": "I don't believe and knew any magic or she didn't work it before.",
+      "quality": {
+        "word_errors": 4,
+        "reference_words": 13,
+        "wer": 0.3076923076923077,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 4.65,
+      "transcribe_seconds": 0.38083278100009466
+    },
+    {
+      "wav": "eval/1272-135031-0021.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "I DO NOT KNOW CONFESSED SHAGGY",
+      "hypothesis": "I do not know, confess to Shaggy.",
+      "quality": {
+        "word_errors": 2,
+        "reference_words": 6,
+        "wer": 0.3333333333333333,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 2.595,
+      "transcribe_seconds": 0.38575630700006514
+    },
+    {
+      "wav": "eval/1272-135031-0022.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "TRUE AGREED KALIKO",
+      "hypothesis": "True, a green calico.",
+      "quality": {
+        "word_errors": 3,
+        "reference_words": 3,
+        "wer": 1.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 2.695,
+      "transcribe_seconds": 0.3758683490000294
+    },
+    {
+      "wav": "eval/1272-135031-0023.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "KALIKO WENT TO THE BIG GONG AND POUNDED ON IT JUST AS RUGGEDO USED TO DO BUT NO ONE ANSWERED THE SUMMONS",
+      "hypothesis": "Calico went in a big gong and pounded on it just as Vergado used to do, but no one answered the summons.",
+      "quality": {
+        "word_errors": 4,
+        "reference_words": 22,
+        "wer": 0.18181818181818182,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 7.52,
+      "transcribe_seconds": 0.40193061399997987
+    },
+    {
+      "wav": "eval/1272-135031-0024.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "HAVING RETURNED TO THE ROYAL CAVERN KALIKO FIRST POUNDED THE GONG AND THEN SAT IN THE THRONE WEARING RUGGEDO'S DISCARDED RUBY CROWN AND HOLDING IN HIS HAND THE SCEPTRE WHICH RUGGEDO HAD SO OFTEN THROWN AT HIS HEAD",
+      "hypothesis": "Having returned to the royal cavern, Calico first pounded the gong and then sat in the throne, wearing Regato's discarded ruby crown and holding in his hand the scepter which Regato had so often thrown at his head.",
+      "quality": {
+        "word_errors": 4,
+        "reference_words": 38,
+        "wer": 0.10526315789473684,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 14.47,
+      "transcribe_seconds": 0.5204301759999908
+    },
+    {
+      "wav": "eval/1272-141231-0000.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "A MAN SAID TO THE UNIVERSE SIR I EXIST",
+      "hypothesis": "A man said to the universe, Sir, I exist.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 9,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 4.65,
+      "transcribe_seconds": 0.36377728700006173
+    },
+    {
+      "wav": "eval/1272-141231-0001.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "SWEAT COVERED BRION'S BODY TRICKLING INTO THE TIGHT LOINCLOTH THAT WAS THE ONLY GARMENT HE WORE",
+      "hypothesis": "Sweat-covered Brien's body, trickling into the tight-wing cloths that was the only germany war.",
+      "quality": {
+        "word_errors": 6,
+        "reference_words": 16,
+        "wer": 0.375,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 6.535,
+      "transcribe_seconds": 0.384471670000039
+    },
+    {
+      "wav": "eval/1272-141231-0002.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "THE CUT ON HIS CHEST STILL DRIPPING BLOOD THE ACHE OF HIS OVERSTRAINED EYES EVEN THE SOARING ARENA AROUND HIM WITH THE THOUSANDS OF SPECTATORS WERE TRIVIALITIES NOT WORTH THINKING ABOUT",
+      "hypothesis": "The cut on his chest is still dripping blood. The ache of his overstrained eyes. Even the soaring arena around him with thousands of spectators, retroviality is not worth thinking about.",
+      "quality": {
+        "word_errors": 4,
+        "reference_words": 31,
+        "wer": 0.12903225806451613,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 13.335,
+      "transcribe_seconds": 0.4370558360000132
+    },
+    {
+      "wav": "eval/1272-141231-0003.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "HIS INSTANT OF PANIC WAS FOLLOWED BY A SMALL SHARP BLOW HIGH ON HIS CHEST",
+      "hypothesis": "His instant panic was followed by a small sharp blow high on his chest.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 15,
+        "wer": 0.06666666666666667,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 5.42,
+      "transcribe_seconds": 0.37428774400007114
+    },
+    {
+      "wav": "eval/1272-141231-0004.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "ONE MINUTE A VOICE SAID AND THE TIME BUZZER SOUNDED",
+      "hypothesis": "One minute, a voice said, and the time buzzer sounded.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 10,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 5.09,
+      "transcribe_seconds": 0.3740442810000104
+    },
+    {
+      "wav": "eval/1272-141231-0005.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "A MINUTE IS NOT A VERY LARGE MEASURE OF TIME AND HIS BODY NEEDED EVERY FRACTION OF IT",
+      "hypothesis": "A minute is not a very large measure of time, and his body needed every fraction of it.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 18,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 5.81,
+      "transcribe_seconds": 0.3842134410000426
+    },
+    {
+      "wav": "eval/1272-141231-0006.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "THE BUZZER'S WHIRR TRIGGERED HIS MUSCLES INTO COMPLETE RELAXATION",
+      "hypothesis": "The buzzers were triggered muscles into complete relaxation.",
+      "quality": {
+        "word_errors": 3,
+        "reference_words": 9,
+        "wer": 0.3333333333333333,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 4.93,
+      "transcribe_seconds": 0.40574202599998443
+    },
+    {
+      "wav": "eval/1272-141231-0007.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "ONLY HIS HEART AND LUNGS WORKED ON AT A STRONG MEASURED RATE",
+      "hypothesis": "Oli's heart and lungs worked on at a strong measured rate.",
+      "quality": {
+        "word_errors": 2,
+        "reference_words": 12,
+        "wer": 0.16666666666666666,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 4.735,
+      "transcribe_seconds": 0.4085540730000048
+    },
+    {
+      "wav": "eval/1272-141231-0008.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "HE WAS IN REVERIE SLIDING ALONG THE BORDERS OF CONSCIOUSNESS",
+      "hypothesis": "He was in reverie, sliding along the borders of consciousness.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 10,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 4.595,
+      "transcribe_seconds": 0.36651305299994874
+    },
+    {
+      "wav": "eval/1272-141231-0009.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "THE CONTESTANTS IN THE TWENTIES NEEDED UNDISTURBED REST THEREFORE NIGHTS IN THE DORMITORIES WERE AS QUIET AS DEATH",
+      "hypothesis": "The contestants in the twenties needed undisturbed rest. Therefore, knights in the dormitories were as quiet as death.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 18,
+        "wer": 0.05555555555555555,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 8.62,
+      "transcribe_seconds": 0.38756520100002945
+    },
+    {
+      "wav": "eval/1272-141231-0010.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "PARTICULARLY SO ON THIS LAST NIGHT WHEN ONLY TWO OF THE LITTLE CUBICLES WERE OCCUPIED THE THOUSANDS OF OTHERS STANDING WITH DARK EMPTY DOORS",
+      "hypothesis": "Particularly so, on this last night, when only two of the little cubicles were occupied, the thousands of others standing with dark empty doors.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 24,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 10.76,
+      "transcribe_seconds": 0.39874009099992236
+    },
+    {
+      "wav": "eval/1272-141231-0011.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "THE OTHER VOICE SNAPPED WITH A HARSH URGENCY CLEARLY USED TO COMMAND",
+      "hypothesis": "The other voice snapped with a harsh urgency clearly used to command.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 12,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 5.015,
+      "transcribe_seconds": 0.38842904499995257
+    },
+    {
+      "wav": "eval/1272-141231-0012.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "I'M HERE BECAUSE THE MATTER IS OF UTMOST IMPORTANCE AND BRANDD IS THE ONE I MUST SEE NOW STAND ASIDE",
+      "hypothesis": "I'm here because the matter is of utmost importance, and brand is the one I must see. Now stand aside.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 20,
+        "wer": 0.05,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 7.74,
+      "transcribe_seconds": 0.39241770000001
+    },
+    {
+      "wav": "eval/1272-141231-0013.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "THE TWENTIES",
+      "hypothesis": "the 20s",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 2,
+        "wer": 0.5,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 1.6399375,
+      "transcribe_seconds": 0.38885976599999594
+    },
+    {
+      "wav": "eval/1272-141231-0014.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "HE MUST HAVE DRAWN HIS GUN BECAUSE THE INTRUDER SAID QUICKLY PUT THAT AWAY YOU'RE BEING A FOOL OUT",
+      "hypothesis": "He must have drawn his gun, because the intruder said quickly, put that away, you're being a fool. Out.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 19,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 7.305,
+      "transcribe_seconds": 0.41387728699999116
+    },
+    {
+      "wav": "eval/1272-141231-0015.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "THERE WAS SILENCE THEN AND STILL WONDERING BRION WAS ONCE MORE ASLEEP",
+      "hypothesis": "There was silence then, and still wondering, Brienne was once more asleep.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 12,
+        "wer": 0.08333333333333333,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 5.68,
+      "transcribe_seconds": 0.38327223299995694
+    },
+    {
+      "wav": "eval/1272-141231-0016.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "TEN SECONDS",
+      "hypothesis": "10 seconds.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 2,
+        "wer": 0.5,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 1.85,
+      "transcribe_seconds": 0.3735783070000025
+    },
+    {
+      "wav": "eval/1272-141231-0017.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "HE ASKED THE HANDLER WHO WAS KNEADING HIS ACHING MUSCLES",
+      "hypothesis": "He asked the handler who was needing his aching muscles.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 10,
+        "wer": 0.1,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 3.735,
+      "transcribe_seconds": 0.3642879729999322
+    },
+    {
+      "wav": "eval/1272-141231-0018.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "A RED HAIRED MOUNTAIN OF A MAN WITH AN APPARENTLY INEXHAUSTIBLE STORE OF ENERGY",
+      "hypothesis": "A red-haired mountain of a man with an apparently inexhaustible store of energy.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 14,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 6.0,
+      "transcribe_seconds": 0.38647479000007934
+    },
+    {
+      "wav": "eval/1272-141231-0019.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "THERE COULD BE LITTLE ART IN THIS LAST AND FINAL ROUND OF FENCING",
+      "hypothesis": "There could be little art in this last and final round of fencing.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 13,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 4.7,
+      "transcribe_seconds": 0.4174427799999876
+    },
+    {
+      "wav": "eval/1272-141231-0020.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "JUST THRUST AND PARRY AND VICTORY TO THE STRONGER",
+      "hypothesis": "Just thrust and parry and victory to the stronger.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 9,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 4.32,
+      "transcribe_seconds": 0.3939843860000565
+    },
+    {
+      "wav": "eval/1272-141231-0021.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "EVERY MAN WHO ENTERED THE TWENTIES HAD HIS OWN TRAINING TRICKS",
+      "hypothesis": "Every man who entered the 20s had his own training tricks.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 11,
+        "wer": 0.09090909090909091,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 4.65,
+      "transcribe_seconds": 0.3816385200000241
+    },
+    {
+      "wav": "eval/1272-141231-0022.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "THERE APPEARED TO BE AN IMMEDIATE ASSOCIATION WITH THE DEATH TRAUMA AS IF THE TWO WERE INEXTRICABLY LINKED INTO ONE",
+      "hypothesis": "There appeared to be an immediate association with the death trauma as if the two were inextricably linked into one.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 20,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 8.35,
+      "transcribe_seconds": 0.38889720899999247
+    },
+    {
+      "wav": "eval/1272-141231-0023.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "THE STRENGTH THAT ENABLES SOMEONE IN A TRANCE TO HOLD HIS BODY STIFF AND UNSUPPORTED EXCEPT AT TWO POINTS THE HEAD AND HEELS",
+      "hypothesis": "The strength that enables someone in a trance to hold his body stiff and unsupported except at two points, the head and heels.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 23,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 8.66,
+      "transcribe_seconds": 0.38855116199999884
+    },
+    {
+      "wav": "eval/1272-141231-0024.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "THIS IS PHYSICALLY IMPOSSIBLE WHEN CONSCIOUS",
+      "hypothesis": "This is physically impossible when conscious.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 6,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 3.64,
+      "transcribe_seconds": 0.37966162499992606
+    },
+    {
+      "wav": "eval/1272-141231-0025.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "OTHERS HAD DIED BEFORE DURING THE TWENTIES AND DEATH DURING THE LAST ROUND WAS IN SOME WAYS EASIER THAN DEFEAT",
+      "hypothesis": "Others had died before during the 20s, and death during the last round was in some ways easier than defeat.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 20,
+        "wer": 0.05,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 8.725,
+      "transcribe_seconds": 0.3883921789999931
+    },
+    {
+      "wav": "eval/1272-141231-0026.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "BREATHING DEEPLY BRION SOFTLY SPOKE THE AUTO HYPNOTIC PHRASES THAT TRIGGERED THE PROCESS",
+      "hypothesis": "Breathing deeply, Brienne softly spoke the auto hypnotic phrases that triggered the process.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 13,
+        "wer": 0.07692307692307693,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 6.635,
+      "transcribe_seconds": 0.38839578600004643
+    },
+    {
+      "wav": "eval/1272-141231-0027.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "WHEN THE BUZZER SOUNDED HE PULLED HIS FOIL FROM HIS SECOND'S STARTLED GRASP AND RAN FORWARD",
+      "hypothesis": "When the buzzer sounded, he pulled his foil from his second startled grasp and ran forward.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 16,
+        "wer": 0.0625,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 6.57,
+      "transcribe_seconds": 0.40275973600000725
+    },
+    {
+      "wav": "eval/1272-141231-0028.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "IROLG LOOKED AMAZED AT THE SUDDEN FURY OF THE ATTACK THEN SMILED",
+      "hypothesis": "I rolled the maze at the sudden fury of the attack, then smiled.",
+      "quality": {
+        "word_errors": 4,
+        "reference_words": 12,
+        "wer": 0.3333333333333333,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 5.65,
+      "transcribe_seconds": 0.4180230459999166
+    },
+    {
+      "wav": "eval/1272-141231-0029.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "HE THOUGHT IT WAS A LAST BURST OF ENERGY HE KNEW HOW CLOSE THEY BOTH WERE TO EXHAUSTION",
+      "hypothesis": "He thought it was the last burst of energy. He knew how close they both were to exhaustion.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 18,
+        "wer": 0.05555555555555555,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 6.88,
+      "transcribe_seconds": 0.38327460799996516
+    },
+    {
+      "wav": "eval/1272-141231-0030.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "BRION SAW SOMETHING CLOSE TO PANIC ON HIS OPPONENT'S FACE WHEN THE MAN FINALLY RECOGNIZED HIS ERROR",
+      "hypothesis": "Brien saw something close to panic on his opponent's face when the man finally recognized his error.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 17,
+        "wer": 0.058823529411764705,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 7.13,
+      "transcribe_seconds": 0.39173321500004477
+    },
+    {
+      "wav": "eval/1272-141231-0031.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "A WAVE OF DESPAIR ROLLED OUT FROM IROLG BRION SENSED IT AND KNEW THE FIFTH POINT WAS HIS",
+      "hypothesis": "A wave of despair rolled out from our rogue. and sensed it and knew the fifth point was his.",
+      "quality": {
+        "word_errors": 3,
+        "reference_words": 18,
+        "wer": 0.16666666666666666,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 7.115,
+      "transcribe_seconds": 0.6347947129999056
+    },
+    {
+      "wav": "eval/1272-141231-0032.wav",
+      "speaker_id": 1272,
+      "kind": "speech",
+      "reference": "THEN THE POWERFUL TWIST THAT THRUST IT ASIDE IN AND UNDER THE GUARD",
+      "hypothesis": "Then the powerful twist that's rest of the side. In and under the guard.",
+      "quality": {
+        "word_errors": 5,
+        "reference_words": 13,
+        "wer": 0.38461538461538464,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 4.48,
+      "transcribe_seconds": 0.38009347199999866
+    },
+    {
+      "wav": "eval/digital-silence.wav",
+      "speaker_id": null,
+      "kind": "non_speech",
+      "reference": "",
+      "hypothesis": "",
+      "quality": null,
+      "audio_seconds": 10.0,
+      "transcribe_seconds": 0.02753815599999143
+    },
+    {
+      "wav": "eval/synthetic-white-noise.wav",
+      "speaker_id": null,
+      "kind": "non_speech",
+      "reference": "",
+      "hypothesis": "",
+      "quality": null,
+      "audio_seconds": 10.0,
+      "transcribe_seconds": 0.023522243000002163
+    }
+  ],
+  "warning": "A one-speaker sample cannot establish generalization or an ASR ranking; check upstream pretraining overlap. Controls are artificial, not real room noise."
+}

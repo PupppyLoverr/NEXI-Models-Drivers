@@ -1,0 +1,7 @@
+{
+  "command": "/usr/bin/time -v -o results/dictation-gnu-time.txt .venv/bin/python scripts/dictation_regression.py --model models/tiny.en --wav fixtures/jfk.wav --reference fixtures/jfk.reference.txt --output results/dictation-regressions.json",
+  "gnu_time_whole_process_exit_peak_rss_bytes": 351166464,
+  "gnu_time_exit_status": 0,
+  "raw_log_sha256": "c61956614046d5b3148a69bc432fcfb0ff54e55819405c7407bc80956155c65e",
+  "definition": "Fresh process through exit including serialization. Regression runs prerecorded PCM in memory, not microphone; all stages/reused model included."
+}

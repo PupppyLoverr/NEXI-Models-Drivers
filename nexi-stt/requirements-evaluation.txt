@@ -1,0 +1,2 @@
+# Optional, only for preparing the explicit one-speaker evaluation sample.
+pyarrow==24.0.0

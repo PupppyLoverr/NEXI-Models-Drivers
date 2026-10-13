@@ -1,0 +1,7 @@
+{
+  "command": "strace -f -e trace=network -o results/dictation-offline.strace .venv/bin/python scripts/dictation_regression.py --model models/tiny.en --wav fixtures/jfk.wav --reference fixtures/jfk.reference.txt --output results/dictation-network-output.json",
+  "network_syscall_count": 0,
+  "trace_sha256": "560bda05a884fe42514d078c0b6dccc7489a424b95c31a127de0cf76ef5fde44",
+  "output": "results/dictation-network-output.json",
+  "definition": "Actual regression driver load + two PCM utterances + EOF + silence/noise + VAD parity; trace all threads. CLI/PCM only, not HTTP loopback."
+}

@@ -1,0 +1,383 @@
+{
+  "silence_with_vad": {
+    "schema_version": 1,
+    "text": "",
+    "segments": [],
+    "language": "en",
+    "audio_seconds": 10.0,
+    "speech_seconds_after_vad": 0.0,
+    "transcribe_seconds": 0.05151650599987079,
+    "real_time_factor": 0.005151650599987079,
+    "config": {
+      "device": "cpu",
+      "compute_type": "int8",
+      "threads": 4,
+      "profile": "fast",
+      "beam_size": 1,
+      "temperature": 0.0,
+      "vad": true,
+      "vad_silence_ms": 2000,
+      "word_timestamps": false,
+      "hotwords": "",
+      "condition_on_previous_text": false
+    },
+    "model": {
+      "upstream": "Systran/faster-whisper-tiny.en",
+      "revision": "0d3d19a32d3338f10357c0889762bd8d64bbdeba",
+      "license": "MIT",
+      "provenance": "upstream weights, not a NEXI fine-tune"
+    }
+  },
+  "empty_wav_rejected": "WAV duration must be >0 and <=120 seconds; split longer clips",
+  "vocabulary_hints": {
+    "schema_version": 1,
+    "text": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country.",
+    "segments": [
+      {
+        "start": 0.0,
+        "end": 10.5,
+        "text": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country.",
+        "no_speech_probability": 0.006198830436915159,
+        "words": [
+          {
+            "start": 0.0,
+            "end": 0.74,
+            "text": " And",
+            "probability": 0.6796335577964783
+          },
+          {
+            "start": 0.74,
+            "end": 1.06,
+            "text": " so",
+            "probability": 0.9728490710258484
+          },
+          {
+            "start": 1.06,
+            "end": 1.46,
+            "text": " my",
+            "probability": 0.5900166630744934
+          },
+          {
+            "start": 1.46,
+            "end": 1.76,
+            "text": " fellow",
+            "probability": 0.9990491271018982
+          },
+          {
+            "start": 1.76,
+            "end": 2.26,
+            "text": " Americans",
+            "probability": 0.879957377910614
+          },
+          {
+            "start": 2.26,
+            "end": 3.88,
+            "text": " ask",
+            "probability": 0.6329253911972046
+          },
+          {
+            "start": 3.88,
+            "end": 4.56,
+            "text": " not",
+            "probability": 0.8624590635299683
+          },
+          {
+            "start": 4.56,
+            "end": 5.7,
+            "text": " what",
+            "probability": 0.8911985754966736
+          },
+          {
+            "start": 5.7,
+            "end": 6.04,
+            "text": " your",
+            "probability": 0.984891414642334
+          },
+          {
+            "start": 6.04,
+            "end": 6.34,
+            "text": " country",
+            "probability": 0.9971972703933716
+          },
+          {
+            "start": 6.34,
+            "end": 6.76,
+            "text": " can",
+            "probability": 0.9951122403144836
+          },
+          {
+            "start": 6.76,
+            "end": 7.02,
+            "text": " do",
+            "probability": 0.9984773993492126
+          },
+          {
+            "start": 7.02,
+            "end": 7.26,
+            "text": " for",
+            "probability": 0.9900463223457336
+          },
+          {
+            "start": 7.26,
+            "end": 8.06,
+            "text": " you",
+            "probability": 0.9916774034500122
+          },
+          {
+            "start": 8.06,
+            "end": 8.66,
+            "text": " ask",
+            "probability": 0.27926698327064514
+          },
+          {
+            "start": 8.66,
+            "end": 8.94,
+            "text": " what",
+            "probability": 0.9864859580993652
+          },
+          {
+            "start": 8.94,
+            "end": 9.28,
+            "text": " you",
+            "probability": 0.9912956953048706
+          },
+          {
+            "start": 9.28,
+            "end": 9.5,
+            "text": " can",
+            "probability": 0.9965314269065857
+          },
+          {
+            "start": 9.5,
+            "end": 9.72,
+            "text": " do",
+            "probability": 0.9975817203521729
+          },
+          {
+            "start": 9.72,
+            "end": 9.92,
+            "text": " for",
+            "probability": 0.9978693723678589
+          },
+          {
+            "start": 9.92,
+            "end": 10.22,
+            "text": " your",
+            "probability": 0.9938331842422485
+          },
+          {
+            "start": 10.22,
+            "end": 10.5,
+            "text": " country.",
+            "probability": 0.9986294507980347
+          }
+        ]
+      }
+    ],
+    "language": "en",
+    "audio_seconds": 11.0,
+    "speech_seconds_after_vad": 11.0,
+    "transcribe_seconds": 0.32914537999999993,
+    "real_time_factor": 0.029922307272727267,
+    "config": {
+      "device": "cpu",
+      "compute_type": "int8",
+      "threads": 4,
+      "profile": "fast",
+      "beam_size": 1,
+      "temperature": 0.0,
+      "vad": true,
+      "vad_silence_ms": 2000,
+      "word_timestamps": true,
+      "hotwords": "Americans country",
+      "condition_on_previous_text": false
+    },
+    "model": {
+      "upstream": "Systran/faster-whisper-tiny.en",
+      "revision": "0d3d19a32d3338f10357c0889762bd8d64bbdeba",
+      "license": "MIT",
+      "provenance": "upstream weights, not a NEXI fine-tune"
+    }
+  },
+  "real_http_transcription": {
+    "schema_version": 1,
+    "text": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country",
+    "segments": [
+      {
+        "start": 0.0,
+        "end": 7.58,
+        "text": "And so my fellow Americans ask not what your country can do for you",
+        "no_speech_probability": 0.07176260650157928,
+        "words": [
+          {
+            "start": 0.0,
+            "end": 0.76,
+            "text": " And",
+            "probability": 0.6451272964477539
+          },
+          {
+            "start": 0.76,
+            "end": 1.06,
+            "text": " so",
+            "probability": 0.9735214114189148
+          },
+          {
+            "start": 1.06,
+            "end": 1.46,
+            "text": " my",
+            "probability": 0.6117669343948364
+          },
+          {
+            "start": 1.46,
+            "end": 1.76,
+            "text": " fellow",
+            "probability": 0.9990966320037842
+          },
+          {
+            "start": 1.76,
+            "end": 2.28,
+            "text": " Americans",
+            "probability": 0.8684334754943848
+          },
+          {
+            "start": 2.57,
+            "end": 3.87,
+            "text": " ask",
+            "probability": 0.5983448028564453
+          },
+          {
+            "start": 3.87,
+            "end": 4.55,
+            "text": " not",
+            "probability": 0.7834619879722595
+          },
+          {
+            "start": 4.84,
+            "end": 5.7,
+            "text": " what",
+            "probability": 0.9422276020050049
+          },
+          {
+            "start": 5.7,
+            "end": 6.04,
+            "text": " your",
+            "probability": 0.9801427125930786
+          },
+          {
+            "start": 6.04,
+            "end": 6.36,
+            "text": " country",
+            "probability": 0.995949387550354
+          },
+          {
+            "start": 6.36,
+            "end": 6.76,
+            "text": " can",
+            "probability": 0.9953339695930481
+          },
+          {
+            "start": 6.76,
+            "end": 7.02,
+            "text": " do",
+            "probability": 0.9984210729598999
+          },
+          {
+            "start": 7.02,
+            "end": 7.26,
+            "text": " for",
+            "probability": 0.9841175079345703
+          },
+          {
+            "start": 7.26,
+            "end": 7.58,
+            "text": " you",
+            "probability": 0.9868144989013672
+          }
+        ]
+      },
+      {
+        "start": 8.26,
+        "end": 10.48,
+        "text": "ask what you can do for your country",
+        "no_speech_probability": 0.07176260650157928,
+        "words": [
+          {
+            "start": 8.26,
+            "end": 8.66,
+            "text": " ask",
+            "probability": 0.3075580298900604
+          },
+          {
+            "start": 8.66,
+            "end": 8.96,
+            "text": " what",
+            "probability": 0.9810317158699036
+          },
+          {
+            "start": 8.96,
+            "end": 9.28,
+            "text": " you",
+            "probability": 0.9919385313987732
+          },
+          {
+            "start": 9.28,
+            "end": 9.5,
+            "text": " can",
+            "probability": 0.9963489770889282
+          },
+          {
+            "start": 9.5,
+            "end": 9.74,
+            "text": " do",
+            "probability": 0.997448742389679
+          },
+          {
+            "start": 9.74,
+            "end": 9.92,
+            "text": " for",
+            "probability": 0.9976293444633484
+          },
+          {
+            "start": 9.92,
+            "end": 10.24,
+            "text": " your",
+            "probability": 0.9942571520805359
+          },
+          {
+            "start": 10.24,
+            "end": 10.48,
+            "text": " country",
+            "probability": 0.9987446069717407
+          }
+        ]
+      }
+    ],
+    "language": "en",
+    "audio_seconds": 11.0,
+    "speech_seconds_after_vad": 10.424,
+    "transcribe_seconds": 0.31352655000000595,
+    "real_time_factor": 0.028502413636364177,
+    "config": {
+      "device": "cpu",
+      "compute_type": "int8",
+      "threads": 4,
+      "profile": "balanced",
+      "beam_size": 5,
+      "temperature": 0.0,
+      "vad": true,
+      "vad_silence_ms": 500,
+      "word_timestamps": true,
+      "hotwords": "",
+      "condition_on_previous_text": false
+    },
+    "model": {
+      "upstream": "Systran/faster-whisper-tiny.en",
+      "revision": "0d3d19a32d3338f10357c0889762bd8d64bbdeba",
+      "license": "MIT",
+      "provenance": "upstream weights, not a NEXI fine-tune"
+    }
+  },
+  "invalid_http_audio_rejected": {
+    "error": "Invalid PCM16 WAV"
+  }
+}

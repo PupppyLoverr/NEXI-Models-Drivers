@@ -9,6 +9,8 @@ from typing import Any
 from .assets import verify_model
 from .audio import inspect_wav
 
+PROFILES = {"fast": 1, "balanced": 5}
+
 
 def offline_environment() -> None:
     os.environ["HF_HUB_OFFLINE"] = "1"
@@ -44,21 +46,28 @@ class Driver:
         hotwords: str = "",
         word_timestamps: bool = False,
         vad: bool = True,
+        profile: str = "fast",
+        vad_silence_ms: int = 2000,
     ) -> dict[str, Any]:
         info = inspect_wav(audio)
         if len(hotwords) > 400 or any(ord(char) < 32 for char in hotwords):
             raise ValueError("Vocabulary hints must be <=400 characters without control characters")
+        if profile not in PROFILES:
+            raise ValueError("Profile must be fast or balanced")
+        if not 100 <= vad_silence_ms <= 3000:
+            raise ValueError("VAD silence must be 100–3000 ms")
         start = time.perf_counter()
         segments, details = self.model.transcribe(
             io.BytesIO(audio),
             language="en",
             task="transcribe",
-            beam_size=1,
+            beam_size=PROFILES[profile],
             best_of=1,
             temperature=0.0,
             condition_on_previous_text=False,
             word_timestamps=word_timestamps,
             vad_filter=vad,
+            vad_parameters={"min_silence_duration_ms": vad_silence_ms},
             hotwords=hotwords or None,
         )
         rendered = []
@@ -89,9 +98,11 @@ class Driver:
                 "device": "cpu",
                 "compute_type": "int8",
                 "threads": self.threads,
-                "beam_size": 1,
+                "profile": profile,
+                "beam_size": PROFILES[profile],
                 "temperature": 0.0,
                 "vad": vad,
+                "vad_silence_ms": vad_silence_ms,
                 "word_timestamps": word_timestamps,
                 "hotwords": hotwords,
                 "condition_on_previous_text": False,
