@@ -59,10 +59,17 @@ def handler_for(driver: Driver) -> type[BaseHTTPRequestHandler]:
                     self.respond(413, {"error": "Body must be >0 and <=10 MiB"})
                     return
                 query = parse_qs(url.query, keep_blank_values=True)
-                if set(query) - {"words", "vad"} or any(
-                    values not in (["0"], ["1"]) for values in query.values()
-                ):
-                    raise ValueError("Only words=0|1 and vad=0|1 are supported")
+                if set(query) - {"words", "vad", "profile", "vad_silence_ms"}:
+                    raise ValueError("Unknown transcription option")
+                if any(query.get(key, ["0"]) not in (["0"], ["1"]) for key in ("words", "vad")):
+                    raise ValueError("words and vad must be 0 or 1")
+                if query.get("profile", ["fast"]) not in (["fast"], ["balanced"]):
+                    raise ValueError("profile must be fast or balanced")
+                if len(query.get("vad_silence_ms", ["2000"])) != 1:
+                    raise ValueError("Duplicate VAD silence parameter")
+                silence_ms = int(query.get("vad_silence_ms", ["2000"])[0])
+                if not 100 <= silence_ms <= 3000:
+                    raise ValueError("VAD silence must be 100–3000 ms")
                 data = self.rfile.read(length)
                 if len(data) != length:
                     raise ValueError("Truncated request body")
@@ -71,6 +78,8 @@ def handler_for(driver: Driver) -> type[BaseHTTPRequestHandler]:
                     hotwords=self.headers.get("X-STT-Hotwords", ""),
                     word_timestamps=query.get("words", ["0"])[0] == "1",
                     vad=query.get("vad", ["1"])[0] == "1",
+                    profile=query.get("profile", ["fast"])[0],
+                    vad_silence_ms=silence_ms,
                 )
                 self.respond(200, result)
             except (ValueError, TimeoutError) as exc:

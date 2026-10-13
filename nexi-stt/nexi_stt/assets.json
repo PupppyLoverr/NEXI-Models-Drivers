@@ -137,6 +137,19 @@
       }
     ]
   },
+  "sample-librispeech": {
+    "upstream": "hf-internal-testing/librispeech_asr_dummy clean validation; one speaker (1272)",
+    "revision": "5be91486e11a2d616f4ec5db8d3fd248585ac07a",
+    "license": "LibriSpeech source audio/transcripts: CC BY 4.0",
+    "files": [
+      {
+        "name": "validation.parquet",
+        "url": "https://huggingface.co/datasets/hf-internal-testing/librispeech_asr_dummy/resolve/5be91486e11a2d616f4ec5db8d3fd248585ac07a/clean/validation-00000-of-00001.parquet",
+        "bytes": 9192059,
+        "sha256": "4e69a06fa5edc90921e5e7e39a7084881f8b3ed9c805c574f4f39c6fde27c603"
+      }
+    ]
+  },
   "sample-jfk": {
     "upstream": "ggml-org/whisper.cpp samples/jfk.wav",
     "revision": "a8d002cfd879315632a579e73f0148d06959de36",

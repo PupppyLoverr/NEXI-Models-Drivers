@@ -2,6 +2,11 @@
 models/
 training-output/
 fixtures/*.wav
+fixtures/*.pcm
+fixtures/eval/
+fixtures/eval-source/
+fixtures/test-source/
+fixtures/test-clean/
 *.egg-info/
 .mypy_cache/
 .ruff_cache/

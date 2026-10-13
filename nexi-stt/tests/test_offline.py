@@ -17,6 +17,7 @@ import pytest
 from nexi_stt import assets
 from nexi_stt.audio import MAX_BYTES, inspect_wav, read_wav
 from nexi_stt.cli import main
+from nexi_stt.dictation import FRAME_BYTES, Endpoint, stream
 from nexi_stt.engine import Driver
 from nexi_stt.metrics import word_error_rate
 from nexi_stt.server import handler_for
@@ -153,10 +154,83 @@ def test_driver_exhausts_generator_offline(tmp_path: Path, monkeypatch: pytest.M
     assert constructor.call_args.kwargs["local_files_only"] is True
     assert constructor.call_args.kwargs["device"] == "cpu"
     assert fake.transcribe.call_args.kwargs["hotwords"] == "NEXI"
+    assert fake.transcribe.call_args.kwargs["beam_size"] == 1
+    assert fake.transcribe.call_args.kwargs["vad_parameters"] == {"min_silence_duration_ms": 2000}
     assert __import__("os").environ["HF_HUB_OFFLINE"] == "1"
     for hotwords in ("X" * 401, "a\nb"):
         with pytest.raises(ValueError, match="Vocabulary"):
             driver.transcribe(wav_data(), hotwords=hotwords)
+    assert driver.transcribe(wav_data(), profile="balanced")["config"]["beam_size"] == 5
+    assert fake.transcribe.call_args.kwargs["beam_size"] == 5
+    for options in ({"profile": "unsafe"}, {"vad_silence_ms": 99}):
+        with pytest.raises(ValueError):
+            driver.transcribe(wav_data(), **options)
+
+
+def test_pause_endpointer_preserves_absolute_times_and_splits() -> None:
+    patterns = [False] * 10 + [True] * 5 + [False] * 19 + [False] * 10 + [True] * 5
+    endpoint = Endpoint(pause_ms=600, speech=lambda _: patterns.pop(0))
+    results = []
+    for _ in range(49):
+        result = endpoint.feed(b"\0" * FRAME_BYTES)
+        if result:
+            results.append(result)
+    results.append(endpoint.flush())
+    assert [(row.start_frame, row.end_frame, row.reason) for row in results] == [
+        (0, 34, "pause"),
+        (34, 49, "end_of_stream"),
+    ]
+    assert all(len(row.pcm) == (row.end_frame - row.start_frame) * FRAME_BYTES for row in results)
+
+
+def test_stream_json_events_adjust_segment_and_word_times() -> None:
+    patterns = [False] * 20 + [True] * 5 + [False] * 19 + [False] * 10 + [True] * 5
+    endpoint = Endpoint(pause_ms=600, speech=lambda _: patterns.pop(0))
+    row = {
+        "text": "hello",
+        "segments": [{"start": 0.01, "end": 0.5, "words": [{"start": 0.02, "end": 0.3}]}],
+    }
+    driver = Mock()
+    driver.transcribe.side_effect = lambda *args, **kwargs: json.loads(json.dumps(row))
+
+    class ShortReads(io.BytesIO):
+        def read(self, size: int = -1) -> bytes:
+            return super().read(min(size, 311))
+
+    result = list(stream(driver, ShortReads(b"\0" * FRAME_BYTES * 59), endpoint=endpoint))
+    assert len(result) == 2
+    assert result[0]["event"] == "final" and result[0]["reason"] == "pause"
+    assert result[1]["reason"] == "end_of_stream"
+    assert result[1]["stream_start_seconds"] == pytest.approx(44 * 0.032)
+    assert result[1]["segments"][0]["start"] == pytest.approx(44 * 0.032 + 0.01)
+    assert result[1]["segments"][0]["words"][0]["start"] == pytest.approx(44 * 0.032 + 0.02)
+    assert all(call.kwargs["vad"] is False for call in driver.transcribe.call_args_list)
+
+
+def test_stream_bounds_and_incomplete_sample() -> None:
+    for options in ({"pause_ms": 100}, {"max_utterance_seconds": 31}):
+        with pytest.raises(ValueError):
+            Endpoint(**options)
+    endpoint = Endpoint(speech=lambda _: False)
+    with pytest.raises(ValueError, match="incomplete sample"):
+        list(stream(Mock(), io.BytesIO(b"\0" * FRAME_BYTES + b"x"), endpoint=endpoint))
+    assert list(stream(Mock(), io.BytesIO(b"\0" * FRAME_BYTES), endpoint=endpoint)) == []
+
+
+def test_endpoint_max_duration_and_partial_final_frame() -> None:
+    endpoint = Endpoint(max_utterance_seconds=1, speech=lambda _: True)
+    chunks = [endpoint.feed(bytes(FRAME_BYTES)) for _ in range(100)]
+    chunks = [chunk for chunk in chunks if chunk]
+    assert len(chunks) == 3
+    assert all(chunk.reason == "max_duration" and len(chunk.pcm) <= 32000 for chunk in chunks)
+    driver = Mock()
+    driver.transcribe.return_value = {"text": "tail", "segments": []}
+    events = list(
+        stream(driver, io.BytesIO(b"\x01\0" * 55), endpoint=Endpoint(speech=lambda _: True))
+    )
+    assert events[0]["reason"] == "end_of_stream"
+    assert events[0]["stream_start_seconds"] == 0
+    assert events[0]["stream_end_seconds"] == 0.032
 
 
 @pytest.mark.parametrize("threads", [0, -1, 65])
@@ -213,7 +287,17 @@ def test_http_contract_and_boundaries() -> None:
             == 403
         )
         assert request("POST", "/transcribe", b"", {"Content-Type": "audio/wav"})[0] == 413
-        for query in ("words=yes", "words=", "vad=", "unknown=", "vad=1&vad=1"):
+        for query in (
+            "words=yes",
+            "words=",
+            "vad=",
+            "unknown=",
+            "vad=1&vad=1",
+            "profile=",
+            "profile=none",
+            "vad_silence_ms=",
+            "vad_silence_ms=99",
+        ):
             assert (
                 request("POST", f"/transcribe?{query}", wav_data(), {"Content-Type": "audio/wav"})[
                     0
@@ -222,7 +306,7 @@ def test_http_contract_and_boundaries() -> None:
             )
         status, payload = request(
             "POST",
-            "/transcribe?words=1&vad=0",
+            "/transcribe?words=1&vad=0&profile=balanced&vad_silence_ms=500",
             wav_data(),
             {"Content-Type": "audio/wav", "X-STT-Hotwords": "NEXI"},
         )
@@ -231,6 +315,8 @@ def test_http_contract_and_boundaries() -> None:
             "hotwords": "NEXI",
             "word_timestamps": True,
             "vad": False,
+            "profile": "balanced",
+            "vad_silence_ms": 500,
         }
         driver.transcribe.side_effect = ValueError("Invalid WAV")
         assert request("POST", "/transcribe", wav_data(), {"Content-Type": "audio/wav"})[0] == 400

@@ -1,0 +1,3240 @@
+{
+  "schema_version": 2,
+  "measured_at_utc": "2026-10-13T08:00:13.159353+00:00",
+  "hardware": {
+    "cpu": "INTEL(R) XEON(R) PLATINUM 8559C",
+    "logical_cpus": 8,
+    "platform": "Linux-6.8.0-1061-aws-x86_64-with-glibc2.35",
+    "machine": "x86_64",
+    "gpu": "none used; forced CPU"
+  },
+  "manifest_sha256": "95192066be196d2b590c6c0973e9962b5484f3f031089136690e4a7205232f46",
+  "platform": "Linux-6.8.0-1061-aws-x86_64-with-glibc2.35",
+  "python": "3.10.12",
+  "threads": 4,
+  "profile": "fast",
+  "model": {
+    "upstream": "Systran/faster-whisper-tiny.en",
+    "revision": "0d3d19a32d3338f10357c0889762bd8d64bbdeba",
+    "license": "MIT",
+    "provenance": "upstream weights, not a NEXI fine-tune"
+  },
+  "model_load_seconds": 0.3378661379999812,
+  "model_disk_bytes": 78091923,
+  "peak_process_rss_bytes": 384679936,
+  "timing_definition": "One freshly loaded process; first clip is cold-call, subsequent clips reuse the model; times exclude model load. Serial runs, OS cache not flushed.",
+  "audio_seconds": 1679.6801875,
+  "median_transcribe_seconds": 0.296209073,
+  "p95_transcribe_seconds_nearest_rank": 0.468057890999944,
+  "total_transcribe_seconds": 63.62468206100357,
+  "total_real_time_factor": 0.037879045388813676,
+  "speech_clips": 200,
+  "non_speech_clips": 0,
+  "non_speech_false_positives": 0,
+  "word_errors": 240,
+  "reference_words": 4499,
+  "corpus_wer": 0.05334518781951545,
+  "records": [
+    {
+      "wav": "test-clean/1089-134686-0008.wav",
+      "wav_sha256": "c6d413fe63540a24110a8dd2db4502d41cf55112767dc2338cb4234cc8c09777",
+      "speaker_id": 1089,
+      "kind": "speech",
+      "reference": "THE CHAOS IN WHICH HIS ARDOUR EXTINGUISHED ITSELF WAS A COLD INDIFFERENT KNOWLEDGE OF HIMSELF",
+      "hypothesis": "The chaos in which his ardor extinguished itself was a cold, indifferent knowledge of himself.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 15,
+        "wer": 0.06666666666666667,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 6.73,
+      "transcribe_seconds": 0.341919973000131
+    },
+    {
+      "wav": "test-clean/1089-134686-0011.wav",
+      "wav_sha256": "097baaee33039db64dd47e7f1bf9880530be8e4f693d70dc022059c7fef2cc69",
+      "speaker_id": 1089,
+      "kind": "speech",
+      "reference": "ON SATURDAY MORNINGS WHEN THE SODALITY MET IN THE CHAPEL TO RECITE THE LITTLE OFFICE HIS PLACE WAS A CUSHIONED KNEELING DESK AT THE RIGHT OF THE ALTAR FROM WHICH HE LED HIS WING OF BOYS THROUGH THE RESPONSES",
+      "hypothesis": "On Saturday mornings when the sodality met in the chapel to recite the little office, his place was a cushioned kneeling desk at the right of the altar from which he led his wing of boys through the responses.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 39,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 12.445,
+      "transcribe_seconds": 0.5020245030000297
+    },
+    {
+      "wav": "test-clean/1089-134686-0013.wav",
+      "wav_sha256": "5ca0d0141fec49d2a047f86a682eee7386d566385daf8f530756c1cbba3167ea",
+      "speaker_id": 1089,
+      "kind": "speech",
+      "reference": "IF EVER HE WAS IMPELLED TO CAST SIN FROM HIM AND TO REPENT THE IMPULSE THAT MOVED HIM WAS THE WISH TO BE HER KNIGHT",
+      "hypothesis": "If ever he was impaled to cast sin from him and to repent, the impulse that moved him was the wish to be her knight.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 25,
+        "wer": 0.04,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 7.915,
+      "transcribe_seconds": 0.47858369700020376
+    },
+    {
+      "wav": "test-clean/1089-134691-0002.wav",
+      "wav_sha256": "b2b3f9df4e88a51a0086aa71973917355774decba3e89abbe9b1d5b2bef19182",
+      "speaker_id": 1089,
+      "kind": "speech",
+      "reference": "HE SET OFF ABRUPTLY FOR THE BULL WALKING RAPIDLY LEST HIS FATHER'S SHRILL WHISTLE MIGHT CALL HIM BACK AND IN A FEW MOMENTS HE HAD ROUNDED THE CURVE AT THE POLICE BARRACK AND WAS SAFE",
+      "hypothesis": "He set off abruptly for the bull, walking rapidly lest his father's shrill whistle might call him back. And in a few moments he had rounded the curve at the police barrack and was safe.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 35,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 11.6,
+      "transcribe_seconds": 0.3734094860001278
+    },
+    {
+      "wav": "test-clean/1089-134691-0021.wav",
+      "wav_sha256": "3c64270c606e831b619b966f4ae6b1728291a4cb0c3180659abaab81b8d32466",
+      "speaker_id": 1089,
+      "kind": "speech",
+      "reference": "THEIR DIVING STONE POISED ON ITS RUDE SUPPORTS AND ROCKING UNDER THEIR PLUNGES AND THE ROUGH HEWN STONES OF THE SLOPING BREAKWATER OVER WHICH THEY SCRAMBLED IN THEIR HORSEPLAY GLEAMED WITH COLD WET LUSTRE",
+      "hypothesis": "Their diving stone poised on its roots supports and rocking under their plunges and the rough-hune stones of the sloping breakwater over which they scrambled in their horseplay gleamed with cold wet luster.",
+      "quality": {
+        "word_errors": 3,
+        "reference_words": 34,
+        "wer": 0.08823529411764706,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 13.37,
+      "transcribe_seconds": 0.4466321009999774
+    },
+    {
+      "wav": "test-clean/1188-133604-0004.wav",
+      "wav_sha256": "4c3d62ac2eb47034f14e258d66b22dbd9ca8e5f409a4a50d0929fc825f740e45",
+      "speaker_id": 1188,
+      "kind": "speech",
+      "reference": "SOME OF THE TOUCHES INDEED WHEN THE TINT HAS BEEN MIXED WITH MUCH WATER HAVE BEEN LAID IN LITTLE DROPS OR PONDS SO THAT THE PIGMENT MIGHT CRYSTALLIZE HARD AT THE EDGE",
+      "hypothesis": "Some of the touches, indeed, when the tint has been mixed with much water, have been laid in little drops or ponds, so that the pigment might crystallize hard at the edge.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 32,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 10.65,
+      "transcribe_seconds": 0.4526755110000522
+    },
+    {
+      "wav": "test-clean/1188-133604-0010.wav",
+      "wav_sha256": "f0ba1d597a718a89e2906bd2173cf77d968efe5deee9248bd7cd71debafc3194",
+      "speaker_id": 1188,
+      "kind": "speech",
+      "reference": "BUT IN THIS VIGNETTE COPIED FROM TURNER YOU HAVE THE TWO PRINCIPLES BROUGHT OUT PERFECTLY",
+      "hypothesis": "But in this vignette copied from Turner, you have the two principles brought out perfectly.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 15,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 6.095,
+      "transcribe_seconds": 0.45023219700010486
+    },
+    {
+      "wav": "test-clean/1188-133604-0014.wav",
+      "wav_sha256": "e98ec82c870dc65543521abebae12e23e545378402c01721f4781229e81e6d13",
+      "speaker_id": 1188,
+      "kind": "speech",
+      "reference": "DO NOT THEREFORE THINK THAT THE GOTHIC SCHOOL IS AN EASY ONE",
+      "hypothesis": "Do not therefore think that the gothic school is an easy one.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 12,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 4.39,
+      "transcribe_seconds": 0.39794767500006856
+    },
+    {
+      "wav": "test-clean/1188-133604-0015.wav",
+      "wav_sha256": "e7d8e1fd584bd58b27a6b55257cdbe62e28c57d7f6a4a6beb06b5c1bcf039b05",
+      "speaker_id": 1188,
+      "kind": "speech",
+      "reference": "THE LAW OF THAT SCHOOL IS THAT EVERYTHING SHALL BE SEEN CLEARLY OR AT LEAST ONLY IN SUCH MIST OR FAINTNESS AS SHALL BE DELIGHTFUL AND I HAVE NO DOUBT THAT THE BEST INTRODUCTION TO IT WOULD BE THE ELEMENTARY PRACTICE OF PAINTING EVERY STUDY ON A GOLDEN GROUND",
+      "hypothesis": "The law of that school is that everything shall be seen clearly, or at least only in such missed or faintness as shall be delightful. And I have no doubt that the best introduction to it would be the elementary practice of painting every study on a golden ground.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 49,
+        "wer": 0.02040816326530612,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 16.085,
+      "transcribe_seconds": 0.43632548000005045
+    },
+    {
+      "wav": "test-clean/1188-133604-0017.wav",
+      "wav_sha256": "3f9328f5bcc0337e14fdd3e00a0280b3ed8360ed249bb98d9ece41737f88bed0",
+      "speaker_id": 1188,
+      "kind": "speech",
+      "reference": "THAT A STYLE IS RESTRAINED OR SEVERE DOES NOT MEAN THAT IT IS ALSO ERRONEOUS",
+      "hypothesis": "that a style is restrained or severe does not mean that it is also erroneous.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 15,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 4.615,
+      "transcribe_seconds": 0.38012135700000727
+    },
+    {
+      "wav": "test-clean/121-121726-0013.wav",
+      "wav_sha256": "08ef76efd7bf91e5ce14ae6f27334d672ef9e88f6c4a513f12a65c4b43d2ce68",
+      "speaker_id": 121,
+      "kind": "speech",
+      "reference": "TIED TO A WOMAN",
+      "hypothesis": "Tied to a woman.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 4,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 2.49,
+      "transcribe_seconds": 0.3233173190001253
+    },
+    {
+      "wav": "test-clean/121-123852-0001.wav",
+      "wav_sha256": "bb86337bef80a5493298b6b920518cf3c50444929faefb493d724a355db09f05",
+      "speaker_id": 121,
+      "kind": "speech",
+      "reference": "AY ME",
+      "hypothesis": "I'm me.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 2,
+        "wer": 0.5,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 1.87,
+      "transcribe_seconds": 0.32818705200020304
+    },
+    {
+      "wav": "test-clean/121-123859-0000.wav",
+      "wav_sha256": "da4567d436f82f5d8f2c6117e405af4e6c0f71b74af3f00f671400e7776818a0",
+      "speaker_id": 121,
+      "kind": "speech",
+      "reference": "YOU ARE MY ALL THE WORLD AND I MUST STRIVE TO KNOW MY SHAMES AND PRAISES FROM YOUR TONGUE NONE ELSE TO ME NOR I TO NONE ALIVE THAT MY STEEL'D SENSE OR CHANGES RIGHT OR WRONG",
+      "hypothesis": "You are my all the world, and I must strive to know my shames and praises from your tongue. None else to me nor I to none alive, that my steeled sense or changes right or wrong.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 37,
+        "wer": 0.02702702702702703,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 17.39,
+      "transcribe_seconds": 0.4190400560000853
+    },
+    {
+      "wav": "test-clean/121-127105-0010.wav",
+      "wav_sha256": "832bc2437dc7b7bdb417afbb1786ac1ba939301a8998bb91356e777b4a694256",
+      "speaker_id": 121,
+      "kind": "speech",
+      "reference": "SHE SENT ME THE PAGES IN QUESTION BEFORE SHE DIED",
+      "hypothesis": "She sent me the pages in question before she died.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 10,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 2.85,
+      "transcribe_seconds": 0.3985800210000434
+    },
+    {
+      "wav": "test-clean/121-127105-0012.wav",
+      "wav_sha256": "f41465b0ff34124426e1f4442f093a429aaa4476c2c1c4654a31e0803d9a5c80",
+      "speaker_id": 121,
+      "kind": "speech",
+      "reference": "IT WASN'T SIMPLY THAT SHE SAID SO BUT THAT I KNEW SHE HADN'T I WAS SURE I COULD SEE",
+      "hypothesis": "It wasn't simply that she said so, but that I knew she hadn't, I was sure I could see.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 19,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 4.83,
+      "transcribe_seconds": 0.3928401370001211
+    },
+    {
+      "wav": "test-clean/1221-135766-0004.wav",
+      "wav_sha256": "8ff4aa5749ae2d6a649bd517c35aeea3ab111bdd825c476dadce1ec7567fc4bb",
+      "speaker_id": 1221,
+      "kind": "speech",
+      "reference": "THIS OUTWARD MUTABILITY INDICATED AND DID NOT MORE THAN FAIRLY EXPRESS THE VARIOUS PROPERTIES OF HER INNER LIFE",
+      "hypothesis": "This outward mutability indicated and did not more than fairly express the various properties of her inner life.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 18,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 7.44,
+      "transcribe_seconds": 0.41945418100021925
+    },
+    {
+      "wav": "test-clean/1221-135766-0010.wav",
+      "wav_sha256": "5f6b9ea0b2a22b72503d7e85046c59ffb84322a59f83eed5d54ba043e007edc5",
+      "speaker_id": 1221,
+      "kind": "speech",
+      "reference": "IT WAS A LOOK SO INTELLIGENT YET INEXPLICABLE PERVERSE SOMETIMES SO MALICIOUS BUT GENERALLY ACCOMPANIED BY A WILD FLOW OF SPIRITS THAT HESTER COULD NOT HELP QUESTIONING AT SUCH MOMENTS WHETHER PEARL WAS A HUMAN CHILD",
+      "hypothesis": "It was a look so intelligent, yet inexplicable, perverse, sometimes so malicious, but generally accompanied by a wild flow of spirits that Hester could not help questioning at such moments whether Pearl was a human child.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 36,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 15.05,
+      "transcribe_seconds": 0.5120667270000467
+    },
+    {
+      "wav": "test-clean/1221-135767-0004.wav",
+      "wav_sha256": "081a8bfb3ca8aff9ac2a38d56c3980c5fab7cc1a800ef5d1d396a462590cfe97",
+      "speaker_id": 1221,
+      "kind": "speech",
+      "reference": "WE HAVE SPOKEN OF PEARL'S RICH AND LUXURIANT BEAUTY A BEAUTY THAT SHONE WITH DEEP AND VIVID TINTS A BRIGHT COMPLEXION EYES POSSESSING INTENSITY BOTH OF DEPTH AND GLOW AND HAIR ALREADY OF A DEEP GLOSSY BROWN AND WHICH IN AFTER YEARS WOULD BE NEARLY AKIN TO BLACK",
+      "hypothesis": "We have spoken of Pearl's rich and luxuriant beauty, a beauty that's shown with deep and vivid tints, a bright complexion, eyes possessing intensity both of depth and glow, and hair already of a deep glossy brown, and which in after years would be nearly akin to black.",
+      "quality": {
+        "word_errors": 2,
+        "reference_words": 48,
+        "wer": 0.041666666666666664,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 19.09,
+      "transcribe_seconds": 0.5623474080000506
+    },
+    {
+      "wav": "test-clean/1221-135767-0005.wav",
+      "wav_sha256": "6bcbe8610dad422483ac9aa7fdcec58a77e0b48f960ae7653f2e880d54607d24",
+      "speaker_id": 1221,
+      "kind": "speech",
+      "reference": "IT WAS THE SCARLET LETTER IN ANOTHER FORM THE SCARLET LETTER ENDOWED WITH LIFE",
+      "hypothesis": "It was the Scarlet Letter in another form. The Scarlet Letter endowed with life.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 14,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 5.865,
+      "transcribe_seconds": 0.3849759460001678
+    },
+    {
+      "wav": "test-clean/1221-135767-0024.wav",
+      "wav_sha256": "f3f8e071fa2cab328ca05951acd967d3ecb68a4efc30d5bbfc47a248a7d8aba6",
+      "speaker_id": 1221,
+      "kind": "speech",
+      "reference": "PEARL SEEING THE ROSE BUSHES BEGAN TO CRY FOR A RED ROSE AND WOULD NOT BE PACIFIED",
+      "hypothesis": "Pearl, seeing the rose bushes, began to cry for our red rose and would not be pacified.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 17,
+        "wer": 0.058823529411764705,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 5.85,
+      "transcribe_seconds": 0.37657392599999184
+    },
+    {
+      "wav": "test-clean/1284-1180-0011.wav",
+      "wav_sha256": "50f136f6c476b374cbad82d408d1a6c3137e9cbc747c8c5ae8c04382a529c292",
+      "speaker_id": 1284,
+      "kind": "speech",
+      "reference": "I AM MY DEAR AND ALL STRANGERS ARE WELCOME TO MY HOME",
+      "hypothesis": "I am my dear and all strangers are welcome to my home.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 12,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 4.275,
+      "transcribe_seconds": 0.38273604500000147
+    },
+    {
+      "wav": "test-clean/1284-1180-0023.wav",
+      "wav_sha256": "561db20fc70e9d9d7c4e5372951eb70fc592317c3b51744b2e143d32f420d679",
+      "speaker_id": 1284,
+      "kind": "speech",
+      "reference": "YOU SEE I'VE LIVED ALL MY LIFE WITH UNC NUNKIE THE SILENT ONE AND THERE WAS NO ONE TO TELL ME ANYTHING",
+      "hypothesis": "You see, I've lived all my life without Nunky, the silent one, and there was no one to tell me anything.",
+      "quality": {
+        "word_errors": 3,
+        "reference_words": 22,
+        "wer": 0.13636363636363635,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 5.61,
+      "transcribe_seconds": 0.39337509999995746
+    },
+    {
+      "wav": "test-clean/1284-1180-0032.wav",
+      "wav_sha256": "550988d5e145c82959a28296c140cb4e58fe0c0fdb29e07a63b51f4b1275a1cf",
+      "speaker_id": 1284,
+      "kind": "speech",
+      "reference": "I WILL SHOW YOU WHAT A GOOD JOB I DID AND SHE WENT TO A TALL CUPBOARD AND THREW OPEN THE DOORS",
+      "hypothesis": "I will show you what a good job I did, and she went to a tall cupboard and threw open the doors.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 22,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 5.78,
+      "transcribe_seconds": 0.4238332709999213
+    },
+    {
+      "wav": "test-clean/1284-1181-0003.wav",
+      "wav_sha256": "588f73f6f2f7078affa57569084f9786dfb5be423ac0a8afa906fa410b7fe077",
+      "speaker_id": 1284,
+      "kind": "speech",
+      "reference": "THE HAIR WAS OF BROWN YARN AND HUNG DOWN ON HER NECK IN SEVERAL NEAT BRAIDS",
+      "hypothesis": "The hair was of brown yarn and hung down on her neck in several neat braids.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 16,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 4.505,
+      "transcribe_seconds": 0.3666753139998491
+    },
+    {
+      "wav": "test-clean/1284-1181-0015.wav",
+      "wav_sha256": "7e62dd5fabf2fa365b64e1445efab7ce01d0eac4025e7ebe45e88b5415c9d603",
+      "speaker_id": 1284,
+      "kind": "speech",
+      "reference": "MOST PEOPLE TALK TOO MUCH SO IT IS A RELIEF TO FIND ONE WHO TALKS TOO LITTLE",
+      "hypothesis": "Most people talk too much, so it is a relief to find one who talks too little.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 17,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 5.115,
+      "transcribe_seconds": 0.3631391800001893
+    },
+    {
+      "wav": "test-clean/1320-122612-0004.wav",
+      "wav_sha256": "ee2df42a8f1b127767466d1508711c1d00be42ad3d1b8efc41459b8e6d5d46bc",
+      "speaker_id": 1320,
+      "kind": "speech",
+      "reference": "DISTRUSTING HIS OWN JUDGMENT HIS APPEALS TO THE OPINION OF CHINGACHGOOK WERE FREQUENT AND EARNEST",
+      "hypothesis": "Distrusting his own judgment, his appeals to the opinion of Chingachkuk were frequent and earnest.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 15,
+        "wer": 0.06666666666666667,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 6.425,
+      "transcribe_seconds": 0.3022504430000481
+    },
+    {
+      "wav": "test-clean/1320-122612-0009.wav",
+      "wav_sha256": "c1c07086a64b9dc0bf041998cad88c4e67b4cbe773563f47336cc6462a549489",
+      "speaker_id": 1320,
+      "kind": "speech",
+      "reference": "IT WOULD HAVE BEEN MORE WONDERFUL HAD HE SPOKEN WITHOUT A BIDDING",
+      "hypothesis": "It would have been more wonderful had he spoken without a bidding.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 12,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 3.88,
+      "transcribe_seconds": 0.2905752140000004
+    },
+    {
+      "wav": "test-clean/1320-122612-0013.wav",
+      "wav_sha256": "a2a8805670ba7002eeeea8e81a466134d667f73bb6c862342a910ae7bae90f04",
+      "speaker_id": 1320,
+      "kind": "speech",
+      "reference": "A CIRCLE OF A FEW HUNDRED FEET IN CIRCUMFERENCE WAS DRAWN AND EACH OF THE PARTY TOOK A SEGMENT FOR HIS PORTION",
+      "hypothesis": "A circle of a few hundred feet in circumference was drawn, and each of the party took a segment for his portion.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 22,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 6.55,
+      "transcribe_seconds": 0.37356453799998235
+    },
+    {
+      "wav": "test-clean/1320-122617-0004.wav",
+      "wav_sha256": "c5863bb79ba0a8fa4dad65452c5832ce041e8c70d67e8a1c14cbff979243bc17",
+      "speaker_id": 1320,
+      "kind": "speech",
+      "reference": "THE INGENIOUS HAWKEYE WHO RECALLED THE HASTY MANNER IN WHICH THE OTHER HAD ABANDONED HIS POST AT THE BEDSIDE OF THE SICK WOMAN WAS NOT WITHOUT HIS SUSPICIONS CONCERNING THE SUBJECT OF SO MUCH SOLEMN DELIBERATION",
+      "hypothesis": "The ingenious Hawkeye, who recalled the hasty manner in which the other had abandoned his post at the bedside of the sick woman, was not without his suspicions concerning the subject of so much solemn deliberation.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 36,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 12.26,
+      "transcribe_seconds": 0.4120111409999936
+    },
+    {
+      "wav": "test-clean/1320-122617-0030.wav",
+      "wav_sha256": "c4147222eff0d89e6fe7aa17b2e627f8cb53c59e0481719da50fe5521e6f93a5",
+      "speaker_id": 1320,
+      "kind": "speech",
+      "reference": "SO CHOOSE FOR YOURSELF TO MAKE A RUSH OR TARRY HERE",
+      "hypothesis": "So choose for yourself to make a rush or tarry here.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 11,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 3.98,
+      "transcribe_seconds": 0.3294175510000059
+    },
+    {
+      "wav": "test-clean/1580-141083-0038.wav",
+      "wav_sha256": "ea365c12de64998fa92dfdb08eb2c479e1d019ecd3fcc60eeee77e0376aca2bd",
+      "speaker_id": 1580,
+      "kind": "speech",
+      "reference": "I UNDERSTAND YOU TO SAY THAT THERE ARE THREE STUDENTS WHO USE THIS STAIR AND ARE IN THE HABIT OF PASSING YOUR DOOR YES THERE ARE",
+      "hypothesis": "I understand you to say that there are three students who use this stair and are in the habit of passing your door. Yes, there are.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 26,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 7.535,
+      "transcribe_seconds": 0.3235158729999057
+    },
+    {
+      "wav": "test-clean/1580-141083-0043.wav",
+      "wav_sha256": "491d90996660e4b347f7307074f9362b2b79fa48328c29b2542bde987e517c5b",
+      "speaker_id": 1580,
+      "kind": "speech",
+      "reference": "THE TOP FLOOR BELONGS TO MILES MC LAREN",
+      "hypothesis": "The top floor belongs to Miles McLaren.",
+      "quality": {
+        "word_errors": 2,
+        "reference_words": 8,
+        "wer": 0.25,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 2.74,
+      "transcribe_seconds": 0.29642330100000436
+    },
+    {
+      "wav": "test-clean/1580-141083-0050.wav",
+      "wav_sha256": "eebd3f5375699e39aa91ae66d5df5545784481ab43422fdce25810a80468f75d",
+      "speaker_id": 1580,
+      "kind": "speech",
+      "reference": "I REALLY DON'T THINK HE KNEW MUCH ABOUT IT MISTER HOLMES",
+      "hypothesis": "I really don't think he knew much about it, Mr. Holmes.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 11,
+        "wer": 0.09090909090909091,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 3.085,
+      "transcribe_seconds": 0.2749926060000689
+    },
+    {
+      "wav": "test-clean/1580-141084-0008.wav",
+      "wav_sha256": "f329f424f17bf9f211c8decbaf166b7af062dd58fdf9ce8a0176412564fe8d4f",
+      "speaker_id": 1580,
+      "kind": "speech",
+      "reference": "I CANNOT ALLOW THE EXAMINATION TO BE HELD IF ONE OF THE PAPERS HAS BEEN TAMPERED WITH THE SITUATION MUST BE FACED",
+      "hypothesis": "I cannot allow the examination to be held if one of the papers has been tampered with. The situation must be faced.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 22,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 6.795,
+      "transcribe_seconds": 0.3002020270000685
+    },
+    {
+      "wav": "test-clean/1580-141084-0024.wav",
+      "wav_sha256": "74a3052ffe88c39a53f12f8c69c190a891e5db888c2ed36c4d72c86622366748",
+      "speaker_id": 1580,
+      "kind": "speech",
+      "reference": "HE COULD HARDLY STAND STILL SO GREAT WAS HIS MENTAL AGITATION AND HE RAN TOWARDS HOLMES WITH TWO EAGER HANDS OUTSTRETCHED THANK HEAVEN THAT YOU HAVE COME",
+      "hypothesis": "He could hardly stand still, so great was his mental agitation, and he ran towards homes with two eager hands outstretched. Thank heaven that you have come!",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 27,
+        "wer": 0.037037037037037035,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 9.185,
+      "transcribe_seconds": 0.31704991899982815
+    },
+    {
+      "wav": "test-clean/1995-1826-0026.wav",
+      "wav_sha256": "89a8c4db1a9d079c9564780a477f6cc695c1a33dfe23cc1749deb9d84d9472f0",
+      "speaker_id": 1995,
+      "kind": "speech",
+      "reference": "NOW FOR ONE LITTLE HALF HOUR SHE HAD BEEN A WOMAN TALKING TO A BOY NO NOT EVEN THAT SHE HAD BEEN TALKING JUST TALKING THERE WERE NO PERSONS IN THE CONVERSATION JUST THINGS ONE THING COTTON",
+      "hypothesis": "Now for one little half hour, she had been a woman talking to a boy. No, not even that. She had been talking. Just talking. There were no persons in the conversation. Just things. One thing. Cotton.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 37,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 15.45,
+      "transcribe_seconds": 0.3351245609999296
+    },
+    {
+      "wav": "test-clean/1995-1837-0008.wav",
+      "wav_sha256": "ea11257f223bebb0a8d13761e0ded65b8cda6627786b4783b3c4b66f7285abf4",
+      "speaker_id": 1995,
+      "kind": "speech",
+      "reference": "WHERE WAS THE USE OF IMAGINING",
+      "hypothesis": "Where was the use of imagining?",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 6,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 1.955,
+      "transcribe_seconds": 0.3115637030000471
+    },
+    {
+      "wav": "test-clean/1995-1837-0009.wav",
+      "wav_sha256": "205ba8580efed0b1414c212c089c96a77e480b21c41b91405311d0b809a8c8b3",
+      "speaker_id": 1995,
+      "kind": "speech",
+      "reference": "THE LAGOON HAD BEEN LEVEL WITH THE DYKES A WEEK AGO AND NOW",
+      "hypothesis": "The lagoon had been level with the dykes a week ago, and now...",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 13,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 3.76,
+      "transcribe_seconds": 0.3023290399999041
+    },
+    {
+      "wav": "test-clean/1995-1837-0018.wav",
+      "wav_sha256": "9cb871d18fa8eb4fb5135232eeccff8d5aa2709c1c2deab6af6e0502cccacc24",
+      "speaker_id": 1995,
+      "kind": "speech",
+      "reference": "HERE LAY THE READING OF THE RIDDLE WITH INFINITE WORK AND PAIN SOME ONE HAD DUG A CANAL FROM THE LAGOON TO THE CREEK INTO WHICH THE FORMER HAD DRAINED BY A LONG AND CROOKED WAY THUS ALLOWING IT TO EMPTY DIRECTLY",
+      "hypothesis": "Here lay the reading of the riddle, with infinite work and pain someone hit dug a canal from the lagoon to the creek, into which the former had drained by a long and crooked way, thus allowing it to empty directly.",
+      "quality": {
+        "word_errors": 3,
+        "reference_words": 42,
+        "wer": 0.07142857142857142,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 12.825,
+      "transcribe_seconds": 0.33835066599999664
+    },
+    {
+      "wav": "test-clean/1995-1837-0025.wav",
+      "wav_sha256": "9a1ec7084b835cfe352d0d2d8d33885594e7bda37653e2bb5b58c41a4ad72d22",
+      "speaker_id": 1995,
+      "kind": "speech",
+      "reference": "SHE ROSE WITH A FLEETING GLANCE GATHERED THE SHAWL ROUND HER THEN GLIDING FORWARD WAVERING TREMULOUS SLIPPED ACROSS THE ROAD AND INTO THE SWAMP",
+      "hypothesis": "She rolls with a fleeting glance gathered the shawl around her, then gliding forward, wavering tremulous, slipped across the road and into the swamp.",
+      "quality": {
+        "word_errors": 2,
+        "reference_words": 24,
+        "wer": 0.08333333333333333,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 9.5050625,
+      "transcribe_seconds": 0.5596899060001306
+    },
+    {
+      "wav": "test-clean/2094-142345-0009.wav",
+      "wav_sha256": "d05d16d500e2a036e243ef73453b1ea1a159e382ada99ebf583335169ca13ec2",
+      "speaker_id": 2094,
+      "kind": "speech",
+      "reference": "FOR THE GREAT BARN DOORS ARE THROWN WIDE OPEN AND MEN ARE BUSY THERE MENDING THE HARNESS UNDER THE SUPERINTENDENCE OF MISTER GOBY THE WHITTAW OTHERWISE SADDLER WHO ENTERTAINS THEM WITH THE LATEST TREDDLESTON GOSSIP",
+      "hypothesis": "For the great barn doors are thrown wide open and men are busy there, mending the harness under the superintendents of Mr. Gobi, the widow, otherwise Sadler, who entertains them with the latest Treadleston gossip.",
+      "quality": {
+        "word_errors": 6,
+        "reference_words": 35,
+        "wer": 0.17142857142857143,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 14.405,
+      "transcribe_seconds": 0.36384456200016757
+    },
+    {
+      "wav": "test-clean/2094-142345-0017.wav",
+      "wav_sha256": "a49932a658b2fb0167ebb653ebfb946b105e35259200fc931a09af0fd8d216f3",
+      "speaker_id": 2094,
+      "kind": "speech",
+      "reference": "I NEVER KNEW YOUR EQUALS FOR GALLOWSNESS",
+      "hypothesis": "I never knew your equals for Galoisness.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 7,
+        "wer": 0.14285714285714285,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 2.835,
+      "transcribe_seconds": 0.25773348099983195
+    },
+    {
+      "wav": "test-clean/2094-142345-0034.wav",
+      "wav_sha256": "5175b31a4b80df0627ceb71458efb3bbba4f3aa4cb4dcc5cbbe6371a2c60fb7a",
+      "speaker_id": 2094,
+      "kind": "speech",
+      "reference": "AND THERE'S LINEN IN THE HOUSE AS I COULD WELL SPARE YOU FOR I'VE GOT LOTS O SHEETING AND TABLE CLOTHING AND TOWELLING AS ISN'T MADE UP",
+      "hypothesis": "And there's linen in the house as I could well spare you. For I got lots of sheeting and table clothing and tauling, this isn't made up.",
+      "quality": {
+        "word_errors": 4,
+        "reference_words": 27,
+        "wer": 0.14814814814814814,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 7.99,
+      "transcribe_seconds": 0.3829902650002168
+    },
+    {
+      "wav": "test-clean/2094-142345-0043.wav",
+      "wav_sha256": "b26dde19c703db7a1c45ecebe360e3662853e188c9c7b21ddd7a37b021efc0df",
+      "speaker_id": 2094,
+      "kind": "speech",
+      "reference": "BY THIS TIME THE TWO GENTLEMEN HAD REACHED THE PALINGS AND HAD GOT DOWN FROM THEIR HORSES IT WAS PLAIN THEY MEANT TO COME IN",
+      "hypothesis": "By this time the two gentlemen had reached the pailings and had got down from their horses. It was plain they meant to come in.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 25,
+        "wer": 0.04,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 7.35,
+      "transcribe_seconds": 0.2812898130000576
+    },
+    {
+      "wav": "test-clean/2094-142345-0059.wav",
+      "wav_sha256": "3465305375aa22f09ef9b9802a350b6fc24ba2f490a543e8062edc0902ad84f2",
+      "speaker_id": 2094,
+      "kind": "speech",
+      "reference": "THIS MISSUS POYSER SAID BLUSHING AND BELIEVING THAT THE CAPTAIN WAS REALLY INTERESTED IN HER MILK PANS AND WOULD ADJUST HIS OPINION OF HER TO THE APPEARANCE OF HER DAIRY",
+      "hypothesis": "This Mrs. Poise said blushing and believing that the captain was really interested in her milk pans and would adjust his opinion of her to the appearance of her dairy.",
+      "quality": {
+        "word_errors": 2,
+        "reference_words": 30,
+        "wer": 0.06666666666666667,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 10.01,
+      "transcribe_seconds": 0.3682167939998635
+    },
+    {
+      "wav": "test-clean/2300-131720-0009.wav",
+      "wav_sha256": "ec12a9dcba419f5242391c6ca5acddeb44494faa2afdca4e2fb63eb6ce37e784",
+      "speaker_id": 2300,
+      "kind": "speech",
+      "reference": "FOR SOME YEARS IT WAS NOT FOUND FEASIBLE TO OPERATE MOTORS ON ALTERNATING CURRENT CIRCUITS AND THAT REASON WAS OFTEN URGED AGAINST IT SERIOUSLY",
+      "hypothesis": "For some years it was not found feasible to operate motors on alternating current circuits, and that reason was often urged against it seriously.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 24,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 9.605,
+      "transcribe_seconds": 0.3770545630000015
+    },
+    {
+      "wav": "test-clean/2300-131720-0010.wav",
+      "wav_sha256": "4e52e66b164bcb60c36b2505292856fa6f167eecb0aa3aaa2cec1ec4af9288fb",
+      "speaker_id": 2300,
+      "kind": "speech",
+      "reference": "IT COULD NOT BE USED FOR ELECTROPLATING OR DEPOSITION NOR COULD IT CHARGE STORAGE BATTERIES ALL OF WHICH ARE EASILY WITHIN THE ABILITY OF THE DIRECT CURRENT",
+      "hypothesis": "It could not be used for electroplating or deposition, nor could it charge storage batteries, all of which are easily within the ability of the direct current.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 27,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 10.82,
+      "transcribe_seconds": 0.39256622499988225
+    },
+    {
+      "wav": "test-clean/2300-131720-0013.wav",
+      "wav_sha256": "aeceaa7de7df94cf75a5a8a23e9aefa905f860dba9359c97ba89caa05beecaea",
+      "speaker_id": 2300,
+      "kind": "speech",
+      "reference": "UNLESS HE COULD SECURE AN ENGINE OF SMOOTHER RUNNING AND MORE EXACTLY GOVERNED AND REGULATED THAN THOSE AVAILABLE FOR HIS DYNAMO AND LAMP EDISON REALIZED THAT HE WOULD FIND IT ALMOST IMPOSSIBLE TO GIVE A STEADY LIGHT",
+      "hypothesis": "Unless he could secure an engine of smoother running and more exactly governed and regulated than those available for his dynamo and lamp, Edison realized that he would find it almost impossible to give a steady light.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 37,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 13.89,
+      "transcribe_seconds": 0.30956419599988294
+    },
+    {
+      "wav": "test-clean/2300-131720-0026.wav",
+      "wav_sha256": "f4e3583148d9f51b0c126079383d65a127c3c1e06cc709db86dcb866e1bef5e4",
+      "speaker_id": 2300,
+      "kind": "speech",
+      "reference": "THE ARC LAMP INSTALLED OUTSIDE A CUSTOMER'S PREMISES OR IN A CIRCUIT FOR PUBLIC STREET LIGHTING BURNED SO MANY HOURS NIGHTLY SO MANY NIGHTS IN THE MONTH AND WAS PAID FOR AT THAT RATE SUBJECT TO REBATE FOR HOURS WHEN THE LAMP MIGHT BE OUT THROUGH ACCIDENT",
+      "hypothesis": "The arc lamp installed outside of customers' promises, or in a circuit for public street lighting, burned so many hours nightly, so many nights in the month, and was paid for at that rate, subject to rebate for hours when the lamp might be out through accident.",
+      "quality": {
+        "word_errors": 3,
+        "reference_words": 47,
+        "wer": 0.06382978723404255,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 17.595,
+      "transcribe_seconds": 0.4945946280001863
+    },
+    {
+      "wav": "test-clean/2300-131720-0034.wav",
+      "wav_sha256": "962590b2f3dde7b8c970ed8f0305f89e83ec1bca04cd40338ada27bf3d4fedbc",
+      "speaker_id": 2300,
+      "kind": "speech",
+      "reference": "THE OTHERS HAVING BEEN IN OPERATION TOO SHORT A TIME TO SHOW DEFINITE RESULTS ALTHOUGH THEY ALSO WENT QUICKLY TO A DIVIDEND BASIS",
+      "hypothesis": "The others, having been in operation two short of time to show definite results, although they also went quickly to a dividend basis.",
+      "quality": {
+        "word_errors": 2,
+        "reference_words": 23,
+        "wer": 0.08695652173913043,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 8.605,
+      "transcribe_seconds": 0.43558799400011594
+    },
+    {
+      "wav": "test-clean/237-126133-0008.wav",
+      "wav_sha256": "ac147370abc650e861fa7b4f05fc6fc6dfc0a5dc973675b52ad2da3812e1d968",
+      "speaker_id": 237,
+      "kind": "speech",
+      "reference": "ASKED PHRONSIE WITH HER LITTLE FACE CLOSE TO POLLY'S OWN",
+      "hypothesis": "asked Fronsey with her little face close to Polly's own.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 10,
+        "wer": 0.1,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 3.865,
+      "transcribe_seconds": 0.2834415889999491
+    },
+    {
+      "wav": "test-clean/237-126133-0022.wav",
+      "wav_sha256": "7c6f7792982d4758f69bb07cffc52538d97be2c652dbadbcfbf5736c9fc3a6a8",
+      "speaker_id": 237,
+      "kind": "speech",
+      "reference": "I DIDN'T HAVE ANY FEARS IF I WORKED IT RIGHTLY SAID THE OLD GENTLEMAN COMPLACENTLY",
+      "hypothesis": "I didn't have any fears if I worked it rightly,\" said the old gentleman complacently.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 15,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 5.04,
+      "transcribe_seconds": 0.3362155210002129
+    },
+    {
+      "wav": "test-clean/237-126133-0024.wav",
+      "wav_sha256": "dc829af9c203b88fdc14ec043602cfe049b279b2d4a3ad79f9271cb27169991a",
+      "speaker_id": 237,
+      "kind": "speech",
+      "reference": "AND THE OLD GENTLEMAN WAS SO DELIGHTED WITH HIS SUCCESS THAT HE HAD TO BURST OUT INTO A SERIES OF SHORT HAPPY BITS OF LAUGHTER THAT OCCUPIED QUITE A SPACE OF TIME",
+      "hypothesis": "And the old gentleman was so delighted with his success that he had to burst out into a series of short, happy bits of laughter, that occupied quite a space of time.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 32,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 9.665,
+      "transcribe_seconds": 0.28047375800019836
+    },
+    {
+      "wav": "test-clean/237-134500-0011.wav",
+      "wav_sha256": "97c5d8541c27ffdae18e375becc3e09f06a94011c6b74dbedff6a05d1999e536",
+      "speaker_id": 237,
+      "kind": "speech",
+      "reference": "AREN'T YOU SPLASHED LOOK AT THE SPIDER WEBS ALL OVER THE GRASS",
+      "hypothesis": "Archie is flashed. Look at the spider webs all over the grass.",
+      "quality": {
+        "word_errors": 3,
+        "reference_words": 12,
+        "wer": 0.25,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 3.35,
+      "transcribe_seconds": 0.26331544799995754
+    },
+    {
+      "wav": "test-clean/237-134500-0031.wav",
+      "wav_sha256": "451bd3dc87eb12c76e2323b21a24c99fff22e7020ee7b1ae4a2ea8f0b3e19ed0",
+      "speaker_id": 237,
+      "kind": "speech",
+      "reference": "SOMETIMES I DON'T WANT TO DO ANYTHING AT ALL AND SOMETIMES I WANT TO PULL THE FOUR CORNERS OF THE DIVIDE TOGETHER HE THREW OUT HIS ARM AND BROUGHT IT BACK WITH A JERK SO LIKE A TABLE CLOTH",
+      "hypothesis": "Sometimes I don't want to do anything at all, and sometimes I want to pull the four corners of the divide together. He threw out his arm and brought it back with a jerk. So, like a tablecloth.",
+      "quality": {
+        "word_errors": 2,
+        "reference_words": 39,
+        "wer": 0.05128205128205128,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 10.61,
+      "transcribe_seconds": 0.31941067699995074
+    },
+    {
+      "wav": "test-clean/260-123286-0028.wav",
+      "wav_sha256": "a1bbb9a817de3ed5ab06e3c31d0280a7875125a74473ada3029cc4bbc2655b18",
+      "speaker_id": 260,
+      "kind": "speech",
+      "reference": "ITS JAW IS ENORMOUS AND ACCORDING TO NATURALISTS IT IS ARMED WITH NO LESS THAN ONE HUNDRED AND EIGHTY TWO TEETH",
+      "hypothesis": "Its jaw is enormous, and according to naturalists, it is ironed with no less than 182 teeth.",
+      "quality": {
+        "word_errors": 6,
+        "reference_words": 21,
+        "wer": 0.2857142857142857,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 7.465,
+      "transcribe_seconds": 0.26019081699996605
+    },
+    {
+      "wav": "test-clean/260-123286-0030.wav",
+      "wav_sha256": "66b39faf666b48d57e11b28e1cf59d314148d18861bba43e78a2ac42fba8575d",
+      "speaker_id": 260,
+      "kind": "speech",
+      "reference": "SUDDENLY THE ICHTHYOSAURUS AND THE PLESIOSAURUS DISAPPEAR BELOW LEAVING A WHIRLPOOL EDDYING IN THE WATER",
+      "hypothesis": "Suddenly, the Ichthiosaurus and the plessiosaurus disappear below, leaving a warpool edying in the water.",
+      "quality": {
+        "word_errors": 4,
+        "reference_words": 15,
+        "wer": 0.26666666666666666,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 7.53,
+      "transcribe_seconds": 0.274957613999959
+    },
+    {
+      "wav": "test-clean/260-123288-0028.wav",
+      "wav_sha256": "5de415f2a7ce1a89c3c177ae5fc8bac4f62feaff638c25f8cec2909a83e1d768",
+      "speaker_id": 260,
+      "kind": "speech",
+      "reference": "WE SUFFER STIFLING PAINS",
+      "hypothesis": "We suffer stifling pains.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 4,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 2.61,
+      "transcribe_seconds": 0.23910632199999782
+    },
+    {
+      "wav": "test-clean/260-123440-0012.wav",
+      "wav_sha256": "c403563e13dda40a7545836ac1770c20ff40957cc6e294c95d47cac251c993ef",
+      "speaker_id": 260,
+      "kind": "speech",
+      "reference": "IT'LL BE NO USE THEIR PUTTING THEIR HEADS DOWN AND SAYING COME UP AGAIN DEAR",
+      "hypothesis": "It'll be no use. They're putting their heads down and saying come up again dear",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 15,
+        "wer": 0.06666666666666667,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 5.245,
+      "transcribe_seconds": 0.2544738839999354
+    },
+    {
+      "wav": "test-clean/260-123440-0018.wav",
+      "wav_sha256": "c2eebac5698e1190c4ac52f530ddc0f4e653ae139aee61dbae5b7686f7342ef0",
+      "speaker_id": 260,
+      "kind": "speech",
+      "reference": "I AM VERY TIRED OF SWIMMING ABOUT HERE O MOUSE",
+      "hypothesis": "I am very tired of swimming about here. Oh, mouse.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 10,
+        "wer": 0.1,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 3.64,
+      "transcribe_seconds": 0.2581422430000657
+    },
+    {
+      "wav": "test-clean/2830-3980-0010.wav",
+      "wav_sha256": "b1f1d535ad767a6190f8e6b86bb79352db6d5381962cbf982658c0a6ec6f4eba",
+      "speaker_id": 2830,
+      "kind": "speech",
+      "reference": "EITHER HE CALLS MINISTERS THROUGH THE AGENCY OF MEN OR HE CALLS THEM DIRECTLY AS HE CALLED THE PROPHETS AND APOSTLES",
+      "hypothesis": "Either he calls ministers to the agency of men, or he calls them directly as he called the prophets in apostles.",
+      "quality": {
+        "word_errors": 2,
+        "reference_words": 21,
+        "wer": 0.09523809523809523,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 6.525,
+      "transcribe_seconds": 0.2630674329998328
+    },
+    {
+      "wav": "test-clean/2830-3980-0012.wav",
+      "wav_sha256": "aec2227b3d201a75bff15d80c7cd08b3f1efa605e5e0307f92d3a53875a0e89b",
+      "speaker_id": 2830,
+      "kind": "speech",
+      "reference": "THE MOST THEY COULD CLAIM IS THAT THEY WERE SENT BY OTHERS",
+      "hypothesis": "The most they could claim is that they were sent by others.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 12,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 3.42,
+      "transcribe_seconds": 0.2562525910000204
+    },
+    {
+      "wav": "test-clean/2830-3980-0032.wav",
+      "wav_sha256": "cac18870c03e730a4c1f5e783a7ab79b78d5d5fa22371bea468fc5d254de1eb2",
+      "speaker_id": 2830,
+      "kind": "speech",
+      "reference": "WE LOOK FOR THAT REWARD WHICH EYE HATH NOT SEEN NOR EAR HEARD NEITHER HATH ENTERED INTO THE HEART OF MAN",
+      "hypothesis": "We look for that reward which I have not seen, nor ear heard, neither have entered into the heart of man.",
+      "quality": {
+        "word_errors": 3,
+        "reference_words": 21,
+        "wer": 0.14285714285714285,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 7.22,
+      "transcribe_seconds": 0.2829691599999933
+    },
+    {
+      "wav": "test-clean/2830-3980-0044.wav",
+      "wav_sha256": "a2791691a1509dbb975a377e1ddbd49d18aba585986de98ce7e1d6ba5321d71c",
+      "speaker_id": 2830,
+      "kind": "speech",
+      "reference": "HOWEVER THE GRACE AND PEACE OF GOD WILL",
+      "hypothesis": "However, the grace and peace of God will.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 8,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 3.49,
+      "transcribe_seconds": 0.3584557430001496
+    },
+    {
+      "wav": "test-clean/2830-3980-0051.wav",
+      "wav_sha256": "18be8b66382173ef162b13798816c206173520ac1e5b12e2336b672f470d51d2",
+      "speaker_id": 2830,
+      "kind": "speech",
+      "reference": "WHEN YOU ARGUE ABOUT THE NATURE OF GOD APART FROM THE QUESTION OF JUSTIFICATION YOU MAY BE AS PROFOUND AS YOU LIKE",
+      "hypothesis": "When you argue about the nature of God apart from the question of justification, you may be as profound as you like.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 22,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 6.44,
+      "transcribe_seconds": 0.3367835809999633
+    },
+    {
+      "wav": "test-clean/2961-960-0001.wav",
+      "wav_sha256": "c60eaeac1a2cb9de64a0bf342971f6499334d2f9486254e75519c7122f5c2520",
+      "speaker_id": 2961,
+      "kind": "speech",
+      "reference": "THE INFLUENCE WITH THE TIMAEUS HAS EXERCISED UPON POSTERITY IS DUE PARTLY TO A MISUNDERSTANDING",
+      "hypothesis": "The influence which the T\u00edmeas has exercised upon posterity is due partly to a misunderstanding.",
+      "quality": {
+        "word_errors": 3,
+        "reference_words": 15,
+        "wer": 0.2,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 8.2500625,
+      "transcribe_seconds": 0.26970114300002024
+    },
+    {
+      "wav": "test-clean/2961-960-0010.wav",
+      "wav_sha256": "14bbbf4f4e546359817c3dd44b15fbdcb808de2b2e9354ee0cf68d074a4eae18",
+      "speaker_id": 2961,
+      "kind": "speech",
+      "reference": "BUT HE HAS NOT AS YET DEFINED THIS INTERMEDIATE TERRITORY WHICH LIES SOMEWHERE BETWEEN MEDICINE AND MATHEMATICS AND HE WOULD HAVE FELT THAT THERE WAS AS GREAT AN IMPIETY IN RANKING THEORIES OF PHYSICS FIRST IN THE ORDER OF KNOWLEDGE AS IN PLACING THE BODY BEFORE THE SOUL",
+      "hypothesis": "But he has not as yet defined this intermediate territory, which lies somewhere between medicine and mathematics. And he would have felt that there was as great an impiety in ranking theories of physics first in the order of knowledge as in placing the body before the soul.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 48,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 20.46,
+      "transcribe_seconds": 0.3127072419999877
+    },
+    {
+      "wav": "test-clean/2961-960-0014.wav",
+      "wav_sha256": "e4025eafe0ffbbb142579933dca36731998cf79eb8a8d0fdb9ddc04acdb77e25",
+      "speaker_id": 2961,
+      "kind": "speech",
+      "reference": "THE IDEAS ALSO REMAIN BUT THEY HAVE BECOME TYPES IN NATURE FORMS OF MEN ANIMALS BIRDS FISHES",
+      "hypothesis": "The ideas also remain, but they have become types in nature, forms of men, animals, birds, fishes.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 17,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 8.775,
+      "transcribe_seconds": 0.275714440999991
+    },
+    {
+      "wav": "test-clean/2961-960-0017.wav",
+      "wav_sha256": "6abf206d08ce9b9faac24068b6d48759254ef5494c50b28425088f25750b3b8b",
+      "speaker_id": 2961,
+      "kind": "speech",
+      "reference": "NOTHING CAN EXCEED THE BEAUTY OR ART OF THE INTRODUCTION IN WHICH HE IS USING WORDS AFTER HIS ACCUSTOMED MANNER",
+      "hypothesis": "Nothing can exceed the beauty or art of the introduction in which his using words after his accustomed manner",
+      "quality": {
+        "word_errors": 2,
+        "reference_words": 20,
+        "wer": 0.1,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 7.87,
+      "transcribe_seconds": 0.2761451850001322
+    },
+    {
+      "wav": "test-clean/2961-960-0022.wav",
+      "wav_sha256": "432429698a7236c6a6268d5e5a346b4f27f10ec4d3f8230d8ee373f5b1d4a06c",
+      "speaker_id": 2961,
+      "kind": "speech",
+      "reference": "PLATO HAD NOT THE COMMAND OF HIS MATERIALS WHICH WOULD HAVE ENABLED HIM TO PRODUCE A PERFECT WORK OF ART",
+      "hypothesis": "Plato had not the command of his materials which would have enabled him to produce a perfect work of art.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 20,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 7.425,
+      "transcribe_seconds": 0.271327342999939
+    },
+    {
+      "wav": "test-clean/3570-5694-0007.wav",
+      "wav_sha256": "1c115ef44534fec51b833e2c9f3676fbee935858e3bd5e592f2518895493c68a",
+      "speaker_id": 3570,
+      "kind": "speech",
+      "reference": "IT HAS EVEN HAPPENED THAT THE NAME FOR CERTAIN DISEASED CONDITIONS OF THE BODY ARISING FROM SUCH AN ORIGIN HAS PASSED INTO EVERYDAY SPEECH AS A SYNONYM FOR NOBLE OR GENTLE",
+      "hypothesis": "It has even happened that the name for certain diseased conditions of the body arising from such an origin has passed into everyday speech as a synonym for noble or gentle.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 31,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 10.545,
+      "transcribe_seconds": 0.2817710140000145
+    },
+    {
+      "wav": "test-clean/3570-5694-0019.wav",
+      "wav_sha256": "2a9edbca65d808d493ec9f5a879c848fa55b7f9412990f6d7f5aafab0aaea5ba",
+      "speaker_id": 3570,
+      "kind": "speech",
+      "reference": "BUT THE GENERAL DISTINCTION IS NOT ON THAT ACCOUNT TO BE OVERLOOKED",
+      "hypothesis": "But the general distinction is not on that account to be overlooked.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 12,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 3.755,
+      "transcribe_seconds": 0.2511637929999324
+    },
+    {
+      "wav": "test-clean/3570-5695-0002.wav",
+      "wav_sha256": "9114791b1b58d03834e6eb77395629dd3b7c863cbf6f82842e4fc16868afad13",
+      "speaker_id": 3570,
+      "kind": "speech",
+      "reference": "BUT AS WE DESCEND THE SOCIAL SCALE THE POINT IS PRESENTLY REACHED WHERE THE DUTIES OF VICARIOUS LEISURE AND CONSUMPTION DEVOLVE UPON THE WIFE ALONE",
+      "hypothesis": "But as we descend the social scale, the point is presently reached, where the duties of vicarious leisure and consumption devolve upon the wife alone.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 25,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 7.805,
+      "transcribe_seconds": 0.283052663999797
+    },
+    {
+      "wav": "test-clean/3570-5696-0001.wav",
+      "wav_sha256": "dfe45c435b0559908db78ff0a7e68089de69a02c9d1c5f3b053726156ea26627",
+      "speaker_id": 3570,
+      "kind": "speech",
+      "reference": "BUT THE ACTUAL COURSE OF DEVELOPMENT HAS BEEN SOMEWHAT DIFFERENT FROM THIS IDEAL SCHEME LEISURE HELD THE FIRST PLACE AT THE START AND CAME TO HOLD A RANK VERY MUCH ABOVE WASTEFUL CONSUMPTION OF GOODS BOTH AS A DIRECT EXPONENT OF WEALTH AND AS AN ELEMENT IN THE STANDARD OF DECENCY DURING THE QUASI PEACEABLE CULTURE",
+      "hypothesis": "But the actual course of development has been somewhat different from this ideal scheme. Leisure held the first place at the start and came to hold a rank very much above wasteful consumption of goods, both as a direct exponent of wealth and as an element in the standard of decency during the course-I-peaceful culture.",
+      "quality": {
+        "word_errors": 3,
+        "reference_words": 56,
+        "wer": 0.05357142857142857,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 16.735,
+      "transcribe_seconds": 0.33199474400021245
+    },
+    {
+      "wav": "test-clean/3570-5696-0009.wav",
+      "wav_sha256": "38386fa2aee715dad3f39f3bc99a53b16b82d47face75b053ee697b8ac115600",
+      "speaker_id": 3570,
+      "kind": "speech",
+      "reference": "IN STRICT ACCURACY NOTHING SHOULD BE INCLUDED UNDER THE HEAD OF CONSPICUOUS WASTE BUT SUCH EXPENDITURE AS IS INCURRED ON THE GROUND OF AN INVIDIOUS PECUNIARY COMPARISON",
+      "hypothesis": "In strict accuracy, nothing should be included under the head of conspicuous waste, but such expenditure as is incurred on the ground of an invidious pecuniary comparison.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 27,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 8.86,
+      "transcribe_seconds": 0.2774020570000175
+    },
+    {
+      "wav": "test-clean/3575-170457-0002.wav",
+      "wav_sha256": "ea8080e4031fa2cf135d144c1d816bc54b6b161ee7c99708c3bd4184b5d6dfb2",
+      "speaker_id": 3575,
+      "kind": "speech",
+      "reference": "WHY ARE WE TO BE DIVIDED",
+      "hypothesis": "Why are we to be divided?",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 6,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 2.11,
+      "transcribe_seconds": 0.33382641699995474
+    },
+    {
+      "wav": "test-clean/3575-170457-0006.wav",
+      "wav_sha256": "8a1270fa5fcda9dd5cc24b70d81d6434f1f0657639368996f5ebd07d51e0172b",
+      "speaker_id": 3575,
+      "kind": "speech",
+      "reference": "HER FEEBLE HEALTH GAVE HER HER YIELDING MANNER FOR SHE COULD NEVER OPPOSE ANY ONE WITHOUT GATHERING UP ALL HER STRENGTH FOR THE STRUGGLE",
+      "hypothesis": "Her fubel health gave her her yielding manner, before she could never oppose anyone without gathering up all her strength for the struggle.",
+      "quality": {
+        "word_errors": 4,
+        "reference_words": 24,
+        "wer": 0.16666666666666666,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 8.3,
+      "transcribe_seconds": 0.38263728500010075
+    },
+    {
+      "wav": "test-clean/3575-170457-0024.wav",
+      "wav_sha256": "70393a92aec3afc8bbeb83b9bc313ee5bd477cdac8d3cb7efbea5ecc37ab201d",
+      "speaker_id": 3575,
+      "kind": "speech",
+      "reference": "I DON'T ALWAYS SUCCEED FOR SOMETIMES WHEN I'M TEACHING OR SEWING I WOULD RATHER BE READING OR WRITING BUT I TRY TO DENY MYSELF AND MY FATHER'S APPROBATION AMPLY REWARDED ME FOR THE PRIVATION",
+      "hypothesis": "I don't always succeed. For sometimes when I'm teaching or sewing, I would rather be reading or writing. But I try to deny myself and my father's approbation, amply rewarded me for the privation.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 34,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 12.255,
+      "transcribe_seconds": 0.3381954639999094
+    },
+    {
+      "wav": "test-clean/3575-170457-0037.wav",
+      "wav_sha256": "30cd9205610c72d6c2f5f2219cd331d0decd4e42183bc106733b8be9d9a1bb23",
+      "speaker_id": 3575,
+      "kind": "speech",
+      "reference": "IF CHRISTIAN PERFECTION BE NECESSARY TO SALVATION I SHALL NEVER BE SAVED MY HEART IS A VERY HOTBED FOR SINFUL THOUGHTS AND WHEN I DECIDE ON AN ACTION I SCARCELY REMEMBER TO LOOK TO MY REDEEMER FOR DIRECTION",
+      "hypothesis": "If Christian perfection be necessary to salvation, I shall never be saved. My heart is a very hot bed for sinful thoughts, and when I decide on an action I scarcely remember to look to my Redeemer for a direction.",
+      "quality": {
+        "word_errors": 3,
+        "reference_words": 38,
+        "wer": 0.07894736842105263,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 14.2,
+      "transcribe_seconds": 0.31934073299999
+    },
+    {
+      "wav": "test-clean/3575-170457-0053.wav",
+      "wav_sha256": "604eb7d3cc90192ce79c8f021cba6844d3c17c555c6780640d1b908d30794f96",
+      "speaker_id": 3575,
+      "kind": "speech",
+      "reference": "BUT ANNE HAD BEGUN TO SUFFER JUST BEFORE THE HOLIDAYS AND CHARLOTTE WATCHED OVER HER YOUNGER SISTERS WITH THE JEALOUS VIGILANCE OF SOME WILD CREATURE THAT CHANGES HER VERY NATURE IF DANGER THREATENS HER YOUNG",
+      "hypothesis": "But Ann had begun to suffer just before the holidays and Charlotte watched over her younger sisters with a jealous vigilance of some wild creature that changes her very nature if danger threatens her young.",
+      "quality": {
+        "word_errors": 2,
+        "reference_words": 35,
+        "wer": 0.05714285714285714,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 11.945,
+      "transcribe_seconds": 0.3102264260000993
+    },
+    {
+      "wav": "test-clean/3729-6852-0005.wav",
+      "wav_sha256": "632d89f53f8b445b178c2b6c7264b97a5d14d1c9d95161fff87f2414c9d41c2c",
+      "speaker_id": 3729,
+      "kind": "speech",
+      "reference": "SILVIA WAS THE ADORATION OF FRANCE AND HER TALENT WAS THE REAL SUPPORT OF ALL THE COMEDIES WHICH THE GREATEST AUTHORS WROTE FOR HER ESPECIALLY OF THE PLAYS OF MARIVAUX FOR WITHOUT HER HIS COMEDIES WOULD NEVER HAVE GONE TO POSTERITY",
+      "hypothesis": "Sylvia was the adoration of France, and her talent was the real support of all the comedies, which the greatest authors wrote for her, especially of the plays of Marivot. For without her, his comedies would never have gone to posterity.",
+      "quality": {
+        "word_errors": 2,
+        "reference_words": 41,
+        "wer": 0.04878048780487805,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 18.54,
+      "transcribe_seconds": 0.445373821999965
+    },
+    {
+      "wav": "test-clean/3729-6852-0008.wav",
+      "wav_sha256": "2804546b51efe2de0eeb0702c0ada9c5b9fde806dcf39c278bcb3ef6e29b66a7",
+      "speaker_id": 3729,
+      "kind": "speech",
+      "reference": "SHE WAS HONOURABLY BURIED IN THE CHURCH OF SAINT SAUVEUR WITHOUT THE SLIGHTEST OPPOSITION FROM THE VENERABLE PRIEST WHO FAR FROM SHARING THE ANTI CHRISTAIN INTOLERANCY OF THE CLERGY IN GENERAL SAID THAT HER PROFESSION AS AN ACTRESS HAD NOT HINDERED HER FROM BEING A GOOD CHRISTIAN AND THAT THE EARTH WAS THE COMMON MOTHER OF ALL HUMAN BEINGS AS JESUS CHRIST HAD BEEN THE SAVIOUR OF ALL MANKIND",
+      "hypothesis": "She was honorably buried in the Church of Saint-Sever. Without the slightest opposition from the venerable priest who, far from sharing the anti-Christian and tolerancy of the clergy in general, said that her profession as an actress had not hindered her from being a good Christian, and that the earth was a common mother of all human beings, as Jesus Christ had been the savior of all mankind.",
+      "quality": {
+        "word_errors": 7,
+        "reference_words": 69,
+        "wer": 0.10144927536231885,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 23.86,
+      "transcribe_seconds": 0.4806585260000702
+    },
+    {
+      "wav": "test-clean/3729-6852-0010.wav",
+      "wav_sha256": "7ad1f7666042f1b7fd7e5f54bcaf2b5d4115f50d522627c699006270b9379bd1",
+      "speaker_id": 3729,
+      "kind": "speech",
+      "reference": "I NEVER HAD ANY FAMILY",
+      "hypothesis": "I never had any family.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 5,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 2.755,
+      "transcribe_seconds": 0.2638891760000206
+    },
+    {
+      "wav": "test-clean/3729-6852-0017.wav",
+      "wav_sha256": "feb2e598230fd6d14b9434bf590d22262b6179bf0ef08b61a5c47638f58c89cb",
+      "speaker_id": 3729,
+      "kind": "speech",
+      "reference": "I SEE A QUANTITY OF CHAIRS FOR HIRE AT THE RATE OF ONE SOU MEN READING THE NEWSPAPER UNDER THE SHADE OF THE TREES GIRLS AND MEN BREAKFASTING EITHER ALONE OR IN COMPANY WAITERS WHO WERE RAPIDLY GOING UP AND DOWN A NARROW STAIRCASE HIDDEN UNDER THE FOLIAGE",
+      "hypothesis": "I see a quantity of chairs for hire at the rate of one soup. Men reading the newspaper under the shade of the trees, girls and men breakfasting either alone or in company, waiters who were rapidly going up and down a narrow staircase hidden under the foliage.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 48,
+        "wer": 0.020833333333333332,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 17.99,
+      "transcribe_seconds": 0.34184509200008506
+    },
+    {
+      "wav": "test-clean/3729-6852-0023.wav",
+      "wav_sha256": "8b565f967e0a9cad1b8cdd556bc6cc1cf94194e20935f62c2a5729071a5ac7f8",
+      "speaker_id": 3729,
+      "kind": "speech",
+      "reference": "MY REMARK PLEASES HIM BUT I SOON PROVE TO HIM THAT IT IS NOT THE RIGHT WAY TO SPEAK HOWEVER PERFECT MAY HAVE BEEN THE LANGUAGE OF THAT ANCIENT WRITER",
+      "hypothesis": "My remark pleases him, but I soon prove to him that it is not the right way to speak. However, perfect may have been the language of that ancient writer.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 30,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 8.185,
+      "transcribe_seconds": 0.3144416009999986
+    },
+    {
+      "wav": "test-clean/4077-13751-0000.wav",
+      "wav_sha256": "5d270ddc3f01afa2c31a8a2162d59c404faed75bbbc9f184903f8c36a53ceef9",
+      "speaker_id": 4077,
+      "kind": "speech",
+      "reference": "ON THE SIXTH OF APRIL EIGHTEEN THIRTY THE CHURCH OF JESUS CHRIST OF LATTER DAY SAINTS WAS FORMALLY ORGANIZED AND THUS TOOK ON A LEGAL EXISTENCE",
+      "hypothesis": "On 6 April 1830, the Church of Jesus Christ of Latter-day Saints was formerly organized and thus took on a legal existence.",
+      "quality": {
+        "word_errors": 6,
+        "reference_words": 26,
+        "wer": 0.23076923076923078,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 9.56,
+      "transcribe_seconds": 0.3737766900001134
+    },
+    {
+      "wav": "test-clean/4077-13751-0011.wav",
+      "wav_sha256": "41b090e65a499ab68f39ea0a50266b939381cde736b0f9e12302d6577ee933c7",
+      "speaker_id": 4077,
+      "kind": "speech",
+      "reference": "SOON THOUSANDS OF CONVERTS HAD RENTED OR PURCHASED HOMES IN MISSOURI INDEPENDENCE JACKSON COUNTY BEING THEIR CENTER BUT FROM THE FIRST THEY WERE UNPOPULAR AMONG THE MISSOURIANS",
+      "hypothesis": "Soon thousands of converts had rented or purchased homes in Missouri, independence, Jackson County, being their center. But from the first, they were unpopular among the Missourians.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 27,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 11.425,
+      "transcribe_seconds": 0.3160854359998666
+    },
+    {
+      "wav": "test-clean/4077-13751-0019.wav",
+      "wav_sha256": "d827baf22599bb07271b32df3832cdebcd671eded0deb610f0f74d1687ff89dd",
+      "speaker_id": 4077,
+      "kind": "speech",
+      "reference": "WHO BEGAN THE QUARREL WAS IT THE MORMONS",
+      "hypothesis": "Who began the quarrel? Was it the Mormons?",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 8,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 2.92,
+      "transcribe_seconds": 0.2788853680001466
+    },
+    {
+      "wav": "test-clean/4077-13754-0008.wav",
+      "wav_sha256": "83a3ac29e812066ad2ad524d744b5fe43172e5791b6da46d0db9f0e30b857022",
+      "speaker_id": 4077,
+      "kind": "speech",
+      "reference": "IT HAS BEEN MY PRIVILEGE TO TREAD THE SOIL OF MANY LANDS TO OBSERVE THE CUSTOMS AND STUDY THE HABITS OF MORE NATIONS THAN ONE AND I HAVE YET TO FIND THE PLACE AND MEET THE PEOPLE WHERE AND WITH WHOM THE PURITY OF MAN AND WOMAN IS HELD MORE PRECIOUS THAN AMONG THE MALIGNED MORMONS IN THE MOUNTAIN VALLEYS OF THE WEST",
+      "hypothesis": "It has been my privilege to tread the soil of many lands, to observe the customs and study the habits of more nations than one. And I have yet to find the place and meet the people, where and with whom the purity of man and woman is held more precious than among the maligned Mormons and the mountain valleys of the West.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 63,
+        "wer": 0.015873015873015872,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 19.91,
+      "transcribe_seconds": 0.4194748410000102
+    },
+    {
+      "wav": "test-clean/4077-13754-0015.wav",
+      "wav_sha256": "8619edfb26b97e58aa97f32894d813e85ca523c9e4f8f005f4ea308566af8b4e",
+      "speaker_id": 4077,
+      "kind": "speech",
+      "reference": "THEN THE CHURCH WAS DISINCORPORATED AND ITS PROPERTY BOTH REAL AND PERSONAL CONFISCATED AND ESCHEATED TO THE GOVERNMENT OF THE UNITED STATES AND ALTHOUGH THE PERSONAL PROPERTY WAS SOON RESTORED REAL ESTATE OF GREAT VALUE LONG LAY IN THE HANDS OF THE COURT'S RECEIVER AND THE MORMON CHURCH HAD TO PAY THE NATIONAL GOVERNMENT HIGH RENTAL ON ITS OWN PROPERTY",
+      "hypothesis": "then the church was disincorporated and its property both real and personal, confiscated and initiated to the government of the United States. And although the personal property was soon restored, real estate of great value long laying the hands of the court's receiver, and the Mormon church had to pay the national government high rental on its own property.",
+      "quality": {
+        "word_errors": 3,
+        "reference_words": 60,
+        "wer": 0.05,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 22.205,
+      "transcribe_seconds": 0.3947325520000504
+    },
+    {
+      "wav": "test-clean/4446-2273-0008.wav",
+      "wav_sha256": "553608a221e07a51e214914f3931ae2762264b5e3b2eee43e6d71e527c274a78",
+      "speaker_id": 4446,
+      "kind": "speech",
+      "reference": "I'VE MANAGED TO SAVE SOMETHING EVERY YEAR AND THAT WITH HELPING MY THREE SISTERS NOW AND THEN AND TIDING POOR COUSIN MIKE OVER BAD SEASONS",
+      "hypothesis": "I've managed to save something every year and that with helping my three sisters now and then and and tidying poor cousin Michael for bad seasons.",
+      "quality": {
+        "word_errors": 4,
+        "reference_words": 25,
+        "wer": 0.16,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 7.715,
+      "transcribe_seconds": 0.5412910050001756
+    },
+    {
+      "wav": "test-clean/4446-2273-0012.wav",
+      "wav_sha256": "78a84c0192f441c3bde5c9787bad856c0de8b9147931df7a04860c4164c875e0",
+      "speaker_id": 4446,
+      "kind": "speech",
+      "reference": "THANK YOU BUT I DON'T LIKE IT SO WELL AS THIS",
+      "hypothesis": "Thank you, but I don't like it so well as this.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 11,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 2.98,
+      "transcribe_seconds": 0.27361901700010094
+    },
+    {
+      "wav": "test-clean/4446-2273-0018.wav",
+      "wav_sha256": "e389b1d9b77d88d6c75599244305876aa568b097a73f2a1275ed716cfc25655c",
+      "speaker_id": 4446,
+      "kind": "speech",
+      "reference": "DO YOU REMEMBER THAT FIRST WALK WE TOOK TOGETHER IN PARIS",
+      "hypothesis": "Do you remember that first walk we took together in Paris?",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 11,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 3.4,
+      "transcribe_seconds": 0.2498284270000113
+    },
+    {
+      "wav": "test-clean/4446-2275-0002.wav",
+      "wav_sha256": "37faadbe1ae985ccce543ce39fcf58dbb26851e13d260ab922e6f2f39625f787",
+      "speaker_id": 4446,
+      "kind": "speech",
+      "reference": "ALEXANDER PACED UP AND DOWN THE HALLWAY BUTTONING AND UNBUTTONING HIS OVERCOAT UNTIL SHE RETURNED AND TOOK HIM UP TO HILDA'S LIVING ROOM",
+      "hypothesis": "Alexander paced up and down the hallway, buttoning and unbuttoning his overcoat until she returned and took him up to Hilda's living room.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 23,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 7.675,
+      "transcribe_seconds": 0.3007800750001479
+    },
+    {
+      "wav": "test-clean/4446-2275-0020.wav",
+      "wav_sha256": "b126c483bb4e2d0c67de4244184de8d1975f67b93a3d586d2f4eed7ed8f56fb0",
+      "speaker_id": 4446,
+      "kind": "speech",
+      "reference": "IT WAS MYSELF I WAS DEFYING HILDA",
+      "hypothesis": "It was myself I was defying Hilda.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 7,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 2.72,
+      "transcribe_seconds": 0.3031075270000656
+    },
+    {
+      "wav": "test-clean/4507-16021-0008.wav",
+      "wav_sha256": "227c8a828c47a1d09930735202c92e8f86df9ea27463d2562643a5ee9262fdde",
+      "speaker_id": 4507,
+      "kind": "speech",
+      "reference": "WHO DENIES THAT OF COURSE IT DOES",
+      "hypothesis": "Who denies that? Of course it does.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 7,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 3.59,
+      "transcribe_seconds": 0.24383395699987886
+    },
+    {
+      "wav": "test-clean/4507-16021-0010.wav",
+      "wav_sha256": "ed2927e05c69988f6ada088e5da5e96e04f5489a98eede0dc3d708f746ab6cc1",
+      "speaker_id": 4507,
+      "kind": "speech",
+      "reference": "WE HAVE ALWAYS THOUGHT THAT IT WAS SOMETIMES A COURAGEOUS ACT AND AT LEAST A SIMPLE AND USEFUL DEED WORTHY OF THE SYMPATHETIC ATTENTION WHICH DUTY ACCEPTED AND FULFILLED MERITS",
+      "hypothesis": "We have always thought that it was sometimes a courageous act, and, at least, a simple and useful deed, worthy of the sympathetic attention which DUTI accepted in fulfilled merits.",
+      "quality": {
+        "word_errors": 2,
+        "reference_words": 30,
+        "wer": 0.06666666666666667,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 15.165,
+      "transcribe_seconds": 0.30555671499996606
+    },
+    {
+      "wav": "test-clean/4507-16021-0039.wav",
+      "wav_sha256": "27aacd15c373de0d88b19ad548969536ed709cabe0430422cf1165f702b887e6",
+      "speaker_id": 4507,
+      "kind": "speech",
+      "reference": "ONE PERCEIVES WITHOUT UNDERSTANDING IT A HIDEOUS MURMUR SOUNDING ALMOST LIKE HUMAN ACCENTS BUT MORE NEARLY RESEMBLING A HOWL THAN AN ARTICULATE WORD",
+      "hypothesis": "One proceeds without understanding it, a hideous murmur, sounding almost like human accents, but more nearly resembling a howl than an articulate word.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 23,
+        "wer": 0.043478260869565216,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 15.42,
+      "transcribe_seconds": 0.3238978290000887
+    },
+    {
+      "wav": "test-clean/4507-16021-0043.wav",
+      "wav_sha256": "ca7954b774003eec38c6481f2b2d8287153cbb05df1fcc622106833a49dcdb19",
+      "speaker_id": 4507,
+      "kind": "speech",
+      "reference": "THE EARTH IS NOT DEVOID OF RESEMBLANCE TO A JAIL",
+      "hypothesis": "The earth is not devoid of resemblance to a jail.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 10,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 3.99,
+      "transcribe_seconds": 0.26543294499992953
+    },
+    {
+      "wav": "test-clean/4507-16021-0044.wav",
+      "wav_sha256": "193285a42b1ef090bd262b221c3ff56c99ec450c98ba418a34f6fe8704617ff1",
+      "speaker_id": 4507,
+      "kind": "speech",
+      "reference": "LOOK CLOSELY AT LIFE",
+      "hypothesis": "Look closely at life.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 4,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 2.19,
+      "transcribe_seconds": 0.25303131999999096
+    },
+    {
+      "wav": "test-clean/4970-29093-0000.wav",
+      "wav_sha256": "b40f0d10b5e7cddf0ae0c55c0fc51c94ae31b816646e4249def3d91472ee46b1",
+      "speaker_id": 4970,
+      "kind": "speech",
+      "reference": "YOU'LL NEVER DIG IT OUT OF THE ASTOR LIBRARY",
+      "hypothesis": "You'll never dig it out of the Astro library.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 9,
+        "wer": 0.1111111111111111,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 3.03,
+      "transcribe_seconds": 0.2578808250000293
+    },
+    {
+      "wav": "test-clean/4970-29095-0005.wav",
+      "wav_sha256": "5e25e8e797105bb76c0f84611db3130f646ae7375cf2f05351c088771600fd46",
+      "speaker_id": 4970,
+      "kind": "speech",
+      "reference": "THY WAYS GREATLY TRY ME RUTH AND ALL THY RELATIONS",
+      "hypothesis": "Thy way is greatly trimey, Ruth, and all thy relations.",
+      "quality": {
+        "word_errors": 4,
+        "reference_words": 10,
+        "wer": 0.4,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 4.65,
+      "transcribe_seconds": 0.258363774000145
+    },
+    {
+      "wav": "test-clean/4970-29095-0022.wav",
+      "wav_sha256": "82a8f1fe17d3f8377d258fa363974e69e2e6c63165e0b0b711b0068856e65c43",
+      "speaker_id": 4970,
+      "kind": "speech",
+      "reference": "IS THEE GOING TO THE YEARLY MEETING RUTH ASKED ONE OF THE GIRLS",
+      "hypothesis": "Is the going to the yearly meeting Ruth? Asked one of the girls.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 13,
+        "wer": 0.07692307692307693,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 4.765,
+      "transcribe_seconds": 0.2640010830000392
+    },
+    {
+      "wav": "test-clean/4970-29095-0030.wav",
+      "wav_sha256": "43193361052d85b02c932d95ae479f270d11775c3140ea3503761617938d7f07",
+      "speaker_id": 4970,
+      "kind": "speech",
+      "reference": "FATHER THEE'S UNJUST TO PHILIP HE'S GOING INTO BUSINESS",
+      "hypothesis": "Father, these unjust to fill up. He's going into business.",
+      "quality": {
+        "word_errors": 3,
+        "reference_words": 9,
+        "wer": 0.3333333333333333,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 4.67,
+      "transcribe_seconds": 0.26406281699996725
+    },
+    {
+      "wav": "test-clean/4970-29095-0035.wav",
+      "wav_sha256": "ecc999fa6e77aed5951d7ad25cf90daef501d24a171c386c88857a7866231504",
+      "speaker_id": 4970,
+      "kind": "speech",
+      "reference": "AND IF I HAD A FORTUNE WOULD THEE WANT ME TO LEAD A USELESS LIFE",
+      "hypothesis": "And if I had a fortune, would he want me to lead a useful slice?",
+      "quality": {
+        "word_errors": 3,
+        "reference_words": 15,
+        "wer": 0.2,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 4.75,
+      "transcribe_seconds": 0.257746300000008
+    },
+    {
+      "wav": "test-clean/4992-23283-0014.wav",
+      "wav_sha256": "fdcf0ba5a91ee1099528728bf875017448287667bd92c02ef302af62e2211a08",
+      "speaker_id": 4992,
+      "kind": "speech",
+      "reference": "WHAT CAN YOU MEAN BY THAT MISS WOODLEY YOU TALK MYSTERIOUSLY",
+      "hypothesis": "What can you mean by that, Miss Woodley? You talked mysteriously.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 11,
+        "wer": 0.09090909090909091,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 4.535,
+      "transcribe_seconds": 0.25884693500006506
+    },
+    {
+      "wav": "test-clean/4992-23283-0018.wav",
+      "wav_sha256": "e6004072b0cca61a7d6232e97b60f9ef6e2c4902da0165e12f3121068d6949d0",
+      "speaker_id": 4992,
+      "kind": "speech",
+      "reference": "TO RELIEVE HER FROM BOTH HE LAID HIS HAND WITH FORCE UPON HIS HEART AND SAID DO YOU BELIEVE ME",
+      "hypothesis": "To relieve her from both, he laid his hand with force upon his heart and said, do you believe me?",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 20,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 6.575,
+      "transcribe_seconds": 0.2791536439999618
+    },
+    {
+      "wav": "test-clean/4992-41797-0003.wav",
+      "wav_sha256": "1833b707831d36bf734f1af35b19e78fea59a0bc0df982651231ae9df7de3c2d",
+      "speaker_id": 4992,
+      "kind": "speech",
+      "reference": "MISTER POPHAM LAID DOWN HIS BRUSH",
+      "hypothesis": "Mr. Poppin lay down his brush.",
+      "quality": {
+        "word_errors": 3,
+        "reference_words": 6,
+        "wer": 0.5,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 2.835,
+      "transcribe_seconds": 0.2373883160000787
+    },
+    {
+      "wav": "test-clean/4992-41797-0004.wav",
+      "wav_sha256": "f8e5200ae1cde80844af78ce63d8f712cac98e5a85f44f836d615fc98e1981da",
+      "speaker_id": 4992,
+      "kind": "speech",
+      "reference": "I SWAN TO MAN HE EJACULATED IF YOU DON'T WORK HARD YOU CAN'T KEEP UP WITH THE TIMES DOCTOR OF LAWS",
+      "hypothesis": "I swing to man, he ejaculated. If you don't work hard, you can't keep up with the times. Doctor of laws.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 21,
+        "wer": 0.047619047619047616,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 7.315,
+      "transcribe_seconds": 0.28908355499993377
+    },
+    {
+      "wav": "test-clean/4992-41806-0003.wav",
+      "wav_sha256": "d724a85051f0c0fe376a25c0ca8b3292162b771ac9041f9d240c41808a22a090",
+      "speaker_id": 4992,
+      "kind": "speech",
+      "reference": "KATHLEEN WAVED THE TORCH TO AND FRO AS SHE RECITED SOME BEAUTIFUL LINES WRITTEN FOR SOME SUCH PURPOSE AS THAT WHICH CALLED THEM TOGETHER TO NIGHT",
+      "hypothesis": "Kathleen waved the torch to and fro as she recited some beautiful lines written for some such purpose as that which called them together tonight.",
+      "quality": {
+        "word_errors": 2,
+        "reference_words": 26,
+        "wer": 0.07692307692307693,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 9.24,
+      "transcribe_seconds": 0.2846484269998655
+    },
+    {
+      "wav": "test-clean/5105-28240-0019.wav",
+      "wav_sha256": "b6f7d294776b0b2196e67cb851a886aa121a2dc9a28fa82b46543c0892f10665",
+      "speaker_id": 5105,
+      "kind": "speech",
+      "reference": "MY YACHT IS AT YOUR SERVICE SIR EVEN SHOULD YOU REQUIRE TO MAKE A TOUR ROUND THE WORLD",
+      "hypothesis": "My yacht is at your service or even should you require to make a tour around the world",
+      "quality": {
+        "word_errors": 2,
+        "reference_words": 18,
+        "wer": 0.1111111111111111,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 6.2400625,
+      "transcribe_seconds": 0.2748643219999849
+    },
+    {
+      "wav": "test-clean/5105-28240-0024.wav",
+      "wav_sha256": "b9ff7cbe810601516f6d85a84947097a57bafad7cb5901ea03b1fe1851ab081e",
+      "speaker_id": 5105,
+      "kind": "speech",
+      "reference": "DOUBTS NOW AROSE AND SOME DISCUSSION FOLLOWED WHETHER OR NOT IT WAS DESIRABLE FOR BEN ZOOF TO ACCOMPANY HIS MASTER",
+      "hypothesis": "Doubt's now arose and some discussion followed whether or not it was desirable for Ben Zuf to accompany his master",
+      "quality": {
+        "word_errors": 2,
+        "reference_words": 20,
+        "wer": 0.1,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 8.2,
+      "transcribe_seconds": 0.28994602399984615
+    },
+    {
+      "wav": "test-clean/5105-28241-0013.wav",
+      "wav_sha256": "4dc15e5d111dc877cdef00d20d51ad9045cb0a01704da7f82c62857035f7b7fb",
+      "speaker_id": 5105,
+      "kind": "speech",
+      "reference": "WOULD NOT THE LOFTIEST EMINENCES OF THE CITY AT LEAST BE VISIBLE",
+      "hypothesis": "would not the loftiest eminence of the city at least be visible.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 12,
+        "wer": 0.08333333333333333,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 4.82,
+      "transcribe_seconds": 0.25439391500003694
+    },
+    {
+      "wav": "test-clean/5105-28241-0017.wav",
+      "wav_sha256": "eb9ebf036b052f1b82018f2eac0fe16d24f48573006fb263c5f37a98df708a2b",
+      "speaker_id": 5105,
+      "kind": "speech",
+      "reference": "AFTER PONDERING AWHILE HE SAID IF WE WERE FARTHER AWAY I SHOULD EXPECT TO FIND A DEPTH OF TWO OR THREE HUNDRED FATHOMS INSTEAD OF FIVE FATHOMS FIVE FATHOMS",
+      "hypothesis": "After pondering a while, he said, If we were farther away, I should expect to find a depth of two or three hundred fathoms instead of five fathoms. Five fathoms!",
+      "quality": {
+        "word_errors": 2,
+        "reference_words": 29,
+        "wer": 0.06896551724137931,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 12.755,
+      "transcribe_seconds": 0.3680619149999984
+    },
+    {
+      "wav": "test-clean/5105-28241-0018.wav",
+      "wav_sha256": "43e0cbe80c90cf5501fc90ea9acb53eb0a6a4bc661035a8b287c45c5cdcd1343",
+      "speaker_id": 5105,
+      "kind": "speech",
+      "reference": "ITS DEPTH REMAINED INVARIABLE STILL FOUR OR AT MOST FIVE FATHOMS AND ALTHOUGH ITS BOTTOM WAS ASSIDUOUSLY DREDGED IT WAS ONLY TO PROVE IT BARREN OF MARINE PRODUCTION OF ANY TYPE",
+      "hypothesis": "It's depth remained invariable, still four or at most five fathoms. And although its bottom was a situously dredged, it was only to prove it barren of marine production of any type.",
+      "quality": {
+        "word_errors": 3,
+        "reference_words": 31,
+        "wer": 0.0967741935483871,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 12.83,
+      "transcribe_seconds": 0.31192056200006846
+    },
+    {
+      "wav": "test-clean/5142-33396-0017.wav",
+      "wav_sha256": "5ba9c766053a87cbbb544df88e95ec5a9fae2ad85488c29bc3131e0512d6dcea",
+      "speaker_id": 5142,
+      "kind": "speech",
+      "reference": "WE ATE AT MANY MEN'S TABLES UNINVITED",
+      "hypothesis": "We ate at many men's tables uninvited.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 7,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 2.635,
+      "transcribe_seconds": 0.26458827199985535
+    },
+    {
+      "wav": "test-clean/5142-33396-0024.wav",
+      "wav_sha256": "ab69cbba3059dbc2d3ad03253a3da300d5993361f27dbb4196ea872a11055511",
+      "speaker_id": 5142,
+      "kind": "speech",
+      "reference": "I STOOD WITH MY BACK TO THE WALL FOR I WANTED NO SWORD REACHING OUT OF THE DARK FOR ME",
+      "hypothesis": "I stood with my back to the wall for I wanted no sword reaching out of the dark for me.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 20,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 5.345,
+      "transcribe_seconds": 0.2634799090001252
+    },
+    {
+      "wav": "test-clean/5142-36377-0006.wav",
+      "wav_sha256": "3a61ff90ba9e7fab28c5403803aa50b84d983b21a7b402d0c9c4a4e35f77cda1",
+      "speaker_id": 5142,
+      "kind": "speech",
+      "reference": "A NEW MEMBER OF THE FAMILY CIRCLE WHO INSTANTLY ATTRACTED MY ATTENTION ENTERED THE ROOM",
+      "hypothesis": "A new member of the family circle who instantly attracted my attention entered the room.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 15,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 4.635,
+      "transcribe_seconds": 0.29999868400000196
+    },
+    {
+      "wav": "test-clean/5142-36377-0008.wav",
+      "wav_sha256": "3ce2f904a67ce8404720c9d7c7b770885b30896dc63c0483216a076a195ff60b",
+      "speaker_id": 5142,
+      "kind": "speech",
+      "reference": "MISTER MEADOWCROFT THE ELDER HAVING NOT SPOKEN ONE WORD THUS FAR HIMSELF INTRODUCED THE NEWCOMER TO ME WITH A SIDE GLANCE AT HIS SONS WHICH HAD SOMETHING LIKE DEFIANCE IN IT A GLANCE WHICH AS I WAS SORRY TO NOTICE WAS RETURNED WITH THE DEFIANCE ON THEIR SIDE BY THE TWO YOUNG MEN",
+      "hypothesis": "Mr. Metacroft the Elder, having not spoken one word thus far, himself introduced the newcomer to me, with a side glance at his sons, which had something like defiance in it. A glance which, as I was sorry to notice, was returned with the defiance on their side by the two young men.",
+      "quality": {
+        "word_errors": 2,
+        "reference_words": 53,
+        "wer": 0.03773584905660377,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 15.425,
+      "transcribe_seconds": 0.3563157180001326
+    },
+    {
+      "wav": "test-clean/5142-36377-0019.wav",
+      "wav_sha256": "3d4ea4f42e611feb5a19ead8f0d89c216c9cf415ee4a86eb278be5114d890bce",
+      "speaker_id": 5142,
+      "kind": "speech",
+      "reference": "WHEN I ADDRESSED HIM HE ANSWERED CONSTRAINEDLY",
+      "hypothesis": "When I addressed him, he answered constrantly.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 7,
+        "wer": 0.14285714285714285,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 2.415,
+      "transcribe_seconds": 0.24627696899983675
+    },
+    {
+      "wav": "test-clean/5639-40744-0005.wav",
+      "wav_sha256": "461a6b1972d4d7591a698128351463a37744f930cd0089a426dbd0b1790f8514",
+      "speaker_id": 5639,
+      "kind": "speech",
+      "reference": "FINALLY THE ONE PARTY WENT OFF EXULTING AND THE OTHER WAS LEFT IN DESOLATION AND WOE",
+      "hypothesis": "Finally, the one party went off exalting and the other was left in desolation and will.",
+      "quality": {
+        "word_errors": 2,
+        "reference_words": 16,
+        "wer": 0.125,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 5.645,
+      "transcribe_seconds": 0.27600912800016886
+    },
+    {
+      "wav": "test-clean/5639-40744-0014.wav",
+      "wav_sha256": "568ef7e94f3d42ee6af618bfc3a7ba7ecb00bfe5051d3f0ffae488004efd5e01",
+      "speaker_id": 5639,
+      "kind": "speech",
+      "reference": "AMONG OTHER THINGS ON WHICH SHE CAST HER EYES WAS A SMALL CRUCIFIX OF SOLID SILVER STANDING ON A CABINET NEAR THE WINDOW",
+      "hypothesis": "Among other things on which she cast her eyes was a small crucifix of solid silver, standing on a cabinet near the window.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 23,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 7.72,
+      "transcribe_seconds": 0.25596026199991684
+    },
+    {
+      "wav": "test-clean/5639-40744-0036.wav",
+      "wav_sha256": "916f6b1defb02124c5b54007a0712af99a11fe3b5b743384b941499bfb166163",
+      "speaker_id": 5639,
+      "kind": "speech",
+      "reference": "HIS MOTHER HAD LEFT HER TO HIM AS BEING HER DESTINED PROTECTOR BUT WHEN SHE SAW THAT HE TOO WAS INSENSIBLE SHE WAS NEAR MAKING A THIRD AND WOULD HAVE DONE SO HAD HE NOT COME TO HIMSELF",
+      "hypothesis": "His mother had left her to him as being her distant protector. But when she saw that he too was insensible, she was near making a third and would have done so, had he not come to himself.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 38,
+        "wer": 0.02631578947368421,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 11.535,
+      "transcribe_seconds": 0.30757889300002716
+    },
+    {
+      "wav": "test-clean/5639-40744-0037.wav",
+      "wav_sha256": "63a691f559638de398d78060bfcb99b7bf46e329004d319c1a073bccbe969858",
+      "speaker_id": 5639,
+      "kind": "speech",
+      "reference": "KNOW THEN SON OF MY HEART THAT THIS FAINTING LADY IS YOUR REAL BRIDE I SAY REAL BECAUSE SHE IS THE ONE WHOM YOUR FATHER AND I HAVE CHOSEN FOR YOU AND THE PORTRAIT WAS A PRETENCE",
+      "hypothesis": "No, then, son of my heart, that this fainting lady is your real bride. I say real because she is the one whom your father and I have chosen for you, and the portrait was a pretense.",
+      "quality": {
+        "word_errors": 2,
+        "reference_words": 37,
+        "wer": 0.05405405405405406,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 11.45,
+      "transcribe_seconds": 0.32313145200009785
+    },
+    {
+      "wav": "test-clean/5639-40744-0040.wav",
+      "wav_sha256": "622c298e356119cbd797f02a20f719075ae832119cb281218d3b1b38b4f377cc",
+      "speaker_id": 5639,
+      "kind": "speech",
+      "reference": "THIS WAS DONE FOR THE EVENT TOOK PLACE AT A TIME WHEN THE CONSENT OF THE PARTIES WAS SUFFICIENT FOR THE CELEBRATION OF A MARRIAGE WITHOUT ANY OF THE PRELIMINARY FORMALITIES WHICH ARE NOW SO PROPERLY REQUIRED",
+      "hypothesis": "This was done for the event took place at a time when the consent of the parties was sufficient for the celebration of a marriage Without any of the preliminary formalities, which are now so properly required",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 37,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 12.51,
+      "transcribe_seconds": 0.29597424700000374
+    },
+    {
+      "wav": "test-clean/5683-32865-0005.wav",
+      "wav_sha256": "b4fa047a19986b6f79fb7f12c0d291a4a66d948807d507fbca1fc2697860dc80",
+      "speaker_id": 5683,
+      "kind": "speech",
+      "reference": "BUT HER GREETING TO CAPTAIN LAKE WAS MORE THAN USUALLY HAUGHTY AND FROZEN AND HER FEATURES I FANCIED PARTICULARLY PROUD AND PALE",
+      "hypothesis": "But her greeting to Captain Lake was more than usually hotty and frozen, and her features I fancied particularly proud and pale.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 22,
+        "wer": 0.045454545454545456,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 10.12,
+      "transcribe_seconds": 0.27490914999998495
+    },
+    {
+      "wav": "test-clean/5683-32865-0010.wav",
+      "wav_sha256": "d69dc4db3662d28d117f8a778a63e25917133d9f6afb7f721a5b9ddc08afb00b",
+      "speaker_id": 5683,
+      "kind": "speech",
+      "reference": "I WAS THINKING IT'S VERY LIKE THE ACE OF HEARTS ANSWERED THE CAPTAIN SOFTLY SMILING ON",
+      "hypothesis": "I was thinking it's very like the ace of hearts. Answer the captain softly smiling on.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 16,
+        "wer": 0.0625,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 6.335,
+      "transcribe_seconds": 0.2677544509999734
+    },
+    {
+      "wav": "test-clean/5683-32866-0012.wav",
+      "wav_sha256": "21e3d1905d92cfa7ba63d7c6f086418ffb88334bcc109a668a746f91e3ab3b51",
+      "speaker_id": 5683,
+      "kind": "speech",
+      "reference": "NOW THAT'S IMPOSSIBLE RADIE FOR I REALLY DON'T THINK I ONCE THOUGHT OF HIM ALL THIS EVENING EXCEPT JUST WHILE WE WERE TALKING",
+      "hypothesis": "Now that's impossible, Radie, for I really don't think I once thought of him all this evening, except just while we were talking.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 23,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 8.26,
+      "transcribe_seconds": 0.2699537410001085
+    },
+    {
+      "wav": "test-clean/5683-32879-0000.wav",
+      "wav_sha256": "20faa15b5785415422695fe5f1b2fa31bdb63c8b73e5654f08e966ba5d092307",
+      "speaker_id": 5683,
+      "kind": "speech",
+      "reference": "IT WAS NOT VERY MUCH PAST ELEVEN THAT MORNING WHEN THE PONY CARRIAGE FROM BRANDON DREW UP BEFORE THE LITTLE GARDEN WICKET OF REDMAN'S FARM",
+      "hypothesis": "It was not very much past eleven that morning when the pony carriage from Brandon drew up before the little garden wicket of Redamins Farm.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 25,
+        "wer": 0.04,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 8.92,
+      "transcribe_seconds": 0.2694522080000752
+    },
+    {
+      "wav": "test-clean/5683-32879-0014.wav",
+      "wav_sha256": "4547f95dbea689491f6875d6bea3b03c67b5c1526286019f7dd56c4d1f2155ff",
+      "speaker_id": 5683,
+      "kind": "speech",
+      "reference": "YES SOMETHING EVERYTHING SAID RACHEL HURRIEDLY LOOKING FROWNINGLY AT A FLOWER WHICH SHE WAS TWIRLING IN HER FINGERS",
+      "hypothesis": "Yes, something EVERYTHING said Rachel, HERDLY looking frowningly at a flower which she was twirling in her fingers.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 18,
+        "wer": 0.05555555555555555,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 8.405,
+      "transcribe_seconds": 0.26260837899985745
+    },
+    {
+      "wav": "test-clean/61-70968-0015.wav",
+      "wav_sha256": "3753e342574252e6414abdabcd09e8ccf1721696e8859f815ffdcdea5d799ae5",
+      "speaker_id": 61,
+      "kind": "speech",
+      "reference": "NAY WE REFUSED THEIR REQUEST MOST POLITELY MOST NOBLE SAID THE LITTLE STROLLER",
+      "hypothesis": "Nay, we refused their request most politely, most noble said the little stroller.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 13,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 5.375,
+      "transcribe_seconds": 0.24824449699985962
+    },
+    {
+      "wav": "test-clean/61-70968-0019.wav",
+      "wav_sha256": "de5b2ae3f62ab70003299d154cf8ca174abecece9861654dc63154b1cbf15ec8",
+      "speaker_id": 61,
+      "kind": "speech",
+      "reference": "IT IS ENOUGH SAID GEORGE GAMEWELL SHARPLY AND HE TURNED UPON THE CROWD",
+      "hypothesis": "It is enough, said George Gamewell sharply, as he turned upon the crowd.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 13,
+        "wer": 0.07692307692307693,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 5.475,
+      "transcribe_seconds": 0.2518147160001263
+    },
+    {
+      "wav": "test-clean/61-70968-0033.wav",
+      "wav_sha256": "6048875e595a68c17f4d79b2c36bfff5e60066aaad246b19a18d6d6101acfad3",
+      "speaker_id": 61,
+      "kind": "speech",
+      "reference": "THRUSTING OPEN THE PROPER ENTRANCE OF THE TENT ROBIN SUDDENLY RUSHED FORTH WITH HIS BURDEN WITH A GREAT SHOUT",
+      "hypothesis": "Thrusting open the proper entrance of the tent, Robin suddenly rushed forth with his burden with a great shout.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 19,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 5.685,
+      "transcribe_seconds": 0.28180681999992885
+    },
+    {
+      "wav": "test-clean/61-70968-0052.wav",
+      "wav_sha256": "abbc8181efacff8a2dbc2d37c3f2f55e02879523dbd58eb5f3e14eb8e6f0a6bd",
+      "speaker_id": 61,
+      "kind": "speech",
+      "reference": "BUT WHO IS THIS FELLOW PLUCKING AT YOUR SLEEVE",
+      "hypothesis": "But who is this fellow plucky at your Steve?",
+      "quality": {
+        "word_errors": 2,
+        "reference_words": 9,
+        "wer": 0.2222222222222222,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 2.65,
+      "transcribe_seconds": 0.2718864969999686
+    },
+    {
+      "wav": "test-clean/61-70970-0037.wav",
+      "wav_sha256": "7365ec574f7467e3c037b2a6074531ee5e4394f2964a8139dfb2b9384fddc5b8",
+      "speaker_id": 61,
+      "kind": "speech",
+      "reference": "HIS TONES RANG PLEASANTLY ON WARRENTON'S EARS AND FORTHWITH A GOOD FELLOWSHIP WAS HERALDED BETWEEN THEM",
+      "hypothesis": "His tones rang pleasantly on War Anten's ears, and forth with the good fellowship was heralded between them.",
+      "quality": {
+        "word_errors": 5,
+        "reference_words": 16,
+        "wer": 0.3125,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 5.98,
+      "transcribe_seconds": 0.27730309399998987
+    },
+    {
+      "wav": "test-clean/672-122797-0020.wav",
+      "wav_sha256": "10abf44eb6c78ef90b0d0233390b9b39b066782b6e09c637d4b8e810feda73cf",
+      "speaker_id": 672,
+      "kind": "speech",
+      "reference": "BUT THE TREE DID NOT REJOICE AT ALL HE GREW AND GREW AND WAS GREEN BOTH WINTER AND SUMMER",
+      "hypothesis": "But the tree did not rejoice at all. He grew and grew and was green both winter and summer.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 19,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 8.825,
+      "transcribe_seconds": 0.2662009919999946
+    },
+    {
+      "wav": "test-clean/672-122797-0022.wav",
+      "wav_sha256": "46791c30de8b5bb82788584afc59081b5ee5e7ec33ed7ce34db511531e477b0f",
+      "speaker_id": 672,
+      "kind": "speech",
+      "reference": "THE AXE STRUCK DEEP INTO THE VERY PITH THE TREE FELL TO THE EARTH WITH A SIGH HE FELT A PANG IT WAS LIKE A SWOON HE COULD NOT THINK OF HAPPINESS FOR HE WAS SORROWFUL AT BEING SEPARATED FROM HIS HOME FROM THE PLACE WHERE HE HAD SPRUNG UP",
+      "hypothesis": "The axe struck deep into the very pith. The tree fell to the earth with a sigh. He felt a pang. It was like a swoon. He could not think of happiness, for he was sorrowful at being separated from his home, from the place where he had sprung up.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 50,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 19.0049375,
+      "transcribe_seconds": 0.3334642160000385
+    },
+    {
+      "wav": "test-clean/672-122797-0025.wav",
+      "wav_sha256": "b2fda65142f4c78cfb27adbdbf1c838248eb27bc06c7e1ffd7dc85bb7eb74771",
+      "speaker_id": 672,
+      "kind": "speech",
+      "reference": "THE TREE ONLY CAME TO HIMSELF WHEN HE WAS UNLOADED IN A COURT YARD WITH THE OTHER TREES AND HEARD A MAN SAY THAT ONE IS SPLENDID WE DON'T WANT THE OTHERS",
+      "hypothesis": "The tree only came to himself when he was unloaded in a courtyard with the other trees and heard a man say, That one is splendid. We don't want the others.",
+      "quality": {
+        "word_errors": 2,
+        "reference_words": 32,
+        "wer": 0.0625,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 10.69,
+      "transcribe_seconds": 0.3484839280001779
+    },
+    {
+      "wav": "test-clean/672-122797-0045.wav",
+      "wav_sha256": "989506cdcbb6a3e5ecf52184e58ad32925b4ba4d91b0eda2df2246f6474c1796",
+      "speaker_id": 672,
+      "kind": "speech",
+      "reference": "TIME ENOUGH HAD HE TOO FOR HIS REFLECTIONS FOR DAYS AND NIGHTS PASSED ON AND NOBODY CAME UP AND WHEN AT LAST SOMEBODY DID COME IT WAS ONLY TO PUT SOME GREAT TRUNKS IN A CORNER OUT OF THE WAY",
+      "hypothesis": "Time enough had he too for his reflections for days and nights passed on and nobody came up And when it last somebody did come it was only to put some great trunks in a corner out of the way",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 40,
+        "wer": 0.025,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 13.96,
+      "transcribe_seconds": 0.33822767499987094
+    },
+    {
+      "wav": "test-clean/672-122797-0050.wav",
+      "wav_sha256": "5c14da56e405e9b169efde9627bef455ee5ff1df658b484ee7fc09b8ccf7aba6",
+      "speaker_id": 672,
+      "kind": "speech",
+      "reference": "THEY SNUFFED ABOUT THE FIR TREE AND RUSTLED AMONG THE BRANCHES",
+      "hypothesis": "They snuffed about the fur tree and rustled among the branches.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 11,
+        "wer": 0.09090909090909091,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 4.855,
+      "transcribe_seconds": 0.2959948449999956
+    },
+    {
+      "wav": "test-clean/6829-68769-0021.wav",
+      "wav_sha256": "a0b34fe1ae5c64a40c035a3e9af2a74a289bccdad5040b0d26fadc13ad49741a",
+      "speaker_id": 6829,
+      "kind": "speech",
+      "reference": "A FRESH WHOLESOME LOOKING BOY WAS TOM GATES WITH STEADY GRAY EYES AN INTELLIGENT FOREHEAD BUT A SENSITIVE RATHER WEAK MOUTH",
+      "hypothesis": "A fresh wholesome-looking boy was Tom Gates, was steady gray eyes, an intelligent forehead, but a sensitive, rather weak mouth.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 21,
+        "wer": 0.047619047619047616,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 7.895,
+      "transcribe_seconds": 0.3606413340000927
+    },
+    {
+      "wav": "test-clean/6829-68769-0043.wav",
+      "wav_sha256": "ded151b5fd251a00cc5bb2754576679d3a36bb6a99693f45db39cc8121e6cc1a",
+      "speaker_id": 6829,
+      "kind": "speech",
+      "reference": "AND HE DESERVES A TERM IN STATE'S PRISON",
+      "hypothesis": "and he deserves a term in states prison.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 8,
+        "wer": 0.125,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 2.59,
+      "transcribe_seconds": 0.270887453999876
+    },
+    {
+      "wav": "test-clean/6829-68769-0044.wav",
+      "wav_sha256": "87f4500fc05979de7aa6f380d2a592e53466097abc10a3cb2b4da10fe80d1b62",
+      "speaker_id": 6829,
+      "kind": "speech",
+      "reference": "IT HAS COST ME TWICE SIXTY DOLLARS IN ANNOYANCE",
+      "hypothesis": "It has cost me $20, $60 in annoyance.",
+      "quality": {
+        "word_errors": 3,
+        "reference_words": 9,
+        "wer": 0.3333333333333333,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 3.225,
+      "transcribe_seconds": 0.24865888299996186
+    },
+    {
+      "wav": "test-clean/6829-68771-0001.wav",
+      "wav_sha256": "e2a23e0ddd6687b44e56dfb6c64f74448e9d6e27db4207a30d50755ef0051def",
+      "speaker_id": 6829,
+      "kind": "speech",
+      "reference": "ONE OF MISTER HOPKINS'S FIRST TASKS AFTER CALLING HIS FAITHFUL HENCHMEN AROUND HIM WAS TO MAKE A CAREFUL CANVASS OF THE VOTERS OF HIS DISTRICT TO SEE WHAT WAS STILL TO BE ACCOMPLISHED",
+      "hypothesis": "One of Mr. Hopkins' first tasks after calling his faithful henchman around him was to make a careful canvas of the voters of his district to see what was still to be accomplished.",
+      "quality": {
+        "word_errors": 4,
+        "reference_words": 33,
+        "wer": 0.12121212121212122,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 10.355,
+      "transcribe_seconds": 0.311889057000144
+    },
+    {
+      "wav": "test-clean/6829-68771-0003.wav",
+      "wav_sha256": "0f51d90f6fcd19f650b76594a29fcaa27b2d2b4bab3c5961166ccacc1346a76a",
+      "speaker_id": 6829,
+      "kind": "speech",
+      "reference": "THE DEMOCRATIC COMMITTEE FIGURED OUT A WAY TO DO THIS",
+      "hypothesis": "The Democratic Committee figured out a way to do this.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 10,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 4.015,
+      "transcribe_seconds": 0.2574824929999977
+    },
+    {
+      "wav": "test-clean/6930-75918-0011.wav",
+      "wav_sha256": "f5413a1368750191bbb12ced5bb5c7f605594254359ddbc8410941d9793c29a5",
+      "speaker_id": 6930,
+      "kind": "speech",
+      "reference": "I AM CONVINCED OF WHAT I SAY SAID THE COUNT",
+      "hypothesis": "I am convinced of what I say, said the count.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 10,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 3.195,
+      "transcribe_seconds": 0.3029139220000161
+    },
+    {
+      "wav": "test-clean/6930-75918-0020.wav",
+      "wav_sha256": "8ad4edbf25b6f8642776f5cd5d46cf421b1ff037db7294bef2e1713e76e846c3",
+      "speaker_id": 6930,
+      "kind": "speech",
+      "reference": "BRAGELONNE WATCHED FOR SOME TIME THE CONDUCT OF THE TWO LOVERS LISTENED TO THE LOUD AND UNCIVIL SLUMBERS OF MANICAMP WHO SNORED AS IMPERIOUSLY AS THOUGH HE WAS WEARING HIS BLUE AND GOLD INSTEAD OF HIS VIOLET SUIT",
+      "hypothesis": "Braggleon watched for some time the conduct of the two lovers listen to the loud and unsyllable slumbers of Manicamp who snored as impreously as though he was wearing his blue and gold instead of his violet suit.",
+      "quality": {
+        "word_errors": 4,
+        "reference_words": 38,
+        "wer": 0.10526315789473684,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 14.4,
+      "transcribe_seconds": 0.4886304699998618
+    },
+    {
+      "wav": "test-clean/6930-76324-0005.wav",
+      "wav_sha256": "e4fae11ead32d4d2fdf297b589313812c31992eed041ddc1b74bc555e307d53f",
+      "speaker_id": 6930,
+      "kind": "speech",
+      "reference": "THE TWIN BROTHER DID SOMETHING SHE DIDN'T LIKE AND SHE TURNED HIS PICTURE TO THE WALL",
+      "hypothesis": "The twin brother did something she didn't like and she turned his picture to the wall.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 16,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 5.035,
+      "transcribe_seconds": 0.25042990400015697
+    },
+    {
+      "wav": "test-clean/6930-81414-0013.wav",
+      "wav_sha256": "e0b80910ca8d798f1426e31b8866c63d03d461bbc96562c3606ebb2bb60ab9d5",
+      "speaker_id": 6930,
+      "kind": "speech",
+      "reference": "I HAD SCARCELY KNOWN WHAT I HAD BEEN SAYING OR DOING UP TO THIS TIME BUT AS HE SPOKE I LOOKED AT MY HAND",
+      "hypothesis": "I had scarcely known what I had been saying or doing up to this time, but as he spoke, I looked at my hand.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 24,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 7.325,
+      "transcribe_seconds": 0.28217342099992493
+    },
+    {
+      "wav": "test-clean/6930-81414-0014.wav",
+      "wav_sha256": "7c852aab78fecb8c63f97b77dee6054dc3340774e83f89d994699ac1ccfa08dc",
+      "speaker_id": 6930,
+      "kind": "speech",
+      "reference": "IN THE LIGHT OF THE MOON I SAW A KNIFE RED WITH BLOOD AND MY HAND TOO WAS ALSO DISCOLOURED",
+      "hypothesis": "In the light of the moon, I saw a knife, red with blood, and my hand too was also discolored.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 20,
+        "wer": 0.05,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 7.41,
+      "transcribe_seconds": 0.3099633819999781
+    },
+    {
+      "wav": "test-clean/7021-79730-0003.wav",
+      "wav_sha256": "2e1a693189cf9da558001ccbd6e20a4cb525d8d2a0f74028bfffee7607a2e15d",
+      "speaker_id": 7021,
+      "kind": "speech",
+      "reference": "AS THE CHAISE DRIVES AWAY MARY STANDS BEWILDERED AND PERPLEXED ON THE DOOR STEP HER MIND IN A TUMULT OF EXCITEMENT IN WHICH HATRED OF THE DOCTOR DISTRUST AND SUSPICION OF HER MOTHER DISAPPOINTMENT VEXATION AND ILL HUMOR SURGE AND SWELL AMONG THOSE DELICATE ORGANIZATIONS ON WHICH THE STRUCTURE AND DEVELOPMENT OF THE SOUL SO CLOSELY DEPEND DOING PERHAPS AN IRREPARABLE INJURY",
+      "hypothesis": "As the chase drives away, Mary stands bewildered and perplexed on the doorstep. Her mind in a tumult of excitement in which hatred of the doctor distrust and suspicion of her mother disappointment, vexation, and ill-humour surge and swell among those delegate organizations on which the structure and development of the soul so closely depend. perhaps an irreparable injury.",
+      "quality": {
+        "word_errors": 6,
+        "reference_words": 62,
+        "wer": 0.0967741935483871,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 32.88,
+      "transcribe_seconds": 0.5047657410000284
+    },
+    {
+      "wav": "test-clean/7021-79740-0008.wav",
+      "wav_sha256": "309738fdcee877d01fc0a3c3466478e9a2d6568a898e2ae0e67053b23cab89d3",
+      "speaker_id": 7021,
+      "kind": "speech",
+      "reference": "FOR INSTANCE ONE DAY THE CHILDREN HAD BEEN PLAYING UPON THE PIAZZA WITH BLOCKS AND OTHER PLAYTHINGS AND FINALLY HAD GONE INTO THE HOUSE LEAVING ALL THE THINGS ON THE FLOOR OF THE PIAZZA INSTEAD OF PUTTING THEM AWAY IN THEIR PLACES AS THEY OUGHT TO HAVE DONE",
+      "hypothesis": "For instance, one day, the children had been playing upon the Piazza with blocks and other playthings, and finally had gone into the house, leaving all the things on the floor of the Piazza instead of putting them away in their places, as they ought to have done.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 48,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 18.415,
+      "transcribe_seconds": 0.35937537299992073
+    },
+    {
+      "wav": "test-clean/7021-79740-0011.wav",
+      "wav_sha256": "72d86d96ea142762222e5a563d53f3704243c4c0aa675672b4ef3823f01bbce3",
+      "speaker_id": 7021,
+      "kind": "speech",
+      "reference": "SO SAYING SHE LED THE WAY ON TIPTOE FOLLOWED BY THE CHILDREN OUT OF THE ROOM AND ROUND BY A CIRCUITOUS ROUTE TO THE PIAZZA THERE",
+      "hypothesis": "So saying, she led the way on tiptoe, followed by the children out of the room, and round by a circuatus route to the piazza. There!",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 26,
+        "wer": 0.038461538461538464,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 10.315,
+      "transcribe_seconds": 0.28721328400001767
+    },
+    {
+      "wav": "test-clean/7021-85628-0003.wav",
+      "wav_sha256": "a68841b44618e241eaf6b61042c67eddb11f3fc516f192d6053957c05c4f63ca",
+      "speaker_id": 7021,
+      "kind": "speech",
+      "reference": "NOW THIS KNIFE WAS A SPLENDID ONE THOUGH HALF THE BLADE WAS GONE AND THE HANDLE WAS A LITTLE CRACKED AND ANDERS KNEW THAT ONE IS ALMOST A MAN AS SOON AS ONE HAS A JACK KNIFE",
+      "hypothesis": "Now, this knife was a splendid one, though half the blade was gone, and the handle was a little cracked, and Anders knew that one is almost a man, as soon as one has a jackknife.",
+      "quality": {
+        "word_errors": 2,
+        "reference_words": 37,
+        "wer": 0.05405405405405406,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 15.29,
+      "transcribe_seconds": 0.3050269120001303
+    },
+    {
+      "wav": "test-clean/7021-85628-0018.wav",
+      "wav_sha256": "14eb09ad82d2bd5287952fe588883debff6b83d5550fca86cac076381e263857",
+      "speaker_id": 7021,
+      "kind": "speech",
+      "reference": "AND IT IS MADE OF MOTHER'S BEST YARN AND SHE KNITTED IT HERSELF AND EVERYBODY WANTS TO GET IT AWAY FROM ME",
+      "hypothesis": "And it is made of Mother's best yarn, and she knitted it herself. And everybody wants to get it away from me.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 22,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 8.22,
+      "transcribe_seconds": 0.291048076999914
+    },
+    {
+      "wav": "test-clean/7127-75946-0009.wav",
+      "wav_sha256": "6cd991daff314d156975bdf059bdfde3e28008af6e011a5e9cd5d3cd13f30755",
+      "speaker_id": 7127,
+      "kind": "speech",
+      "reference": "NOT AT ALL YOU ARE ON THE CONTRARY MOST AGREEABLE TO ME",
+      "hypothesis": "Not at all. You are on the contrary most agreeable to me.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 12,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 4.72,
+      "transcribe_seconds": 0.2665763039999547
+    },
+    {
+      "wav": "test-clean/7127-75946-0024.wav",
+      "wav_sha256": "1d49a1555d23d5873882cfb16f589ee59e82d4ef28c23613ddb850cbde5dbc9c",
+      "speaker_id": 7127,
+      "kind": "speech",
+      "reference": "MONSIEUR WAS THE ONLY ONE WHO DID NOT UNDERSTAND ANYTHING ABOUT THE MATTER",
+      "hypothesis": "Monsieur was the only one who did not understand anything about the matter.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 13,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 5.09,
+      "transcribe_seconds": 0.2674305540001569
+    },
+    {
+      "wav": "test-clean/7127-75947-0017.wav",
+      "wav_sha256": "ed8bbab57091a74ef4bdfee8de8c0f5faaf1b07eba03df80ef3d306016471413",
+      "speaker_id": 7127,
+      "kind": "speech",
+      "reference": "WHAT ALREADY HERE THEY SAID TO HER",
+      "hypothesis": "What already here they said to her",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 7,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 2.665,
+      "transcribe_seconds": 0.24806257599993842
+    },
+    {
+      "wav": "test-clean/7127-75947-0020.wav",
+      "wav_sha256": "37677d183f3c86e43e8f403eebd6113d144596c496a1d7663868f5d70f60e6fe",
+      "speaker_id": 7127,
+      "kind": "speech",
+      "reference": "NO MORE THAN THE DANCING",
+      "hypothesis": "No more than the dancing.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 5,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 2.175,
+      "transcribe_seconds": 0.24963083000011466
+    },
+    {
+      "wav": "test-clean/7127-75947-0033.wav",
+      "wav_sha256": "0f6157f0bfe700ce89614e7fca1de2bfc1c7cc9dadd3a535440e3c945e6977e9",
+      "speaker_id": 7127,
+      "kind": "speech",
+      "reference": "HOW IS IT LA VALLIERE SAID MADEMOISELLE DE TONNAY CHARENTE THAT THE VICOMTE DE BRAGELONNE SPOKE OF YOU AS LOUISE",
+      "hypothesis": "How is it, La Valier, said Mad Mauselle D'Tinecheauant, that the V-compped a braggle-loan spoke of you as Louise?",
+      "quality": {
+        "word_errors": 10,
+        "reference_words": 20,
+        "wer": 0.5,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 8.865,
+      "transcribe_seconds": 0.3226402699999653
+    },
+    {
+      "wav": "test-clean/7176-88083-0023.wav",
+      "wav_sha256": "47efed5871f605d9b7ad491028b202bf4aad3ba2dc7633667ccbb193e0bdaece",
+      "speaker_id": 7176,
+      "kind": "speech",
+      "reference": "HE HAD A LOT OF LINE OUT AND THE PLACE WAS NONE TOO FREE FOR A LONG CAST BUT HE WAS IMPATIENT TO DROP HIS FLIES AGAIN ON THE SPOT WHERE THE BIG FISH WAS FEEDING",
+      "hypothesis": "He had a lot of line out, and the place was none too free for a long cast. But he was impatient to drop his flies again on the spot where the big fish was feeding.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 36,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 9.645,
+      "transcribe_seconds": 0.29200290600010703
+    },
+    {
+      "wav": "test-clean/7176-92135-0018.wav",
+      "wav_sha256": "8d6ddf736461abad6ee601d5f9ca4c755037423b7f682e39f9418486b6d6f376",
+      "speaker_id": 7176,
+      "kind": "speech",
+      "reference": "IN THE MODERN WELL CONSTRUCTED PLAY HE SIMPLY RINGS UP AN IMAGINARY CONFEDERATE AND TELLS HIM WHAT HE IS GOING TO DO COULD ANYTHING BE MORE NATURAL",
+      "hypothesis": "In the modern, well-constructed play, he simply rings up an imaginary confederate and tells him what he is going to do. Could anything be more natural?",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 27,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 8.94,
+      "transcribe_seconds": 0.28387041500013765
+    },
+    {
+      "wav": "test-clean/7176-92135-0021.wav",
+      "wav_sha256": "6ec73ed59c998be10964a65efc77a1cd5608c991de371f148a026ae09163e016",
+      "speaker_id": 7176,
+      "kind": "speech",
+      "reference": "I SAY I'VE BEEN WONDERING ABOUT THIS BUSINESS",
+      "hypothesis": "I say I've been wondering about this business.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 8,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 2.565,
+      "transcribe_seconds": 0.24466719399993053
+    },
+    {
+      "wav": "test-clean/7176-92135-0023.wav",
+      "wav_sha256": "f70f5a759f2372173b4510621c1f797a098f1b6840f98a640a5c1d6d2150d6bd",
+      "speaker_id": 7176,
+      "kind": "speech",
+      "reference": "YOU GAVE ME DOUBLE FIVE I WANT DOUBLE NINE HALLO IS THAT YOU HORATIO HAMLET SPEAKING",
+      "hypothesis": "You gave me double five. I want double nine. Hello? Is that you Horatio Hamlet speaking?",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 16,
+        "wer": 0.0625,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 6.215,
+      "transcribe_seconds": 0.2611119079999753
+    },
+    {
+      "wav": "test-clean/7176-92135-0035.wav",
+      "wav_sha256": "12022bbd5c482039404299bc4041f8e8c20c0fdc1389e5275f159a7ee143db5d",
+      "speaker_id": 7176,
+      "kind": "speech",
+      "reference": "THEN LORD TUPPENY WELL WHAT ABOUT AUCTION",
+      "hypothesis": "Then, Lord Tuppany, well what about auction?",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 7,
+        "wer": 0.14285714285714285,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 3.38,
+      "transcribe_seconds": 0.24467945300011706
+    },
+    {
+      "wav": "test-clean/7729-102255-0001.wav",
+      "wav_sha256": "a4e032b319a4ac5933a29a090ad23431f334528564eb381017da2692e56ec45f",
+      "speaker_id": 7729,
+      "kind": "speech",
+      "reference": "THIS WAS AT THE MARCH ELECTION EIGHTEEN FIFTY FIVE",
+      "hypothesis": "This was at the March election 1855.",
+      "quality": {
+        "word_errors": 3,
+        "reference_words": 9,
+        "wer": 0.3333333333333333,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 3.45,
+      "transcribe_seconds": 0.25471582399995896
+    },
+    {
+      "wav": "test-clean/7729-102255-0002.wav",
+      "wav_sha256": "f8e9574a4743df5adca62c99b13aeee6cd48082aed075708545a898435aabde3",
+      "speaker_id": 7729,
+      "kind": "speech",
+      "reference": "THAT SUMMER'S EMIGRATION HOWEVER BEING MAINLY FROM THE FREE STATES GREATLY CHANGED THE RELATIVE STRENGTH OF THE TWO PARTIES",
+      "hypothesis": "That summer's immigration, however, being mainly from the free states greatly changed the relative strengths of the two parties.",
+      "quality": {
+        "word_errors": 2,
+        "reference_words": 19,
+        "wer": 0.10526315789473684,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 8.3,
+      "transcribe_seconds": 0.2635194859999501
+    },
+    {
+      "wav": "test-clean/7729-102255-0018.wav",
+      "wav_sha256": "6b038fa0bbffcfc9e76e7d113da5fe01b1b7c275eb78ce8a1e90aa86af7e0424",
+      "speaker_id": 7729,
+      "kind": "speech",
+      "reference": "LITTLE BY LITTLE HOWEVER THE LATTER BECAME HEMMED AND BOUND IN THE MESHES OF THE VARIOUS DEVICES AND PROCEEDINGS WHICH THE TERRITORIAL OFFICIALS EVOLVED FROM THE BOGUS LAWS",
+      "hypothesis": "Little by little, however, the latter became hemmed and bound in the meshes of the various devices and proceedings, which the territorial officials evolved from the bogus laws.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 28,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 11.35,
+      "transcribe_seconds": 0.28373411500001566
+    },
+    {
+      "wav": "test-clean/7729-102255-0029.wav",
+      "wav_sha256": "a7e92fd96aea1580b967371cb3487f5485a755dfb79325bceb77aa578055ea33",
+      "speaker_id": 7729,
+      "kind": "speech",
+      "reference": "TEN DAYS WERE CONSUMED IN THESE NEGOTIATIONS BUT THE SPIRIT OF VENGEANCE REFUSED TO YIELD",
+      "hypothesis": "Ten days were consumed in these negotiations, but the spirit of vengeance refused to yield.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 15,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 7.06,
+      "transcribe_seconds": 0.25603455999998914
+    },
+    {
+      "wav": "test-clean/7729-102255-0033.wav",
+      "wav_sha256": "49cd0007d292e9378f2b9d7e26cd85d0d0bb17f108071b2e3c2d22af06f93738",
+      "speaker_id": 7729,
+      "kind": "speech",
+      "reference": "AS HE HAD PROMISED TO PROTECT THE HOTEL THE REASSURED CITIZENS BEGAN TO LAUGH AT THEIR OWN FEARS",
+      "hypothesis": "As he had promised to protect the hotel, the reassured citizens began to laugh at their own fears.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 18,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 6.775,
+      "transcribe_seconds": 0.2668627059999835
+    },
+    {
+      "wav": "test-clean/8224-274381-0000.wav",
+      "wav_sha256": "1a319e17ca38e5e863b0beccaae3331afe24d516c1b74776e898bf1daca67b24",
+      "speaker_id": 8224,
+      "kind": "speech",
+      "reference": "THOUGH THROWN INTO PRISON FOR THIS ENTERPRISE AND DETAINED SOME TIME HE WAS NOT DISCOURAGED BUT STILL CONTINUED BY HIS COUNTENANCE AND PROTECTION TO INFUSE SPIRIT INTO THE DISTRESSED ROYALISTS",
+      "hypothesis": "Though thrown into prison for this enterprise and detained some time, he was not discouraged, but still continued by his countenance and protection to infuse spirit into the distressed Royalists.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 30,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 17.74,
+      "transcribe_seconds": 0.468057890999944
+    },
+    {
+      "wav": "test-clean/8224-274381-0002.wav",
+      "wav_sha256": "01c792275358a8e6dfd7ff37f5bd66b418af0fe53763102161d88daad9c4d4cc",
+      "speaker_id": 8224,
+      "kind": "speech",
+      "reference": "WHILE THE FORMER FORETOLD THAT THE SCOTTISH COVENANTERS WERE SECRETLY FORMING A UNION WITH THE ENGLISH PARLIAMENT AND INCULCATED THE NECESSITY OF PREVENTING THEM BY SOME VIGOROUS UNDERTAKING THE LATTER STILL INSISTED THAT EVERY SUCH ATTEMPT WOULD PRECIPITATE THEM INTO MEASURES TO WHICH OTHERWISE THEY WERE NOT PERHAPS INCLINED",
+      "hypothesis": "While the former foretold that the Scottish Covenanters were secretly forming a union with the English Parliament and inculcated the necessity of preventing them by some vigorous undertaking, the latter still insisted that every such attempt would precipitate them into measures to which otherwise they were not perhaps inclined.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 49,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 24.54,
+      "transcribe_seconds": 0.3339947160000065
+    },
+    {
+      "wav": "test-clean/8224-274384-0000.wav",
+      "wav_sha256": "49424c35e197a51991f93f94767278898db9be9ea1d5ce17f9fa63170dc3cb53",
+      "speaker_id": 8224,
+      "kind": "speech",
+      "reference": "HE PASSED THROUGH HENLEY SAINT ALBANS AND CAME SO NEAR TO LONDON AS HARROW ON THE HILL",
+      "hypothesis": "He passed through Henley, St. Albans, and came so near to London as Harrow on the Hill.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 17,
+        "wer": 0.058823529411764705,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 7.605,
+      "transcribe_seconds": 0.2746720039999673
+    },
+    {
+      "wav": "test-clean/8224-274384-0003.wav",
+      "wav_sha256": "137c40b034f05d363fb741718a410430dabdf8920aee8de022d14675724c3d27",
+      "speaker_id": 8224,
+      "kind": "speech",
+      "reference": "OR HATH HE GIVEN US ANY GIFT",
+      "hypothesis": "Or have he given us any gift?",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 7,
+        "wer": 0.14285714285714285,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 3.87,
+      "transcribe_seconds": 0.2655093719999968
+    },
+    {
+      "wav": "test-clean/8224-274384-0007.wav",
+      "wav_sha256": "78606c13f3c12856531badcac96f59578b4df50c2af4845e880f2df1bd8c9b7f",
+      "speaker_id": 8224,
+      "kind": "speech",
+      "reference": "HAVE MERCY LORD ON ME I PRAY FOR MEN WOULD ME DEVOUR",
+      "hypothesis": "Have mercy, Lord, on me I pray, for men with me devour.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 12,
+        "wer": 0.08333333333333333,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 6.23,
+      "transcribe_seconds": 0.2979327129999092
+    },
+    {
+      "wav": "test-clean/8230-279154-0001.wav",
+      "wav_sha256": "923f63275dcc45e0681e648858ccbbc8bcfdd27a1cb190fa520098d0417901d0",
+      "speaker_id": 8230,
+      "kind": "speech",
+      "reference": "WHAT IS CALLED PERCEPTION DIFFERS FROM SENSATION BY THE FACT THAT THE SENSATIONAL INGREDIENTS BRING UP HABITUAL ASSOCIATES IMAGES AND EXPECTATIONS OF THEIR USUAL CORRELATES ALL OF WHICH ARE SUBJECTIVELY INDISTINGUISHABLE FROM THE SENSATION",
+      "hypothesis": "What is called perception differs from sensation by the fact that the sensational ingredients bring up habitual associates, images and expectations of their usual correlates, all of which are subjectively indistinguishable from the sensation.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 34,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 17.38,
+      "transcribe_seconds": 0.32722849600008885
+    },
+    {
+      "wav": "test-clean/8230-279154-0013.wav",
+      "wav_sha256": "70928c1ba00d16d4f497889b330275708eee0638dd27166b57b1ee6d305201a4",
+      "speaker_id": 8230,
+      "kind": "speech",
+      "reference": "IN AN IMAGE OF A WELL KNOWN FACE FOR EXAMPLE SOME PARTS MAY FEEL MORE FAMILIAR THAN OTHERS WHEN THIS HAPPENS WE HAVE MORE BELIEF IN THE ACCURACY OF THE FAMILIAR PARTS THAN IN THAT OF THE UNFAMILIAR PARTS",
+      "hypothesis": "In an image of a well-known face, for example, some parts may feel more familiar than others. When this happens, we have more belief in the accuracy of the familiar parts than in that of the unfamiliar parts.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 39,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 14.56,
+      "transcribe_seconds": 0.32042673700016167
+    },
+    {
+      "wav": "test-clean/8230-279154-0024.wav",
+      "wav_sha256": "4236298aebcb03ef40038f2a341724d43a698a8a54a6c3864fbad0c8d9dc5d11",
+      "speaker_id": 8230,
+      "kind": "speech",
+      "reference": "THE FIRST OF OUR VAGUE BUT INDUBITABLE DATA IS THAT THERE IS KNOWLEDGE OF THE PAST",
+      "hypothesis": "The first of our vague but indubitable data is that there is knowledge of the past.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 16,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 6.34,
+      "transcribe_seconds": 0.2512933709999743
+    },
+    {
+      "wav": "test-clean/8230-279154-0032.wav",
+      "wav_sha256": "6446362d5f9e1a09833c2e1763f41ce022aa5dd70a0c85d6af201afb6c1755ef",
+      "speaker_id": 8230,
+      "kind": "speech",
+      "reference": "IT IS THIS THAT IS OF INTEREST TO THEORY OF KNOWLEDGE",
+      "hypothesis": "It is this that is of interest to theory of knowledge.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 11,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 3.88,
+      "transcribe_seconds": 0.26362625100000514
+    },
+    {
+      "wav": "test-clean/8230-279154-0038.wav",
+      "wav_sha256": "ae13d0b301975f9aa309f301cabf4463c830384b1e0bc222afddec131ae0fb44",
+      "speaker_id": 8230,
+      "kind": "speech",
+      "reference": "WE ARE OF COURSE IN FACT ABLE TO JUDGE WHEN WE RECOGNIZE AN OBJECT THAT WE HAVE SEEN IT BEFORE BUT THIS JUDGMENT IS SOMETHING OVER AND ABOVE RECOGNITION IN THIS FIRST SENSE AND MAY VERY PROBABLY BE IMPOSSIBLE TO ANIMALS THAT NEVERTHELESS HAVE THE EXPERIENCE OF RECOGNITION IN THIS FIRST SENSE OF THE WORD",
+      "hypothesis": "We are, of course, in fact able to judge when we recognize an object that we have seen it before. But this judgment is something over and above recognition in this first sense. And may very probably be impossible to animals that nevertheless have the experience of recognition in this first sense of the word.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 55,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 22.49,
+      "transcribe_seconds": 0.32668199999989156
+    },
+    {
+      "wav": "test-clean/8455-210777-0010.wav",
+      "wav_sha256": "0db31be210830203192f517f06ff262c716d66385a13a638478739421c8b7a22",
+      "speaker_id": 8455,
+      "kind": "speech",
+      "reference": "THEIR MASTERS SAID MISSUS NEVERBEND",
+      "hypothesis": "Their master said Mrs. Never Bend",
+      "quality": {
+        "word_errors": 4,
+        "reference_words": 5,
+        "wer": 0.8,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 3.1,
+      "transcribe_seconds": 0.24121268500016413
+    },
+    {
+      "wav": "test-clean/8455-210777-0027.wav",
+      "wav_sha256": "d3768c88c76dbd9ec33033c7c49d191a88c04b0275f5b4bcf6c4481e298a89f8",
+      "speaker_id": 8455,
+      "kind": "speech",
+      "reference": "WHEN THIS CAPTAIN SHOULD HAVE TAKEN HIMSELF AND HIS VESSEL BACK TO ENGLAND I WOULD RETIRE TO A SMALL FARM WHICH I POSSESSED AT THE FARTHEST SIDE OF THE ISLAND AND THERE IN SECLUSION WOULD I END MY DAYS",
+      "hypothesis": "When this captain should have taken himself and his vessel back to England, I would retire to a small farm which I possessed at the furthest side of the island, and there in seclusion would I end my days.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 39,
+        "wer": 0.02564102564102564,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 12.625,
+      "transcribe_seconds": 0.3071058449997963
+    },
+    {
+      "wav": "test-clean/8455-210777-0038.wav",
+      "wav_sha256": "a6a9c14ebc0362a0bfbcf57e44e7f011efca76683cb01449388199ebf995dacb",
+      "speaker_id": 8455,
+      "kind": "speech",
+      "reference": "THEREFORE I FEEL MYSELF QUITE ABLE AS PRESIDENT OF THIS REPUBLIC TO RECEIVE YOU WITH A COURTESY DUE TO THE SERVANTS OF A FRIENDLY ALLY",
+      "hypothesis": "Therefore, I feel myself quite able as President of this Republic to receive you with courtesy due to the servants of a friendly ally.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 25,
+        "wer": 0.04,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 10.03,
+      "transcribe_seconds": 0.420400926999946
+    },
+    {
+      "wav": "test-clean/8455-210777-0046.wav",
+      "wav_sha256": "df45f20af02064fcefa29e11260120ffb544d790b0e43e649f9bef52c4075ed8",
+      "speaker_id": 8455,
+      "kind": "speech",
+      "reference": "YOU MAY BE QUITE SURE IT'S THERE SAID CAPTAIN BATTLEAX AND THAT I CAN SO USE IT AS TO HALF OBLITERATE YOUR TOWN WITHIN TWO MINUTES OF MY RETURN ON BOARD",
+      "hypothesis": "You may be quite short there, so it kept them battle-ax. And that I can so use it as to half obliterate your town within two minutes of my return on board.",
+      "quality": {
+        "word_errors": 8,
+        "reference_words": 31,
+        "wer": 0.25806451612903225,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 9.33,
+      "transcribe_seconds": 0.2852821640001366
+    },
+    {
+      "wav": "test-clean/8455-210777-0047.wav",
+      "wav_sha256": "fcd8eba846d95aa3e6c545be192183b3b4e65efb35a2d87e7380c70b4b76377e",
+      "speaker_id": 8455,
+      "kind": "speech",
+      "reference": "YOU PROPOSE TO KIDNAP ME I SAID",
+      "hypothesis": "You proposed to kidnap me, I said.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 7,
+        "wer": 0.14285714285714285,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 2.54,
+      "transcribe_seconds": 0.24330590200020197
+    },
+    {
+      "wav": "test-clean/8463-287645-0000.wav",
+      "wav_sha256": "20d3a722fecc2090ba5bc90fdfe7e4f3863b3695247b5ffc25f047a7e25d077d",
+      "speaker_id": 8463,
+      "kind": "speech",
+      "reference": "THIS WAS WHAT DID THE MISCHIEF SO FAR AS THE RUNNING AWAY WAS CONCERNED",
+      "hypothesis": "This was what did the mischief so far as the running away was concerned.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 14,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 4.73,
+      "transcribe_seconds": 0.25938097300013396
+    },
+    {
+      "wav": "test-clean/8463-287645-0012.wav",
+      "wav_sha256": "a280b3bedb7d8af6462b9e779a8083b9a1acc2c68c989b56043b092d15cd821c",
+      "speaker_id": 8463,
+      "kind": "speech",
+      "reference": "SUBSTANTIALLY THIS WAS JACOB'S UNVARNISHED DESCRIPTION OF HIS MASTER AND MISTRESS",
+      "hypothesis": "Substantially, this was Jacob's unvarnished description of his master and mistress.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 11,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 5.425,
+      "transcribe_seconds": 0.2619795329999306
+    },
+    {
+      "wav": "test-clean/8463-294825-0002.wav",
+      "wav_sha256": "7aeab7c2adb72a4247843f84d893a3362d98245b5e8c3defde449ef3542562c3",
+      "speaker_id": 8463,
+      "kind": "speech",
+      "reference": "FIRST AS A PARIS STOCKBROKER LATER AS A CELEBRATED AUTHOR AND YACHTSMAN HE WENT ON FREQUENT VOYAGES TO BRITAIN AMERICA THE MEDITERRANEAN",
+      "hypothesis": "First as a Paris stockbroker, later as a celebrated author and Yatsman, he went on frequent forages to Britain, America, the Mediterranean.",
+      "quality": {
+        "word_errors": 2,
+        "reference_words": 22,
+        "wer": 0.09090909090909091,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 10.56,
+      "transcribe_seconds": 0.42445639400011714
+    },
+    {
+      "wav": "test-clean/8463-294825-0012.wav",
+      "wav_sha256": "79ecf50d7735c2f60b68b9bdc89b078436e9b70b6e0bc7ec3254b153a0f735c8",
+      "speaker_id": 8463,
+      "kind": "speech",
+      "reference": "THE NAUTILUS NEARLY PERISHES IN THE ANTARCTIC AND NEMO SINKS INTO A GROWING DEPRESSION",
+      "hypothesis": "the nautilus nearly parishes in the Antarctic and Nemo sinks into a growing depression.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 14,
+        "wer": 0.07142857142857142,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 5.9650625,
+      "transcribe_seconds": 0.2663074299998698
+    },
+    {
+      "wav": "test-clean/8463-294828-0031.wav",
+      "wav_sha256": "febec77e50d409c04bcb5110966e586b62a4baa4e9ae0fe6b64c5fff210bf8d4",
+      "speaker_id": 8463,
+      "kind": "speech",
+      "reference": "ONE OF THE SAILORS LED ME TO THE AFTERDECK WHERE I STOOD IN THE PRESENCE OF A SMART LOOKING OFFICER WHO EXTENDED HIS HAND TO ME",
+      "hypothesis": "One of the sailors led me to the after deck where I stood in the presence of a smart-looking officer who extended his hands to me.",
+      "quality": {
+        "word_errors": 3,
+        "reference_words": 26,
+        "wer": 0.11538461538461539,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 7.765,
+      "transcribe_seconds": 0.2844879460001266
+    },
+    {
+      "wav": "test-clean/8555-284447-0014.wav",
+      "wav_sha256": "113d02763351986d1b02a81fee26d9a47b0cf178d14d15f2561567b43238bfa2",
+      "speaker_id": 8555,
+      "kind": "speech",
+      "reference": "THE IDEA OF PATCHING CAP'N BILL TO A GOAT WAS VASTLY AMUSING TO HIM AND THE MORE HE THOUGHT OF IT THE MORE HE ROARED WITH LAUGHTER",
+      "hypothesis": "The idea of patching Cat and Bill to a goat was vastly amusing to him. And the more he thought of it, the more he roared with laughter.",
+      "quality": {
+        "word_errors": 2,
+        "reference_words": 27,
+        "wer": 0.07407407407407407,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 8.47,
+      "transcribe_seconds": 0.2973046939998767
+    },
+    {
+      "wav": "test-clean/8555-284449-0001.wav",
+      "wav_sha256": "86628619ec440fb389d7c3725957a9ea7aa99ef018d2aad8b8078a528ae2e577",
+      "speaker_id": 8555,
+      "kind": "speech",
+      "reference": "THEN THEY ALL MARCHED OUT A LITTLE WAY INTO THE FIELDS AND FOUND THAT THE ARMY OF PINKIES HAD ALREADY FORMED AND WAS ADVANCING STEADILY TOWARD THEM",
+      "hypothesis": "Then they all marched out a little way into the fields and found that the army of Pinkies had already formed and was advancing steadily toward them.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 27,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 8.63,
+      "transcribe_seconds": 0.26608121699996445
+    },
+    {
+      "wav": "test-clean/8555-284449-0007.wav",
+      "wav_sha256": "866fce795796bfd87e0bc70e2388455d5acefcfb53c0f7a47ef79a2bcbc433f5",
+      "speaker_id": 8555,
+      "kind": "speech",
+      "reference": "NOW THEN LET'S ENTER THE CITY AN ENJOY THE GRAND FEAST THAT'S BEING COOKED I'M NEARLY STARVED MYSELF FOR THIS CONQUERIN KINGDOMS IS HARD WORK",
+      "hypothesis": "Now then, let's enter the city and enjoy the great feast that's being cooked. I'm nearly starving myself for this conquering kingdom's hard work.",
+      "quality": {
+        "word_errors": 6,
+        "reference_words": 25,
+        "wer": 0.24,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 9.31,
+      "transcribe_seconds": 0.2815277370000331
+    },
+    {
+      "wav": "test-clean/8555-284449-0016.wav",
+      "wav_sha256": "37b6c70bdaac9052e71b2c28d5577dee651117a52a4373faf8148d6f2681ad58",
+      "speaker_id": 8555,
+      "kind": "speech",
+      "reference": "AS A PRIVATE CITIZEN I SHALL BE A MODEL OF DEPORTMENT BECAUSE IT WOULD BE DANGEROUS TO BE OTHERWISE",
+      "hypothesis": "As a private citizen, I shall be a model of deportment because it would be dangerous to be otherwise.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 19,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 5.895,
+      "transcribe_seconds": 0.29467428800012385
+    },
+    {
+      "wav": "test-clean/8555-292519-0015.wav",
+      "wav_sha256": "e474dc458a71feca730b64ddc3be9205eb0cf092bf1e8189ff7266adf07dde4a",
+      "speaker_id": 8555,
+      "kind": "speech",
+      "reference": "HE HAD BROKEN INTO HER COURTYARD",
+      "hypothesis": "He had broken into her courtyard.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 6,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 2.85,
+      "transcribe_seconds": 0.2784008119999726
+    },
+    {
+      "wav": "test-clean/908-157963-0024.wav",
+      "wav_sha256": "5c9385dc853a03b4eb47979d0870e69c87ae189e4d72aab051c8d37efbcfd618",
+      "speaker_id": 908,
+      "kind": "speech",
+      "reference": "IMAGE OF WEAKNESS ART THOU BUT A WORM",
+      "hypothesis": "image of weakness. Are thou but a worm?",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 8,
+        "wer": 0.125,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 3.44,
+      "transcribe_seconds": 0.24227045399993585
+    },
+    {
+      "wav": "test-clean/908-31957-0004.wav",
+      "wav_sha256": "ed8b5a2d85270581e931baacbbb850e22d939e385b1ac6ca5e2dea2b2bfa09bc",
+      "speaker_id": 908,
+      "kind": "speech",
+      "reference": "SHALL I NEVER MISS HOME TALK AND BLESSING AND THE COMMON KISS THAT COMES TO EACH IN TURN NOR COUNT IT STRANGE WHEN I LOOK UP TO DROP ON A NEW RANGE OF WALLS AND FLOORS ANOTHER HOME THAN THIS",
+      "hypothesis": "Shall I never miss Home Talk and Blessing and the common kiss that comes to each in turn? Nor count its strange when I look up to drop on a new range of walls and floors another home than this.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 40,
+        "wer": 0.025,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 14.755,
+      "transcribe_seconds": 0.31610991900015506
+    },
+    {
+      "wav": "test-clean/908-31957-0006.wav",
+      "wav_sha256": "7c35d03c6439fd643d6debf1775eb997f22848f46b305687d457659eb6e2a3bb",
+      "speaker_id": 908,
+      "kind": "speech",
+      "reference": "OPEN THY HEART WIDE AND FOLD WITHIN THE WET WINGS OF THY DOVE",
+      "hypothesis": "Open my heart wide and fold within the wet wings of thy dove.",
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 13,
+        "wer": 0.07692307692307693,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 5.89,
+      "transcribe_seconds": 0.26170892200002527
+    },
+    {
+      "wav": "test-clean/908-31957-0015.wav",
+      "wav_sha256": "f0fa31ee1c1dbb6d861f53659d5f745d7f3f7c5f5366c9ce62c13e70a59ffda9",
+      "speaker_id": 908,
+      "kind": "speech",
+      "reference": "THAT WAS THE CHRISM OF LOVE WHICH LOVE'S OWN CROWN WITH SANCTIFYING SWEETNESS DID PRECEDE THE THIRD UPON MY LIPS WAS FOLDED DOWN IN PERFECT PURPLE STATE SINCE WHEN INDEED I HAVE BEEN PROUD AND SAID MY LOVE MY OWN",
+      "hypothesis": "That was the chrism of love, which loves own crown, with sanctifying sweetness, did proceed, the third upon my lips, was folded down in perfect, purple state. Since when? Indeed, I have been proud and said, my love, my own.",
+      "quality": {
+        "word_errors": 2,
+        "reference_words": 40,
+        "wer": 0.05,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 21.465,
+      "transcribe_seconds": 0.3405665279999539
+    },
+    {
+      "wav": "test-clean/908-31957-0021.wav",
+      "wav_sha256": "9f43634eb64960ed6853887d2b574c36ee292ba791139f8e309430de312a0f21",
+      "speaker_id": 908,
+      "kind": "speech",
+      "reference": "OH TO SHOOT MY SOUL'S FULL MEANING INTO FUTURE YEARS THAT THEY SHOULD LEND IT UTTERANCE AND SALUTE LOVE THAT ENDURES FROM LIFE THAT DISAPPEARS",
+      "hypothesis": "Oh, to shoot my soul's full meaning into future years, that they should lend it utterance and salute love that endures from life that disappears.",
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 25,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      },
+      "audio_seconds": 10.905,
+      "transcribe_seconds": 0.2787532489999194
+    }
+  ],
+  "warning": "Read-speech subsets cannot establish a dictation/ASR category ranking; check upstream pretraining overlap. Controls are artificial, not real room noise."
+}

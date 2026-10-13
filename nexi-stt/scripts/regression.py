@@ -52,7 +52,10 @@ def main() -> None:
     try:
         connection = http.client.HTTPConnection(*server.server_address, timeout=30)
         connection.request(
-            "POST", "/transcribe?words=1", body=audio, headers={"Content-Type": "audio/wav"}
+            "POST",
+            "/transcribe?words=1&profile=balanced&vad_silence_ms=500",
+            body=audio,
+            headers={"Content-Type": "audio/wav"},
         )
         response = connection.getresponse()
         assert response.status == 200

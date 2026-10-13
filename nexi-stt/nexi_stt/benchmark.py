@@ -25,7 +25,9 @@ def worker(args: argparse.Namespace) -> dict[str, Any]:
     audio = read_wav(args.wav)
     driver = Driver(args.model, threads=args.threads)
     results = [
-        driver.transcribe(audio, word_timestamps=args.words, vad=not args.no_vad)
+        driver.transcribe(
+            audio, word_timestamps=args.words, vad=not args.no_vad, profile=args.profile
+        )
         for _ in range(args.repeats)
     ]
     rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
@@ -51,6 +53,8 @@ def child(args: argparse.Namespace, repeats: int) -> dict[str, Any]:
         str(args.threads),
         "--repeats",
         str(repeats),
+        "--profile",
+        args.profile,
     ]
     if args.words:
         command.append("--words")
@@ -64,14 +68,7 @@ def child(args: argparse.Namespace, repeats: int) -> dict[str, Any]:
     return result
 
 
-def measure(args: argparse.Namespace) -> dict[str, Any]:
-    cold = [child(args, 1) for _ in range(args.runs)]
-    warm = child(args, args.runs + 1)
-    outputs = [entry["results"][0] for entry in cold] + warm["results"]
-    references = args.reference.read_text() if args.reference else None
-    for result in outputs:
-        if references is not None:
-            result["quality"] = word_error_rate(references, result["text"])
+def hardware() -> dict[str, Any]:
     cpuinfo = Path("/proc/cpuinfo")
     cpu = platform.processor()
     if cpuinfo.is_file():
@@ -84,15 +81,26 @@ def measure(args: argparse.Namespace) -> dict[str, Any]:
             cpu,
         )
     return {
+        "cpu": cpu,
+        "logical_cpus": os.cpu_count(),
+        "platform": platform.platform(),
+        "machine": platform.machine(),
+        "gpu": "none used; forced CPU",
+    }
+
+
+def measure(args: argparse.Namespace) -> dict[str, Any]:
+    cold = [child(args, 1) for _ in range(args.runs)]
+    warm = child(args, args.runs + 1)
+    outputs = [entry["results"][0] for entry in cold] + warm["results"]
+    references = args.reference.read_text() if args.reference else None
+    for result in outputs:
+        if references is not None:
+            result["quality"] = word_error_rate(references, result["text"])
+    return {
         "schema_version": 1,
         "measured_at_utc": datetime.now(timezone.utc).isoformat(),
-        "hardware": {
-            "cpu": cpu,
-            "logical_cpus": os.cpu_count(),
-            "platform": platform.platform(),
-            "machine": platform.machine(),
-            "gpu": "none used; forced CPU",
-        },
+        "hardware": hardware(),
         "software": {
             name: importlib.metadata.version(name)
             for name in ("faster-whisper", "ctranslate2", "av", "onnxruntime", "numpy")
@@ -134,6 +142,7 @@ def main() -> None:
     parser.add_argument("--reference", type=Path)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--threads", type=int, default=4)
+    parser.add_argument("--profile", choices=("fast", "balanced"), default="fast")
     parser.add_argument("--runs", type=int, default=3)
     parser.add_argument("--repeats", type=int, default=1)
     parser.add_argument("--words", action="store_true")

@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "text": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country",
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 10.4,
+      "text": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country",
+      "no_speech_probability": 0.07191699743270874
+    }
+  ],
+  "language": "en",
+  "audio_seconds": 11.0,
+  "speech_seconds_after_vad": 11.0,
+  "transcribe_seconds": 0.34498225299989826,
+  "real_time_factor": 0.03136202299999075,
+  "config": {
+    "device": "cpu",
+    "compute_type": "int8",
+    "threads": 4,
+    "profile": "fast",
+    "beam_size": 1,
+    "temperature": 0.0,
+    "vad": true,
+    "vad_silence_ms": 2000,
+    "word_timestamps": false,
+    "hotwords": "",
+    "condition_on_previous_text": false
+  },
+  "model": {
+    "upstream": "local Whisper export",
+    "revision": "a8f99100f208f0ef1f6d49690c5da8d3b653d4cbc71a5899ddd7337e019b5d61",
+    "license": "MIT upstream; verify rights/consent for your training data",
+    "provenance": "user-generated local export; quality requires held-out evaluation"
+  },
+  "model_load_seconds": 0.290439890000016
+}

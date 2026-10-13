@@ -18,8 +18,9 @@ Reference is 22 words, supplied in `fixtures/jfk.reference.txt`:
 > you can do for your country
 
 **Do not interpret zero errors on these 22 well-known words as a general quality
-score, or compare it to Open ASR/LibriSpeech WER.** No held-out corpus, accents,
-noisy-room dictation, long recording, laptop power or mobile-device test was run.
+score, or compare it to Open ASR/LibriSpeech WER.** The JFK table does not evaluate
+accents, noisy-room dictation, long recording, laptop power or mobile devices.
+Additional read-speech subset results are below, separately from this smoke test.
 
 | Local checkpoint/runtime | Exact model-directory bytes | Max whole-process peak RSS bytes | Median cold process wall | Median cold transcribe | Median warm transcribe | Warm RTF | Smoke word errors |
 |---|---:|---:|---:|---:|---:|---:|---:|
@@ -114,6 +115,98 @@ timer); whole-process peak RSS **1,409,179,648 bytes (~1.41 GB)**. Torch
 Checkpoint SHA256 is in `training-smoke.json`. The int8 export was loaded and
 transcribed successfully in the runtime venv. **Training loss, successful export
 and reused-clip WER are not proof of useful fine-tuning or generalization.**
+
+## Expanded read-speech and endpoint evidence — 2026-10-13
+
+Same Xeon 8559C, Linux CPU int8, 4 threads, English, temperature=0, VAD enabled,
+previous-text conditioning disabled; serial fresh evaluator processes. The
+first clip in each process is a cold call; later clips reuse the loaded model.
+Per-clip timings exclude model initialization. RSS is whole-process `ru_maxrss`
+after the last transcription, before final JSON serialization. OS caches were
+not flushed. This is not a latency guarantee or a benchmark of different runtimes.
+
+### One-speaker development sample and decode ablation
+
+All 73 clips (speaker **1272**, 1,150 reference words) from
+[hf-internal-testing/librispeech_asr_dummy](https://huggingface.co/datasets/hf-internal-testing/librispeech_asr_dummy/tree/5be91486e11a2d616f4ec5db8d3fd248585ac07a),
+plus 10 seconds of digital silence and 10 seconds of seeded synthetic white noise
+(NumPy seed 13, normalized Gaussian standard deviation 0.01, PCM16 clipping).
+Total audio including controls: **501.034875 seconds**. Punctuation is stripped
+by the existing normalizer. Median/p95 timings below cover all 75 clips.
+
+| Model / profile | Word errors | Corpus WER | Median clip inference | p95 clip inference | Peak process RSS | Total RTF | Non-speech false positives |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| tiny.en / fast (beam 1) | 128/1150 | 11.1304% | 0.259 s | 0.397 s | 359,976,960 B | 0.04026 | 0/2 |
+| tiny.en / balanced (beam 5) | 127/1150 | 11.0435% | 0.273 s | 0.432 s | 362,590,208 B | 0.04327 | 0/2 |
+| base.en / fast (beam 1) | 114/1150 | 9.9130% | 0.388 s | 0.467 s | 443,973,632 B | 0.05886 | 0/2 |
+| base.en / balanced (beam 5) | 115/1150 | 10.0000% | 0.405 s | 0.692 s | 459,055,104 B | 0.06350 | 0/2 |
+
+**Fast remains the default:** beam 5 barely changed tiny WER and slightly worsened
+base WER on this sample. Choose model/profile on your held-out application data,
+not the name of the profile. This is a development proxy from one speaker, **not
+standard LibriSpeech WER or evidence that NEXI ranks above another ASR system**.
+
+Parquet: 9,192,059 bytes, SHA256
+`4e69a06fa5edc90921e5e7e39a7084881f8b3ed9c805c574f4f39c6fde27c603`.
+Model directory bytes/revisions are unchanged from the earlier table. Evidence:
+`results/librispeech-{tiny,base}-{fast,balanced}.json`; exact references, hypotheses,
+per-clip errors/timings and manifest SHA256 are included. No fine-tuning was
+performed on this evaluation data. Upstream pretraining overlap is not ruled out.
+
+### Forty-speaker test-clean subset
+
+**200 clips, 40 speakers, 4,499 reference words, 1,679.6801875 seconds of audio**.
+`prepare_test_clean.py` picks five clips per speaker by the SHA256 ordering of
+the canonical archive-member path, independent of text length or measured WER.
+Both checkpoints transcribe exactly the same committed manifest, without hints
+or fine-tuning on the sample. VAD is on, fast decoding is beam 1, no word
+timestamps. Process-cold model loading is excluded from per-clip times; the
+first call is included, with subsequent clips using the same loaded model.
+
+| Model / profile | Word errors | Subset WER | Median clip inference | p95 clip inference | Whole-process peak RSS | Total RTF | Model disk |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| tiny.en / fast | 240/4499 | 5.3345% | 0.296 s | 0.468 s | 384,679,936 B | 0.03788 | 78,091,923 B |
+| base.en / fast | 178/4499 | 3.9564% | 0.426 s | 0.543 s | 482,963,456 B | 0.05269 | 147,770,840 B |
+
+Base/fast is the more accurate **tested choice on this subset**, with higher
+latency/RSS. Both remain below 500 decimal MB here. This does not establish
+native-streaming latency, real room-noise robustness, phone performance,
+punctuation accuracy or a category ranking. It is **not the official full
+test-clean WER** and was not compared against a competitor runtime on these clips.
+
+Archive: [OpenSLR test-clean.tar.gz](https://www.openslr.org/resources/12/test-clean.tar.gz),
+346,663,984 bytes. Published [MD5](https://www.openslr.org/resources/12/md5sum.txt)
+`32fa31d27d2e1cad72775fee3f4849a9` matched; measured/pinned SHA256:
+`39fde525e59672dc6d1551919b1478f724438a95aa55f874b576be21967e6c23`.
+Preparation rejects a different hash. Evidence:
+`results/test-clean-{tiny,base}-fast.json`, including manifest hash, per-WAV hash,
+reference/hypothesis, errors, latency, hardware, model revision and disk bytes.
+
+### PCM utterance regression
+
+`scripts/dictation_regression.py` feeds a local JFK PCM recording twice with
+explicit silent gaps, verifies two pause-finalized events with zero errors on
+this reused sample, absolute word timestamp offsets, EOF flush, bounded
+length segmentation, zero events for digital silence/synthetic noise, and
+stateful Silero classifications identical to upstream batch classifications.
+Evidence: `results/dictation-regressions.json`.
+
+Fresh regression process peak RSS was **351,166,464 bytes**, independently matched
+by GNU time through process exit (`results/dictation-process-exit-proof.json`).
+Its two ASR calls took 0.328 s and 0.300 s; these exclude capture and endpoint wait.
+`results/dictation-offline-proof.json` records a separate all-thread network trace
+of real load/PCM regressions: **zero network syscalls**. Trace-run timings are not
+used as latency measurements. Existing CLI/API/export inference also passed
+again (`tiny-improved-regressions.json`, `export-improved-driver-smoke.json`).
+
+The **1200-ms pause default** preserves more context: an exploratory 600-ms
+setting split this recording into short phrases and introduced a word error.
+The test feeds prerecorded PCM as fast as possible; **no real microphone,
+capture latency, live partial text or end-to-end keyboard dictation was measured**.
+Finalized utterances do not make Whisper a native streaming ASR model.
+
+Data attribution: [LibriSpeech / OpenSLR 12](https://www.openslr.org/12), CC BY 4.0;
+Panayotov, Chen, Povey and Khudanpur, ICASSP 2015; source audiobooks from LibriVox.
 
 ## Published alternatives — NOT locally measured here
 
