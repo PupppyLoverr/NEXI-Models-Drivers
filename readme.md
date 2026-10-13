@@ -33,6 +33,10 @@ foundation models. Adaptation/fine-tuning instructions are in each guide; traini
 memory is separate from inference memory. Published cloud-product quality claims are
 not evidence that these small local models match Wispr Flow or ElevenLabs.
 
+STT fine-tuning/export and image LoRA paths were executed as optimizer smoke tests,
+not validated quality improvements. Kitten Nano TTS has no verified released trainer;
+its guide documents a separate Pocket TTS training route, not a compatible Nano adapter.
+
 The [process benchmark harness](common/bench/README.md) records fresh-process wall time
 and peak system RSS without an ML dependency. Each modality's benchmark table identifies
 its input, hardware, settings and model revision and separates measurements here from
