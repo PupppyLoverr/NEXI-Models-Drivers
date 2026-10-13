@@ -1,0 +1,14 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+torch==2.11.0+cpu
+numpy==2.2.6
+sentencepiece==0.2.2
+transformers==5.19.0
+tokenizers==0.23.3
+gguf==0.19.0
+protobuf==4.25.9
+peft==0.21.2
+accelerate==1.15.0
+huggingface-hub==1.33.0
+evalplus==0.3.1
+lm-eval==0.4.13
