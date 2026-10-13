@@ -1,5 +1,7 @@
 .venv*/
 .models/
+__pycache__/
+*.py[cod]
 *.wav
 *.onnx
 *.npz

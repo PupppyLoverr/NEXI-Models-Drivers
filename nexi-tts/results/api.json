@@ -1,0 +1,11 @@
+{
+  "sample_rate": 24000,
+  "channels": 1,
+  "sample_width_bytes": 2,
+  "audio_seconds": 7.833333333333333,
+  "wav_bytes": 376044,
+  "wav_sha256": "6bdf3b8e599bec958e2c37165d5525e18374577e67d4078ac19dc2f9a5e2ab59",
+  "health": true,
+  "voices": true,
+  "invalid_language_nan_empty_rejected": true
+}
