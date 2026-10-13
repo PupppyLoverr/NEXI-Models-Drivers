@@ -188,6 +188,8 @@ def generate(tier: str, prompt: str, output: str | Path, models: str | Path = "m
     width = config["width"] if width is None else width
     height = config["width"] if height is None else height
     steps = config["steps"] if steps is None else steps
+    if any(type(n) is not int for n in (width, height, steps, threads, seed)):
+        raise ValueError("dimensions, steps, threads and seed must be integers")
     if not prompt.strip() or len(prompt) > 4000:
         raise ValueError("prompt must contain 1–4000 characters")
     if any(n < 128 or n > 1024 or n % 64 for n in (width, height)):

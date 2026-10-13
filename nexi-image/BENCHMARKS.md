@@ -1,8 +1,16 @@
 # Benchmarks: measured locally versus published upstream
 
-## Result and interpretation
+## Three native tiers
 
-**The strict 1 GB total-RAM goal was not met.** The smallest observed BK worker
+The new generation/editing profiles are documented in [TIERS.md](TIERS.md).
+Their native quantization/disk-backed measurements supersede the original
+Diffusers path's RAM-target failure **for those tested native profiles only**.
+The original measurements below remain valid for the original Python/default
+SD1.5 paths, not a statement that every new variant fails the target.
+
+## Original baseline result and interpretation
+
+**The original baseline did not meet the strict 1 GB total-RAM goal.** The smallest observed BK worker
 peak was **1,082,589,184 bytes (1.008 GiB)** with sequential CFG on the cup
 prompt. The apple reached 1,085,317,120 bytes and its repeat reached
 1,142,714,368 bytes. A live Python parent, OS and filesystem cache are

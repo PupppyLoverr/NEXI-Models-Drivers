@@ -132,6 +132,18 @@ new output does not masquerade as an existing image's success.
 
 ## Measurement boundaries
 
+After provisioning, reproduce serial generation, real masked editing and pixel
+seed-repeat checks with:
+
+```bash
+.venv/bin/python -m nexi_image.benchmark_tiers --tiers small medium best
+```
+
+This uses real weights, not mocks, and takes many CPU minutes. It creates
+generated input images, deterministic mask fixtures, native reports/logs and
+pixel-change checks in `outputs/tier-benchmark/`. `--tiers small` limits the
+workload; `--skip-repeat` omits the repeat rather than claiming it passed.
+
 Every report contains exact native child peak RSS from `wait4`, a sampled
 parent+child RSS sum (50 ms polling), the parent's own peak RSS and the sum of
 parent/child individual peaks as a **conservative upper bound**. The two peaks

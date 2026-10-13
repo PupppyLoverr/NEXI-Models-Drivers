@@ -57,7 +57,8 @@ class TierTests(unittest.TestCase):
 
     def test_invalid_arguments_rejected_without_models(self):
         invalid = [{"tier": "unknown"}, {"prompt": " "}, {"width": 0}, {"height": 513},
-                   {"seed": -1}, {"steps": 0}, {"threads": 0}, {"mask": "mask.png"},
+                   {"seed": -1}, {"seed": 42.5}, {"steps": 0}, {"threads": 0},
+                   {"threads": True}, {"mask": "mask.png"},
                    {"reference": ["r.png"]}, {"strength": float("nan")},
                    {"tier": "best", "steps": 8}, {"tier": "medium", "steps": 20},
                    {"tier": "best", "image": "in.png", "strength": .5}]
@@ -114,6 +115,18 @@ class TierTests(unittest.TestCase):
             with Image.open(root / "out.png") as image:
                 self.assertEqual(image.getpixel((0, 0)), (0, 0, 0))
                 self.assertEqual(image.getpixel((64, 64)), (255, 255, 255))
+
+    def test_mask_changes_reports_real_pixel_changes(self):
+        from PIL import Image
+        from nexi_image.benchmark_tiers import mask_changes
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            Image.new("RGB", (128, 128), "red").save(root / "before.png")
+            Image.new("RGB", (128, 128), "blue").save(root / "after.png")
+            Image.new("L", (128, 128), 0).save(root / "mask.png")
+            checks = mask_changes(root / "before.png", root / "after.png", root / "mask.png")
+            self.assertEqual(checks["changed_zero_mask_pixels"], 128 * 128)
+            self.assertEqual(checks["changed_selected_pixels"], 0)
 
     def test_native_failure_leaves_old_output_untouched(self):
         from PIL import Image
