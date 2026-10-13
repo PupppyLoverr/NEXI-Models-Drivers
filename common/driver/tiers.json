@@ -1,0 +1,33 @@
+{
+  "release": {
+    "owner": "ggml-org",
+    "repo": "llama.cpp",
+    "tag": "b11580"
+  },
+  "tiers": {
+    "nexi-4gb": {
+      "ctx": 2048,
+      "hf_repo": "ravtheman/nexi-4gb",
+      "model_url": "https://huggingface.co/unsloth/Qwen3.5-2B-GGUF/resolve/main/Qwen3.5-2B-UD-Q4_K_XL.gguf",
+      "sha256": "0af96165ea615bea39a04118d63f0b6d35908aea850ee4a51aa6151d851b8b35"
+    },
+    "nexi-8gb": {
+      "ctx": 4096,
+      "hf_repo": "ravtheman/nexi-8gb",
+      "model_url": "https://huggingface.co/unsloth/Qwen3.5-4B-GGUF/resolve/main/Qwen3.5-4B-UD-Q4_K_XL.gguf",
+      "sha256": "b252c5610a42ca82d20fe2a12813e9d069eed89292907e26c783eeb0bc961bc7"
+    },
+    "nexi-16gb": {
+      "ctx": 4096,
+      "hf_repo": "ravtheman/nexi-16gb",
+      "model_url": "https://huggingface.co/unsloth/gemma-4-12b-it-GGUF/resolve/main/gemma-4-12b-it-UD-Q4_K_XL.gguf",
+      "sha256": "90fd944d227e9d9b68e7e2c7d5b57b79d4c66ed521b0919fbbd932cf834f6f8e"
+    },
+    "nexi-24gb": {
+      "ctx": 4096,
+      "hf_repo": "ravtheman/nexi-24gb",
+      "model_url": "https://huggingface.co/unsloth/Qwen3.8-27B-GGUF/resolve/main/Qwen3.8-27B-UD-Q4_K_XL.gguf",
+      "sha256": "3f227079003add2511437e5b1e94812e363385225bf6a9b47b0054a72bc8b01e"
+    }
+  }
+}

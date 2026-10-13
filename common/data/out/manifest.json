@@ -1,0 +1,33 @@
+{
+  "seed": 2026,
+  "mix_target": {
+    "coding": 720,
+    "tool": 720,
+    "cua": 600,
+    "chat": 360
+  },
+  "sources": {
+    "coding": "bigcode/self-oss-instruct-sc2-exec-filter-50k (ODC-By)",
+    "tool": "NousResearch/hermes-function-calling-v1 func_calling_singleturn (Apache-2.0)",
+    "cua": "PupppyLoverr/gabbledobo-71588 nexi-cua synth.generate (seed 2026 train / 99991 eval)",
+    "chat": "HuggingFaceTB/smoltalk smol-magpie-ultra (Apache-2.0)"
+  },
+  "train.jsonl": {
+    "rows": 2283,
+    "sha256": "ab21546ab4853a2e4f1a03dc3d64d98f22dffa3f3218b5ac01b32f9508c92353"
+  },
+  "eval_tool.jsonl": {
+    "rows": 150,
+    "sha256": "6850c5d654bbb924873539045a17b8dbbb8a5df8202b203a4bb29e4341a59b2a"
+  },
+  "eval_cua.jsonl": {
+    "rows": 200,
+    "sha256": "3086f9856347b6c9d5c230216baa73d907059a1e0fcca9b5ee5b03faa8928103"
+  },
+  "train_by_source": {
+    "coding": 720,
+    "tool": 720,
+    "cua": 600,
+    "chat": 243
+  }
+}
