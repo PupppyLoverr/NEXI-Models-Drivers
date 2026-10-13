@@ -1,14 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ "$#" -ne 3 ]]; then
-    printf 'Usage: %s <gguf> <ctx> <out.json>\n' "$0" >&2
+if [[ "$#" -lt 3 ]]; then
+    printf 'Usage: %s <gguf> <ctx> <out.json> [extra completion args...]\n' "$0" >&2
     exit 2
 fi
 
 gguf="$(realpath "$1")"
 ctx="$2"
 output="$3"
+extra_completion_args=()
+if [[ "$#" -gt 3 ]]; then
+    extra_completion_args=("${@:4}")
+fi
 if [[ ! "$ctx" =~ ^[0-9]+$ ]]; then
     printf 'Context must be a positive integer: %s\n' "$ctx" >&2
     exit 2
@@ -56,8 +60,14 @@ if ! "$bench" -m "$gguf" -t "$threads" -ngl 0 -p 512 -n 128 -r 3 -o json \
     exit 1
 fi
 
+mkdir -p "$(dirname "$output")"
+cp "$bench_json" "${output}.bench.json"
+
 time_args=(-m "$gguf" -t "$threads" -ngl 0 -c "$ctx" -n 256 --temp 0 --seed 2026 -p "$prompt")
 time_args+=("${noninteractive[@]}")
+if [[ "${#extra_completion_args[@]}" -gt 0 ]]; then
+    time_args+=("${extra_completion_args[@]}")
+fi
 python3 - "$binary" "${time_args[@]}" <<'PY' >"${temporary_dir}/command"
 import shlex
 import sys
@@ -84,7 +94,6 @@ for run in 1 2; do
     rss_values+=("$rss")
 done
 
-mkdir -p "$(dirname "$output")"
 python3 - "$gguf" "$ctx" "$output" "$threads" "$command_line" \
     "${rss_values[0]}" "${rss_values[1]}" "$bench_json" "$llama_cpp_dir" <<'PY'
 import datetime

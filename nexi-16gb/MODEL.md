@@ -6,5 +6,7 @@
 - GGUF size: 7,366,423,360 bytes
 - SHA-256: `90fd944d227e9d9b68e7e2c7d5b57b79d4c66ed521b0919fbbd932cf834f6f8e`
 - Measurement context: 4096
-- Measurement: not completed. `llama-completion` aborted on the model's custom chat template before the two successful peak-RSS runs.
-- Failure: `this custom template is not supported, try using --jinja`
+- Prompt processing: 60.577606 tok/s (stddev 0.888452)
+- Generation: 5.190879 tok/s (stddev 0.048195)
+- Peak RSS: 12,454,056 and 12,454,132 kB (12.753 GB / 11.877 GiB maximum)
+- CPU: Intel Xeon Platinum 8375C, 8 vCPU; CPU-only
