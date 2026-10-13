@@ -16,3 +16,7 @@ Footprints and throughput are measured on the 8-vCPU Intel Xeon Platinum 8375C
 CPU box; these are CPU numbers only.
 
 Status: M1 — base footprints measured. M2 (in progress): CPU LoRA fine-tuning on 32 GB / 8 vCPU Linux VMs (no GPU).
+
+## NEXI-CUA (computer-use and browser-use driver + model)
+
+[`nexi-cua/`](nexi-cua/) is a local, $0 computer-use runtime. It contains the 6.3 MB NEXI-CUA-1 action ranker, a deterministic semantic resolver, and macOS AX / Windows UIA / Linux AT-SPI / Chromium CDP drivers with safety gates and verification. Start with [`nexi-cua/README.md`](nexi-cua/README.md). Installers are in `nexi-cua/install/`, the prebuilt v0.4.0 wheel/sdist in `nexi-cua/releases/`, and the measured numbers and comparisons in `nexi-cua/BENCHMARKS.md`.

@@ -1,0 +1,18 @@
+# big vision weights — download via `nexi-cua download-weights`
+weights/vision/
+*.part
+
+# python
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+
+# local runs
+weights_v4/
+*.grid.png
+*.zoom.png
+*.crop.png
+/tmp/

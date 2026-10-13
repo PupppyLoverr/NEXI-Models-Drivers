@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nexi-cua"
+version = "0.4.0"
+description = "Local semantic-first computer-use runtime (macOS/Windows/Linux, $0, no cloud)"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.26",
+    "pillow>=10.0",
+    "requests>=2.31",
+    "websocket-client>=1.7",
+    "mss>=9.0",
+    "torch>=2.2",
+]
+
+[project.optional-dependencies]
+macos = ["pyobjc-framework-Quartz>=10.0",
+         "pyobjc-framework-ApplicationServices>=10.0",
+         "pyobjc-framework-Cocoa>=10.0"]
+windows = ["comtypes>=1.4", "pywin32>=306", "psutil>=5.9"]
+linux = ["pyatspi>=2.46", "python-xlib>=0.33", "pydbus>=0.6"]
+vision-mlx = ["mlx-vlm>=0.1"]
+
+[project.scripts]
+nexi-cua = "nexi_cua.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/PupppyLoverr/gabbledobo-71588"
+Source = "https://github.com/PupppyLoverr/gabbledobo-71588/tree/main/nexi-cua"
+
+[tool.setuptools.packages.find]
+include = ["nexi_cua*"]
+
+[tool.setuptools.data-files]
+"share/nexi-cua/weights" = [
+    "weights/nexi-cua-1.pt",
+    "weights/nexi-cua-1.calib.json",
+]
