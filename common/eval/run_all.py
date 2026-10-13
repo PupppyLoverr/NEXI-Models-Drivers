@@ -114,10 +114,10 @@ def main():
         env = dict(os.environ, OPENAI_API_KEY="none")
         if "humaneval" in tasks:
             t0 = time.time()
-            cmd = [sys.executable, "-m", "evalplus.evaluate", "--model", a.label, "--dataset", "humaneval", "--backend", "openai",
+            runner = ([os.path.join(os.path.dirname(os.path.abspath(__file__)), "evalplus_subset.py"), str(a.limit_humaneval)]
+                      if a.limit_humaneval else ["-m", "evalplus.evaluate"])
+            cmd = [sys.executable, *runner, "--model", a.label, "--dataset", "humaneval", "--backend", "openai",
                    "--base-url", URL + "/v1", "--greedy", "--root", os.path.join(a.out_dir, "evalplus")]
-            if a.limit_humaneval:
-                cmd += ["--id-range", f"[0,{a.limit_humaneval}]"]
             p = subprocess.run(cmd, env=env, capture_output=True, text=True)
             scores = re.findall(r"pass@1:\s*([0-9.]+)", p.stdout)
             out["tasks"]["humaneval"] = {"base_pass@1": float(scores[0]) if scores else None,
