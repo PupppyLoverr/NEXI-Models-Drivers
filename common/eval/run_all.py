@@ -1,6 +1,6 @@
 """NEXI eval harness (lead-authored). Serves a GGUF with llama-server and scores held-out tool-call + computer-use sets;
 optionally runs EvalPlus HumanEval+ and IFEval (lm-eval) against the same server.
-usage: python run_all.py --gguf X --label L --out-dir results [--ctx 4096] [--tasks tool,cua,humaneval,ifeval] [--limit-humaneval N] [--limit-tool N] [--limit-cua N] [--limit-ifeval N]"""
+usage: python run_all.py --gguf X --label L --out-dir results [--ctx 4096] [--tasks tool,cua,humaneval,ifeval] [--limit-humaneval N] [--limit-tool N] [--limit-cua N] [--limit-ifeval N] [--lora adapter.gguf]"""
 import argparse, ast, collections, glob, hashlib, json, os, re, subprocess, sys, threading, time, urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -91,10 +91,11 @@ def main():
     ap.add_argument("--tasks", default="tool,cua,humaneval,ifeval"); ap.add_argument("--limit-humaneval", type=int, default=0)
     ap.add_argument("--limit-tool", type=int, default=0); ap.add_argument("--limit-cua", type=int, default=0)
     ap.add_argument("--limit-ifeval", type=int, default=100)
+    ap.add_argument("--lora", default="", help="GGUF LoRA adapter applied at serve time (27B tier: no bf16 merge fits in RAM)")
     a = ap.parse_args()
     os.makedirs(a.out_dir, exist_ok=True)
     srv = subprocess.Popen([LLAMA, "-m", a.gguf, "-t", str(os.cpu_count()), "-ngl", "0", "-c", str(a.ctx), "--port", str(PORT),
-                            "--jinja", "--chat-template-kwargs", '{"enable_thinking": false}', "--cache-ram", "256", "--no-webui"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                            "--jinja", "--chat-template-kwargs", '{"enable_thinking": false}', "--cache-ram", "256", "--no-webui"] + (["--lora", a.lora] if a.lora else []), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     threading.Thread(target=lambda: [None for _ in srv.stdout], daemon=True).start()
     for _ in range(600):
         try:
