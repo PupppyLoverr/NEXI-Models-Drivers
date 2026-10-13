@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "label": "final-bk-fp16-sequential",
+  "measured_at_utc": "2026-10-13T07:07:09.734462+00:00",
+  "status": "passed",
+  "exit_code": 0,
+  "command": [
+    ".venv/bin/python",
+    "-m",
+    "nexi_image.driver",
+    "generate",
+    "--prompt",
+    "A photo of a red apple on a wooden table, still life, studio lighting",
+    "--output",
+    "outputs/final-parent-apple.png",
+    "--steps",
+    "10",
+    "--width",
+    "256",
+    "--height",
+    "256",
+    "--seed",
+    "42",
+    "--threads",
+    "4"
+  ],
+  "cwd": "/home/ubuntu/repos/NEXI-Models-Drivers/nexi-image",
+  "wall_seconds": 14.097757429000012,
+  "peak_rss_bytes": 1141796864,
+  "asset_files_bytes": 904340286,
+  "asset_paths": [
+    "models"
+  ],
+  "hardware": {
+    "cpu": "INTEL(R) XEON(R) PLATINUM 8559C",
+    "logical_cpus": 8,
+    "platform": "Linux-6.8.0-1061-aws-x86_64-with-glibc2.35",
+    "architecture": "x86_64"
+  },
+  "thread_environment": {},
+  "measurement": "GNU time maximum process RSS; not summed concurrent-worker RAM or VRAM"
+}

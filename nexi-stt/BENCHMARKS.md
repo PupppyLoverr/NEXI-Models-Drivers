@@ -19,7 +19,9 @@ Reference is 22 words, supplied in `fixtures/jfk.reference.txt`:
 
 **Do not interpret zero errors on these 22 well-known words as a general quality
 score, or compare it to Open ASR/LibriSpeech WER.** No held-out corpus, accents,
-noisy-room dictation, long recording, laptop power or mobile-device test was run.
+noisy-room dictation, long recording, laptop power or mobile-device test was run
+for that initial table. The additional five-speaker sanity check below is still
+not a full corpus benchmark.
 
 | Local checkpoint/runtime | Exact model-directory bytes | Max whole-process peak RSS bytes | Median cold process wall | Median cold transcribe | Median warm transcribe | Warm RTF | Smoke word errors |
 |---|---:|---:|---:|---:|---:|---:|---:|
@@ -152,6 +154,54 @@ and sherpa's small transducer is another genuine streaming option. Both need
 local benchmark, silence/hallucination, domain accuracy and training/export
 validation before a runtime pivot. Wispr Flow is product inspiration, not a
 direct local-model competitor or an implemented system-wide integration.
+
+## Additional five-speaker sanity check (parent integration)
+
+A deterministic subset of **LibriSpeech test-clean**, not training data: the
+first utterance alphabetically from each of the first five alphabetically
+ordered speakers. It contains 50.175 seconds and 125 reference words. Data and
+reference provenance are in `fixtures/librispeech-five.json`; audio is not
+committed. LibriSpeech is [CC BY 4.0](https://www.openslr.org/12/), attributed to
+Vassil Panayotov, Guoguo Chen, Daniel Povey and Sanjeev Khudanpur.
+
+Same Xeon CPU, four threads, CPU int8 and VAD defaults. One fresh process per
+model, warmed model reused across its five different clips; word timestamps
+off. Whole-process GNU time RSS includes loading, all five transcriptions and
+result serialization. OS page cache was not flushed. These are single runs,
+not statistical latency percentiles or benchmark-wide LibriSpeech WER.
+
+The optional preparation helper was executed against the verified archive and
+reproduced all five recorded WAV SHA-256 values exactly. Corpus evaluation was
+then rerun through the public `scripts/evaluate.py` interface. Parent silence,
+empty-audio, vocabulary/timestamp and real HTTP regressions also passed; see
+`results/parent-regressions.json`.
+
+| Model | Subset word errors / words | Subset WER | Full process wall | Process peak RSS | Model directory bytes |
+|---|---:|---:|---:|---:|---:|
+| tiny.en | 8 / 125 | 6.4% | 1.960 s | 348,520,448 | 78,091,923 |
+| base.en | 6 / 125 | 4.8% | 3.073 s | 436,277,248 | 147,770,840 |
+
+Exact unrounded measurements: `results/tiny-corpus-process.json` and
+`results/base-corpus-process.json`. Transcripts, references, edit counts and
+all per-clip timings: `results/tiny-corpus.json` and `results/base-corpus.json`.
+Different decode settings (including word timestamp alignment) can change
+the transcript and WER. This tiny clean read-speech subset does **not**
+establish accuracy on spontaneous dictation, noise, accents or languages.
+
+Reproduce from `nexi-stt/` with FFmpeg installed. The optional public archive
+is about 346 MB; preparation verifies its official MD5 before reading members.
+The helper records the actual WAV hashes because FFmpeg versions can change
+container metadata without changing decoded speech.
+
+```bash
+curl -fL https://openslr.elda.org/resources/12/test-clean.tar.gz -o test-clean.tar.gz
+.venv/bin/python scripts/prepare_librispeech.py --archive test-clean.tar.gz --output fixtures/librispeech-five
+python3 ../common/bench/process.py --label tiny-corpus-evaluator \
+  --asset-path models/tiny.en --output results/reproduced-tiny-process.json -- \
+  .venv/bin/python scripts/evaluate.py --model models/tiny.en \
+  --data fixtures/librispeech-five/evaluation.jsonl --output results/reproduced-tiny-corpus.json
+# Repeat with base.en and distinct output paths.
+```
 
 ## Immutable asset provenance
 

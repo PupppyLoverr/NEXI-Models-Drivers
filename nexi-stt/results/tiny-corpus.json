@@ -1,0 +1,270 @@
+{
+  "word_errors": 8,
+  "reference_words": 125,
+  "corpus_wer": 0.064,
+  "records": [
+    {
+      "wav": "1089-134686-0000.wav",
+      "reference": "HE HOPED THERE WOULD BE STEW FOR DINNER TURNIPS AND CARROTS AND BRUISED POTATOES AND FAT MUTTON PIECES TO BE LADLED OUT IN THICK PEPPERED FLOUR FATTENED SAUCE",
+      "result": {
+        "schema_version": 1,
+        "text": "He hoped there would be stew for dinner, turnips and carrots and bruised potatoes and fat mutton pieces to be ladled out and thick, peppered flower-fattened sauce.",
+        "segments": [
+          {
+            "start": 0.18,
+            "end": 5.52,
+            "text": "He hoped there would be stew for dinner, turnips and carrots and bruised potatoes and fat",
+            "no_speech_probability": 0.024681059643626213
+          },
+          {
+            "start": 5.52,
+            "end": 10.18,
+            "text": "mutton pieces to be ladled out and thick, peppered flower-fattened sauce.",
+            "no_speech_probability": 0.024681059643626213
+          }
+        ],
+        "language": "en",
+        "audio_seconds": 10.435,
+        "speech_seconds_after_vad": 10.259,
+        "transcribe_seconds": 0.3682040549999783,
+        "real_time_factor": 0.035285486823189105,
+        "config": {
+          "device": "cpu",
+          "compute_type": "int8",
+          "threads": 4,
+          "beam_size": 1,
+          "temperature": 0.0,
+          "vad": true,
+          "word_timestamps": false,
+          "hotwords": "",
+          "condition_on_previous_text": false
+        },
+        "model": {
+          "upstream": "Systran/faster-whisper-tiny.en",
+          "revision": "0d3d19a32d3338f10357c0889762bd8d64bbdeba",
+          "license": "MIT",
+          "provenance": "upstream weights, not a NEXI fine-tune"
+        }
+      },
+      "quality": {
+        "word_errors": 2,
+        "reference_words": 28,
+        "wer": 0.07142857142857142,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      }
+    },
+    {
+      "wav": "1188-133604-0000.wav",
+      "reference": "YOU WILL FIND ME CONTINUALLY SPEAKING OF FOUR MEN TITIAN HOLBEIN TURNER AND TINTORET IN ALMOST THE SAME TERMS",
+      "result": {
+        "schema_version": 1,
+        "text": "You will find me continually speaking of four men, Titian, Holbein, Turner, and Tenkarat, in almost the same terms.",
+        "segments": [
+          {
+            "start": 0.18,
+            "end": 3.5,
+            "text": "You will find me continually speaking of four men,",
+            "no_speech_probability": 0.04831378161907196
+          },
+          {
+            "start": 3.5,
+            "end": 4.8,
+            "text": "Titian,",
+            "no_speech_probability": 0.04831378161907196
+          },
+          {
+            "start": 4.8,
+            "end": 6.58,
+            "text": "Holbein, Turner,",
+            "no_speech_probability": 0.04831378161907196
+          },
+          {
+            "start": 6.58,
+            "end": 8.26,
+            "text": "and Tenkarat,",
+            "no_speech_probability": 0.04831378161907196
+          },
+          {
+            "start": 8.26,
+            "end": 10.26,
+            "text": "in almost the same terms.",
+            "no_speech_probability": 0.04831378161907196
+          }
+        ],
+        "language": "en",
+        "audio_seconds": 10.725,
+        "speech_seconds_after_vad": 10.549,
+        "transcribe_seconds": 0.2804268760000923,
+        "real_time_factor": 0.026147028065276672,
+        "config": {
+          "device": "cpu",
+          "compute_type": "int8",
+          "threads": 4,
+          "beam_size": 1,
+          "temperature": 0.0,
+          "vad": true,
+          "word_timestamps": false,
+          "hotwords": "",
+          "condition_on_previous_text": false
+        },
+        "model": {
+          "upstream": "Systran/faster-whisper-tiny.en",
+          "revision": "0d3d19a32d3338f10357c0889762bd8d64bbdeba",
+          "license": "MIT",
+          "provenance": "upstream weights, not a NEXI fine-tune"
+        }
+      },
+      "quality": {
+        "word_errors": 1,
+        "reference_words": 19,
+        "wer": 0.05263157894736842,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      }
+    },
+    {
+      "wav": "121-121726-0000.wav",
+      "reference": "ALSO A POPULAR CONTRIVANCE WHEREBY LOVE MAKING MAY BE SUSPENDED BUT NOT STOPPED DURING THE PICNIC SEASON",
+      "result": {
+        "schema_version": 1,
+        "text": "Also, a popular contrivance, whereby lovemaking may be suspended but not stopped during the picnic season.",
+        "segments": [
+          {
+            "start": 0.0,
+            "end": 7.04,
+            "text": "Also, a popular contrivance, whereby lovemaking may be suspended but not stopped during",
+            "no_speech_probability": 0.012346488423645496
+          },
+          {
+            "start": 7.04,
+            "end": 8.08,
+            "text": "the picnic season.",
+            "no_speech_probability": 0.012346488423645496
+          }
+        ],
+        "language": "en",
+        "audio_seconds": 8.46,
+        "speech_seconds_after_vad": 8.46,
+        "transcribe_seconds": 0.2823590460000105,
+        "real_time_factor": 0.03337577375886649,
+        "config": {
+          "device": "cpu",
+          "compute_type": "int8",
+          "threads": 4,
+          "beam_size": 1,
+          "temperature": 0.0,
+          "vad": true,
+          "word_timestamps": false,
+          "hotwords": "",
+          "condition_on_previous_text": false
+        },
+        "model": {
+          "upstream": "Systran/faster-whisper-tiny.en",
+          "revision": "0d3d19a32d3338f10357c0889762bd8d64bbdeba",
+          "license": "MIT",
+          "provenance": "upstream weights, not a NEXI fine-tune"
+        }
+      },
+      "quality": {
+        "word_errors": 2,
+        "reference_words": 17,
+        "wer": 0.11764705882352941,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      }
+    },
+    {
+      "wav": "1221-135766-0000.wav",
+      "reference": "HOW STRANGE IT SEEMED TO THE SAD WOMAN AS SHE WATCHED THE GROWTH AND THE BEAUTY THAT BECAME EVERY DAY MORE BRILLIANT AND THE INTELLIGENCE THAT THREW ITS QUIVERING SUNSHINE OVER THE TINY FEATURES OF THIS CHILD",
+      "result": {
+        "schema_version": 1,
+        "text": "How strange it seemed to the sad woman as she watched the growth and the beauty that became everyday more brilliant and the intelligence that through its quivering sunshine over the tiny features of this child.",
+        "segments": [
+          {
+            "start": 0.0,
+            "end": 6.6,
+            "text": "How strange it seemed to the sad woman as she watched the growth and the beauty that became everyday more brilliant",
+            "no_speech_probability": 0.03086608089506626
+          },
+          {
+            "start": 6.6,
+            "end": 12.0,
+            "text": "and the intelligence that through its quivering sunshine over the tiny features of this child.",
+            "no_speech_probability": 0.03086608089506626
+          }
+        ],
+        "language": "en",
+        "audio_seconds": 12.435,
+        "speech_seconds_after_vad": 12.435,
+        "transcribe_seconds": 0.2816083410000374,
+        "real_time_factor": 0.022646428709291306,
+        "config": {
+          "device": "cpu",
+          "compute_type": "int8",
+          "threads": 4,
+          "beam_size": 1,
+          "temperature": 0.0,
+          "vad": true,
+          "word_timestamps": false,
+          "hotwords": "",
+          "condition_on_previous_text": false
+        },
+        "model": {
+          "upstream": "Systran/faster-whisper-tiny.en",
+          "revision": "0d3d19a32d3338f10357c0889762bd8d64bbdeba",
+          "license": "MIT",
+          "provenance": "upstream weights, not a NEXI fine-tune"
+        }
+      },
+      "quality": {
+        "word_errors": 3,
+        "reference_words": 37,
+        "wer": 0.08108108108108109,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      }
+    },
+    {
+      "wav": "1284-1180-0000.wav",
+      "reference": "HE WORE BLUE SILK STOCKINGS BLUE KNEE PANTS WITH GOLD BUCKLES A BLUE RUFFLED WAIST AND A JACKET OF BRIGHT BLUE BRAIDED WITH GOLD",
+      "result": {
+        "schema_version": 1,
+        "text": "He wore blue silk stockings, blue knee pants with gold buckles, a blue ruffled waist and a jacket of bright blue braided with gold.",
+        "segments": [
+          {
+            "start": 0.0,
+            "end": 8.0,
+            "text": "He wore blue silk stockings, blue knee pants with gold buckles, a blue ruffled waist and a jacket of bright blue braided with gold.",
+            "no_speech_probability": 0.005474087782204151
+          }
+        ],
+        "language": "en",
+        "audio_seconds": 8.12,
+        "speech_seconds_after_vad": 8.12,
+        "transcribe_seconds": 0.3185764669999571,
+        "real_time_factor": 0.039233555049255804,
+        "config": {
+          "device": "cpu",
+          "compute_type": "int8",
+          "threads": 4,
+          "beam_size": 1,
+          "temperature": 0.0,
+          "vad": true,
+          "word_timestamps": false,
+          "hotwords": "",
+          "condition_on_previous_text": false
+        },
+        "model": {
+          "upstream": "Systran/faster-whisper-tiny.en",
+          "revision": "0d3d19a32d3338f10357c0889762bd8d64bbdeba",
+          "license": "MIT",
+          "provenance": "upstream weights, not a NEXI fine-tune"
+        }
+      },
+      "quality": {
+        "word_errors": 0,
+        "reference_words": 24,
+        "wer": 0.0,
+        "normalization": "NFKC, casefold, English letters/digits/apostrophes; strip punctuation"
+      }
+    }
+  ],
+  "warning": "Use held-out speakers/audio. Training-set WER is not generalization."
+}

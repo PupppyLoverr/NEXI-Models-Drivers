@@ -2,6 +2,8 @@
 models/
 training-output/
 fixtures/*.wav
+fixtures/librispeech-five/
+test-clean.tar.gz
 *.egg-info/
 .mypy_cache/
 .ruff_cache/

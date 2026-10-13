@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "label": "bk-sdm-fp16-parent",
+  "measured_at_utc": "2026-10-13T07:02:37.857174+00:00",
+  "status": "passed",
+  "exit_code": 0,
+  "command": [
+    ".venv/bin/python",
+    "-m",
+    "nexi_image.driver",
+    "generate",
+    "--prompt",
+    "A small red ceramic teapot on a wooden table, soft window light, studio product photograph",
+    "--output",
+    "outputs/parent-teapot-fp16.png",
+    "--steps",
+    "10",
+    "--dtype",
+    "float16",
+    "--width",
+    "256",
+    "--height",
+    "256",
+    "--seed",
+    "42",
+    "--threads",
+    "4"
+  ],
+  "cwd": "/home/ubuntu/repos/NEXI-Models-Drivers/nexi-image",
+  "wall_seconds": 13.88743427899999,
+  "peak_rss_bytes": 1137664000,
+  "asset_files_bytes": 904340286,
+  "asset_paths": [
+    "models"
+  ],
+  "hardware": {
+    "cpu": "INTEL(R) XEON(R) PLATINUM 8559C",
+    "logical_cpus": 8,
+    "platform": "Linux-6.8.0-1061-aws-x86_64-with-glibc2.35",
+    "architecture": "x86_64"
+  },
+  "thread_environment": {},
+  "measurement": "GNU time maximum process RSS; not summed concurrent-worker RAM or VRAM"
+}

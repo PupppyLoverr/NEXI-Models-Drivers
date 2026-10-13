@@ -1,0 +1,455 @@
+{
+  "silence_with_vad": {
+    "schema_version": 1,
+    "text": "",
+    "segments": [],
+    "language": "en",
+    "audio_seconds": 10.0,
+    "speech_seconds_after_vad": 0.0,
+    "transcribe_seconds": 0.04346141099995293,
+    "real_time_factor": 0.004346141099995293,
+    "config": {
+      "device": "cpu",
+      "compute_type": "int8",
+      "threads": 4,
+      "beam_size": 1,
+      "temperature": 0.0,
+      "vad": true,
+      "word_timestamps": false,
+      "hotwords": "",
+      "condition_on_previous_text": false
+    },
+    "model": {
+      "upstream": "Systran/faster-whisper-tiny.en",
+      "revision": "0d3d19a32d3338f10357c0889762bd8d64bbdeba",
+      "license": "MIT",
+      "provenance": "upstream weights, not a NEXI fine-tune"
+    }
+  },
+  "empty_wav_rejected": "WAV duration must be >0 and <=120 seconds; split longer clips",
+  "vocabulary_hints": {
+    "schema_version": 1,
+    "text": "He hoped there would be stew for dinner turnips and carrots and bruised potatoes and fat mutton pieces to be ladled out and thick peppered flower fat and sauce.",
+    "segments": [
+      {
+        "start": 0.18,
+        "end": 10.12,
+        "text": "He hoped there would be stew for dinner turnips and carrots and bruised potatoes and fat mutton pieces to be ladled out and thick peppered flower fat and sauce.",
+        "no_speech_probability": 0.0022987339179962873,
+        "words": [
+          {
+            "start": 0.18,
+            "end": 0.76,
+            "text": " He",
+            "probability": 0.7184059619903564
+          },
+          {
+            "start": 0.76,
+            "end": 1.02,
+            "text": " hoped",
+            "probability": 0.9978539347648621
+          },
+          {
+            "start": 1.02,
+            "end": 1.24,
+            "text": " there",
+            "probability": 0.9895980358123779
+          },
+          {
+            "start": 1.24,
+            "end": 1.44,
+            "text": " would",
+            "probability": 0.9926407933235168
+          },
+          {
+            "start": 1.44,
+            "end": 1.66,
+            "text": " be",
+            "probability": 0.9911483526229858
+          },
+          {
+            "start": 1.66,
+            "end": 1.92,
+            "text": " stew",
+            "probability": 0.9742169380187988
+          },
+          {
+            "start": 1.92,
+            "end": 2.12,
+            "text": " for",
+            "probability": 0.8901117444038391
+          },
+          {
+            "start": 2.12,
+            "end": 2.46,
+            "text": " dinner",
+            "probability": 0.9969505071640015
+          },
+          {
+            "start": 2.46,
+            "end": 3.1,
+            "text": " turnips",
+            "probability": 0.5096179880201817
+          },
+          {
+            "start": 3.1,
+            "end": 3.44,
+            "text": " and",
+            "probability": 0.9888259172439575
+          },
+          {
+            "start": 3.44,
+            "end": 3.74,
+            "text": " carrots",
+            "probability": 0.976827085018158
+          },
+          {
+            "start": 3.74,
+            "end": 4.12,
+            "text": " and",
+            "probability": 0.9770165085792542
+          },
+          {
+            "start": 4.12,
+            "end": 4.46,
+            "text": " bruised",
+            "probability": 0.9718390703201294
+          },
+          {
+            "start": 4.46,
+            "end": 4.98,
+            "text": " potatoes",
+            "probability": 0.9904566407203674
+          },
+          {
+            "start": 4.98,
+            "end": 5.44,
+            "text": " and",
+            "probability": 0.924896240234375
+          },
+          {
+            "start": 5.44,
+            "end": 5.76,
+            "text": " fat",
+            "probability": 0.9760532975196838
+          },
+          {
+            "start": 5.76,
+            "end": 6.12,
+            "text": " mutton",
+            "probability": 0.7771758437156677
+          },
+          {
+            "start": 6.12,
+            "end": 6.48,
+            "text": " pieces",
+            "probability": 0.9908273816108704
+          },
+          {
+            "start": 6.48,
+            "end": 6.76,
+            "text": " to",
+            "probability": 0.9865909814834595
+          },
+          {
+            "start": 6.76,
+            "end": 7.04,
+            "text": " be",
+            "probability": 0.9980138540267944
+          },
+          {
+            "start": 7.04,
+            "end": 7.28,
+            "text": " ladled",
+            "probability": 0.9625725448131561
+          },
+          {
+            "start": 7.28,
+            "end": 7.64,
+            "text": " out",
+            "probability": 0.9916109442710876
+          },
+          {
+            "start": 7.64,
+            "end": 7.94,
+            "text": " and",
+            "probability": 0.46495693922042847
+          },
+          {
+            "start": 7.94,
+            "end": 8.32,
+            "text": " thick",
+            "probability": 0.9835554957389832
+          },
+          {
+            "start": 8.32,
+            "end": 8.86,
+            "text": " peppered",
+            "probability": 0.8393283486366272
+          },
+          {
+            "start": 8.86,
+            "end": 9.26,
+            "text": " flower",
+            "probability": 0.7241833806037903
+          },
+          {
+            "start": 9.26,
+            "end": 9.46,
+            "text": " fat",
+            "probability": 0.20202934741973877
+          },
+          {
+            "start": 9.46,
+            "end": 9.76,
+            "text": " and",
+            "probability": 0.5941612720489502
+          },
+          {
+            "start": 9.76,
+            "end": 10.12,
+            "text": " sauce.",
+            "probability": 0.9752238988876343
+          }
+        ]
+      }
+    ],
+    "language": "en",
+    "audio_seconds": 10.435,
+    "speech_seconds_after_vad": 10.259,
+    "transcribe_seconds": 0.48218920599993,
+    "real_time_factor": 0.04620883622423862,
+    "config": {
+      "device": "cpu",
+      "compute_type": "int8",
+      "threads": 4,
+      "beam_size": 1,
+      "temperature": 0.0,
+      "vad": true,
+      "word_timestamps": true,
+      "hotwords": "Americans country",
+      "condition_on_previous_text": false
+    },
+    "model": {
+      "upstream": "Systran/faster-whisper-tiny.en",
+      "revision": "0d3d19a32d3338f10357c0889762bd8d64bbdeba",
+      "license": "MIT",
+      "provenance": "upstream weights, not a NEXI fine-tune"
+    }
+  },
+  "real_http_transcription": {
+    "schema_version": 1,
+    "text": "He hoped there would be stew for dinner, turnips and carrots and bruised potatoes and fat mutton pieces to be ladled out and thick, peppered flower-fattened sauce.",
+    "segments": [
+      {
+        "start": 0.18,
+        "end": 5.74,
+        "text": "He hoped there would be stew for dinner, turnips and carrots and bruised potatoes and fat",
+        "no_speech_probability": 0.024681059643626213,
+        "words": [
+          {
+            "start": 0.18,
+            "end": 0.76,
+            "text": " He",
+            "probability": 0.7184059619903564
+          },
+          {
+            "start": 0.76,
+            "end": 1.02,
+            "text": " hoped",
+            "probability": 0.9978539347648621
+          },
+          {
+            "start": 1.02,
+            "end": 1.24,
+            "text": " there",
+            "probability": 0.9895980358123779
+          },
+          {
+            "start": 1.24,
+            "end": 1.44,
+            "text": " would",
+            "probability": 0.9926407933235168
+          },
+          {
+            "start": 1.44,
+            "end": 1.66,
+            "text": " be",
+            "probability": 0.9911483526229858
+          },
+          {
+            "start": 1.66,
+            "end": 1.92,
+            "text": " stew",
+            "probability": 0.9742169380187988
+          },
+          {
+            "start": 1.92,
+            "end": 2.12,
+            "text": " for",
+            "probability": 0.8901117444038391
+          },
+          {
+            "start": 2.12,
+            "end": 2.46,
+            "text": " dinner,",
+            "probability": 0.9969505071640015
+          },
+          {
+            "start": 2.84,
+            "end": 3.08,
+            "text": " turnips",
+            "probability": 0.9292855262756348
+          },
+          {
+            "start": 3.08,
+            "end": 3.42,
+            "text": " and",
+            "probability": 0.9842280149459839
+          },
+          {
+            "start": 3.42,
+            "end": 3.74,
+            "text": " carrots",
+            "probability": 0.9781976342201233
+          },
+          {
+            "start": 3.74,
+            "end": 4.12,
+            "text": " and",
+            "probability": 0.835174560546875
+          },
+          {
+            "start": 4.12,
+            "end": 4.46,
+            "text": " bruised",
+            "probability": 0.9770589470863342
+          },
+          {
+            "start": 4.46,
+            "end": 4.96,
+            "text": " potatoes",
+            "probability": 0.9922143816947937
+          },
+          {
+            "start": 4.96,
+            "end": 5.44,
+            "text": " and",
+            "probability": 0.6546032428741455
+          },
+          {
+            "start": 5.44,
+            "end": 5.74,
+            "text": " fat",
+            "probability": 0.9731692671775818
+          }
+        ]
+      },
+      {
+        "start": 5.74,
+        "end": 10.08,
+        "text": "mutton pieces to be ladled out and thick, peppered flower-fattened sauce.",
+        "no_speech_probability": 0.024681059643626213,
+        "words": [
+          {
+            "start": 5.74,
+            "end": 6.14,
+            "text": " mutton",
+            "probability": 0.7223089784383774
+          },
+          {
+            "start": 6.14,
+            "end": 6.48,
+            "text": " pieces",
+            "probability": 0.9877074360847473
+          },
+          {
+            "start": 6.48,
+            "end": 6.76,
+            "text": " to",
+            "probability": 0.9798653721809387
+          },
+          {
+            "start": 6.76,
+            "end": 7.06,
+            "text": " be",
+            "probability": 0.9981040954589844
+          },
+          {
+            "start": 7.06,
+            "end": 7.28,
+            "text": " ladled",
+            "probability": 0.9642240405082703
+          },
+          {
+            "start": 7.28,
+            "end": 7.62,
+            "text": " out",
+            "probability": 0.9935123324394226
+          },
+          {
+            "start": 7.62,
+            "end": 7.94,
+            "text": " and",
+            "probability": 0.40606293082237244
+          },
+          {
+            "start": 7.94,
+            "end": 8.32,
+            "text": " thick,",
+            "probability": 0.9815052151679993
+          },
+          {
+            "start": 8.34,
+            "end": 8.86,
+            "text": " peppered",
+            "probability": 0.9867604970932007
+          },
+          {
+            "start": 8.86,
+            "end": 9.26,
+            "text": " flower",
+            "probability": 0.4445450007915497
+          },
+          {
+            "start": 9.26,
+            "end": 9.76,
+            "text": "-fattened",
+            "probability": 0.5715190321207047
+          },
+          {
+            "start": 9.76,
+            "end": 10.08,
+            "text": " sauce.",
+            "probability": 0.9944773316383362
+          }
+        ]
+      }
+    ],
+    "language": "en",
+    "audio_seconds": 10.435,
+    "speech_seconds_after_vad": 10.259,
+    "transcribe_seconds": 0.28793038399999205,
+    "real_time_factor": 0.027592753617632203,
+    "config": {
+      "device": "cpu",
+      "compute_type": "int8",
+      "threads": 4,
+      "beam_size": 1,
+      "temperature": 0.0,
+      "vad": true,
+      "word_timestamps": true,
+      "hotwords": "",
+      "condition_on_previous_text": false
+    },
+    "model": {
+      "upstream": "Systran/faster-whisper-tiny.en",
+      "revision": "0d3d19a32d3338f10357c0889762bd8d64bbdeba",
+      "license": "MIT",
+      "provenance": "upstream weights, not a NEXI fine-tune"
+    }
+  },
+  "invalid_http_audio_rejected": {
+    "error": "Invalid PCM16 WAV"
+  }
+}

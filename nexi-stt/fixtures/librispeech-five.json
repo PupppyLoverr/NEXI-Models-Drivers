@@ -1,0 +1,50 @@
+{
+  "dataset": "LibriSpeech test-clean",
+  "source": "https://www.openslr.org/12/",
+  "license": "CC BY 4.0",
+  "archive_md5": "32fa31d27d2e1cad72775fee3f4849a9",
+  "selection": "first clip lexically from first five lexically ordered speakers, not the full test-clean benchmark",
+  "clips": [
+    {
+      "id": "1089-134686-0000",
+      "source_archive_member": "LibriSpeech/test-clean/1089/134686/1089-134686-0000.flac",
+      "wav": "1089-134686-0000.wav",
+      "wav_sha256": "cdbf18e9d4264b0284390091b309a678d07e16767261f1a02703d6db4c93ea27",
+      "audio_seconds": 10.435,
+      "reference": "HE HOPED THERE WOULD BE STEW FOR DINNER TURNIPS AND CARROTS AND BRUISED POTATOES AND FAT MUTTON PIECES TO BE LADLED OUT IN THICK PEPPERED FLOUR FATTENED SAUCE"
+    },
+    {
+      "id": "1188-133604-0000",
+      "source_archive_member": "LibriSpeech/test-clean/1188/133604/1188-133604-0000.flac",
+      "wav": "1188-133604-0000.wav",
+      "wav_sha256": "d960b97a6d2fbf5f6bb503c6359cd6db09b5ea2065ea777e89d03f35f2f04230",
+      "audio_seconds": 10.725,
+      "reference": "YOU WILL FIND ME CONTINUALLY SPEAKING OF FOUR MEN TITIAN HOLBEIN TURNER AND TINTORET IN ALMOST THE SAME TERMS"
+    },
+    {
+      "id": "121-121726-0000",
+      "source_archive_member": "LibriSpeech/test-clean/121/121726/121-121726-0000.flac",
+      "wav": "121-121726-0000.wav",
+      "wav_sha256": "7c23efe52bb3168c8a3586419c8ac078708148188f574500332ddad835e2ecf4",
+      "audio_seconds": 8.46,
+      "reference": "ALSO A POPULAR CONTRIVANCE WHEREBY LOVE MAKING MAY BE SUSPENDED BUT NOT STOPPED DURING THE PICNIC SEASON"
+    },
+    {
+      "id": "1221-135766-0000",
+      "source_archive_member": "LibriSpeech/test-clean/1221/135766/1221-135766-0000.flac",
+      "wav": "1221-135766-0000.wav",
+      "wav_sha256": "1c8083dcc8bf2fefd8e40e8d450f41c6f8e9d910f2b879c88a29e32f282ef0be",
+      "audio_seconds": 12.435,
+      "reference": "HOW STRANGE IT SEEMED TO THE SAD WOMAN AS SHE WATCHED THE GROWTH AND THE BEAUTY THAT BECAME EVERY DAY MORE BRILLIANT AND THE INTELLIGENCE THAT THREW ITS QUIVERING SUNSHINE OVER THE TINY FEATURES OF THIS CHILD"
+    },
+    {
+      "id": "1284-1180-0000",
+      "source_archive_member": "LibriSpeech/test-clean/1284/1180/1284-1180-0000.flac",
+      "wav": "1284-1180-0000.wav",
+      "wav_sha256": "4f43156f30423d10db847a2846d3bdd27ea30d81faf888653db6947781f55e7e",
+      "audio_seconds": 8.12,
+      "reference": "HE WORE BLUE SILK STOCKINGS BLUE KNEE PANTS WITH GOLD BUCKLES A BLUE RUFFLED WAIST AND A JACKET OF BRIGHT BLUE BRAIDED WITH GOLD"
+    }
+  ],
+  "attribution": "Vassil Panayotov, Guoguo Chen, Daniel Povey and Sanjeev Khudanpur; LibriSpeech/OpenSLR 12, CC BY 4.0"
+}

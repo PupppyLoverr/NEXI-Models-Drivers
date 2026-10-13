@@ -70,6 +70,37 @@ build and executable are additional. The Python `.venv` directory measured
 disk totals above count **model assets only**, not application/dependency/cache
 storage. Optional original VAE training assets bring BK to 1,071,676,179 bytes.
 
+### Additional parent integration measurements
+
+Serial CPU runs on the same Xeon, Python 3.10.12, four threads, 256×256,
+seed 42, guidance 7.5 and **batched CFG** (before the sequential default was
+integrated). Input: “A small red ceramic teapot on a wooden table, soft window
+light, studio product photograph”. Each component used a fresh worker. The
+outer GNU time wrapper records the largest process RSS, **not** simultaneous
+parent+worker memory. OS page cache was not flushed.
+
+| Profile | Steps | Full process wall | Peak RSS bytes | Model asset bytes |
+|---|---:|---:|---:|---:|
+| BK + TAESD, BF16 | 20 | 22.225 s | 1,617,342,464 | 904,340,286 |
+| BK + TAESD, FP16 | 10 | 13.887 s | 1,137,664,000 | 904,340,286 |
+
+Evidence: `evidence/parent-teapot-bf16.json`, `parent-teapot-fp16.json`,
+`parent-bf16-process.json` and `parent-fp16-process.json`. These additional
+runs also exceed 1 GB. Do not compare their latency to the child table as a
+controlled speedup: prompt, host scheduling, Python version and settings differ.
+The red vessel is recognizable but cropped and not a faithful complete teapot;
+this is smoke evidence, not a quality score. No image quality equivalence is claimed.
+
+After integrating the final sequential-CFG default, a fresh parent apple run
+completed in **14.098 s**, with **1,141,796,864-byte** maximum process RSS and
+the same **904,340,286-byte** assets. It reproduced the child apple PNG's SHA-256
+exactly: `d014c639468f8cb5063252db5e503402b3d180b05ab0f0d061116c5fdd2573e9`.
+Settings: FP16, ten steps, 256×256, seed 42, four threads, sequential CFG;
+prompt is the apple prompt used by the main table. This independent integration
+run also fails the 1 GB target. Evidence: `evidence/parent-final-apple.json` and
+`evidence/parent-final-apple-process.json`. Timing varies substantially across
+these VMs despite the same advertised CPU class; it is not a device-speed guarantee.
+
 ### Adaptation execution, not quality proof
 
 One real rank-two LoRA optimizer update at 128px, batch one, FP32, one local

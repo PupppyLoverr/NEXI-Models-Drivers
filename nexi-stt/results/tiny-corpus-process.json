@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "label": "tiny-corpus-evaluator",
+  "measured_at_utc": "2026-10-13T07:03:22.064634+00:00",
+  "status": "passed",
+  "exit_code": 0,
+  "command": [
+    ".venv/bin/python",
+    "scripts/evaluate.py",
+    "--model",
+    "models/tiny.en",
+    "--data",
+    "/home/ubuntu/nexi-validation-assets/librispeech-five/evaluation.jsonl",
+    "--output",
+    "/home/ubuntu/nexi-validation-assets/tiny-corpus.json"
+  ],
+  "cwd": "/home/ubuntu/repos/NEXI-Models-Drivers/nexi-stt",
+  "wall_seconds": 1.9603379389998281,
+  "peak_rss_bytes": 348520448,
+  "asset_files_bytes": 78091923,
+  "asset_paths": [
+    "models/tiny.en"
+  ],
+  "hardware": {
+    "cpu": "INTEL(R) XEON(R) PLATINUM 8559C",
+    "logical_cpus": 8,
+    "platform": "Linux-6.8.0-1061-aws-x86_64-with-glibc2.35",
+    "architecture": "x86_64"
+  },
+  "thread_environment": {},
+  "measurement": "GNU time maximum process RSS; not summed concurrent-worker RAM or VRAM"
+}
