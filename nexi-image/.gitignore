@@ -1,0 +1,10 @@
+.venv/
+models/
+outputs/
+adapters/
+*.pt
+*.png
+*.safetensors
+__pycache__/
+.ruff_cache/
+.mypy_cache/
