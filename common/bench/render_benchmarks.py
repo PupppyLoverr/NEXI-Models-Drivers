@@ -283,8 +283,11 @@ def render(tier, all_data):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("tier", nargs="*", choices=TIERS, help="tier folder(s); defaults to all four")
+    parser.add_argument("tier", nargs="*", help="tier folder(s); defaults to all four")
     args = parser.parse_args()
+    invalid = [tier for tier in args.tier if tier not in TIERS]
+    if invalid:
+        parser.error(f"invalid tier(s): {', '.join(invalid)}")
     selected = args.tier or list(TIERS)
     all_data = {tier: read_tier(tier) for tier in TIERS}
     for tier in selected:

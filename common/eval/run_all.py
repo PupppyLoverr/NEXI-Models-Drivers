@@ -12,6 +12,14 @@ TOOL_RE = re.compile(r"<tool_call>(.*?)</tool_call>", re.S)
 CUA_RE = re.compile(r"\b(\d+|NONE)\b", re.I)
 
 
+def sha256_file(path):
+    digest = hashlib.sha256()
+    with open(path, "rb") as stream:
+        for chunk in iter(lambda: stream.read(16 * 1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 def loads_lenient(s):
     """Accept JSON or Python-literal dicts (Hermes style), with or without escaped newlines."""
     s = s.strip()
@@ -104,7 +112,7 @@ def main():
         except Exception:
             time.sleep(1)
     out = {"label": a.label, "gguf": os.path.basename(a.gguf), "ctx": a.ctx,
-           "gguf_sha256": hashlib.sha256(open(a.gguf, "rb").read()).hexdigest(), "tasks": {}}
+           "gguf_sha256": sha256_file(a.gguf), "tasks": {}}
     tasks = a.tasks.split(",")
     try:
         with open(os.path.join(a.out_dir, f"eval_{a.label}_items.jsonl"), "w") as f:

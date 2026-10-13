@@ -6,6 +6,31 @@ TOOLCHAIN_DIR="${HOME}/nexi-toolchain"
 LLAMA_CPP_DIR="${TOOLCHAIN_DIR}/llama.cpp"
 VENV_DIR="${HOME}/nexi-venv"
 
+has_cxx_compiler() {
+    command -v c++ >/dev/null 2>&1 ||
+        command -v g++ >/dev/null 2>&1 ||
+        command -v clang++ >/dev/null 2>&1
+}
+
+if ! command -v cmake >/dev/null 2>&1 || ! has_cxx_compiler; then
+    if [[ "$(uname -s)" != "Linux" ]]; then
+        printf 'Error: cmake and a C++ compiler are required; automatic installation is supported on Linux only.\n' >&2
+        exit 1
+    fi
+    if ! command -v sudo >/dev/null 2>&1 || ! command -v apt-get >/dev/null 2>&1; then
+        printf 'Error: missing cmake or C++ compiler; sudo and apt-get are required to install cmake build-essential.\n' >&2
+        exit 1
+    fi
+    if ! sudo apt-get install -y cmake build-essential; then
+        printf 'Error: failed to install cmake build-essential with apt-get.\n' >&2
+        exit 1
+    fi
+    if ! command -v cmake >/dev/null 2>&1 || ! has_cxx_compiler; then
+        printf 'Error: cmake or a C++ compiler is still missing after package installation.\n' >&2
+        exit 1
+    fi
+fi
+
 mkdir -p "$TOOLCHAIN_DIR"
 
 if [[ ! -d "${LLAMA_CPP_DIR}/.git" ]]; then
