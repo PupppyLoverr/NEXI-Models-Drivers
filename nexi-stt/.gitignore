@@ -1,0 +1,10 @@
+.venv*/
+models/
+training-output/
+fixtures/*.wav
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+__pycache__/
+*.pyc

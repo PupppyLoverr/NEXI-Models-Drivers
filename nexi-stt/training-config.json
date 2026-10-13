@@ -1,0 +1,9 @@
+{
+  "seed": 13,
+  "steps": 100,
+  "gradient_accumulation": 4,
+  "learning_rate": 0.00001,
+  "threads": 4,
+  "freeze_encoder": false,
+  "gradient_checkpointing": true
+}
