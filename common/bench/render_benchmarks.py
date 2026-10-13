@@ -63,7 +63,9 @@ def format_n(value):
     return "not run" if value is None else str(value)
 
 
-def paired_n(base, tuned):
+def paired_n(base, tuned, tuned_eval_present):
+    if not tuned_eval_present:
+        return format_n(base)
     if base == tuned and base is not None:
         return format_n(base)
     if base is None and tuned is None:
@@ -117,10 +119,16 @@ def eval_table(data):
         base_n = nested(data["base"], ("tasks",) + n_path)
         tuned_n = nested(data["tuned"], ("tasks",) + n_path)
         lines.append(
-            f"| {label} | {paired_n(base_n, tuned_n)} | {percent(base)} | "
+            f"| {label} | {paired_n(base_n, tuned_n, data['tuned'] is not None)} | {percent(base)} | "
             f"{percent(tuned)} | {score_delta(base, tuned)} |"
         )
     return lines
+
+
+def footprint_heading(footprint):
+    model = raw(nested(footprint, ("gguf_file",)))
+    ctx = raw(nested(footprint, ("ctx",)))
+    return f"## Footprint (llama-bench / llama-cli on the shipped base GGUF `{model}`, ctx {ctx})"
 
 
 def footprint_table(data):
@@ -133,8 +141,8 @@ def footprint_table(data):
         ("Peak RSS", format_gb(nested(footprint, ("peak_rss_gb",)))),
         ("Prompt tok/s", format_tps(nested(footprint, ("pp512_tps",)))),
         ("Generation tok/s", format_tps(nested(footprint, ("tg128_tps",)))),
-        ("Base eval server peak RSS", format_kb(nested(base, ("server_peak_rss_kb",)))),
-        ("Tuned eval server peak RSS", format_kb(nested(tuned, ("server_peak_rss_kb",)))),
+        ("Base eval server peak RSS (ctx 4096)", format_kb(nested(base, ("server_peak_rss_kb",)))),
+        ("Tuned eval server peak RSS (ctx 4096)", format_kb(nested(tuned, ("server_peak_rss_kb",)))),
     )
     lines = ["| Metric | Value |", "|---|---:|"]
     lines.extend(f"| {label} | {value} |" for label, value in rows)
@@ -175,6 +183,12 @@ def training_list(summary):
         ("Last loss", last_loss),
     )
     return [f"- {label}: {raw(value)}" for label, value in rows]
+
+
+def training_section(summary):
+    if summary is None:
+        return ["Training run in progress."]
+    return training_list(summary)
 
 
 def across_tiers_table(all_data):
@@ -245,13 +259,13 @@ def render(tier, all_data):
         "prompt-level strict is the fraction of prompts satisfying all instructions under strict scoring; "
         "instruction-level strict is the fraction of individual instructions satisfied under strict scoring.",
         "",
-        "## Footprint",
+        footprint_heading(data["footprint"]),
         "",
         *footprint_table(data),
         "",
         "## Training",
         "",
-        *training_list(data["training"]),
+        *training_section(data["training"]),
         "",
         "## Across tiers[^across-tiers]",
         "",

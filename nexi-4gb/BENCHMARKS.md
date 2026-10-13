@@ -8,17 +8,17 @@ Measured locally: CPU-only (8 vCPU, no GPU), llama.cpp b11580, Q4_K_M GGUF (24gb
 
 | Metric | n | Base | NEXI tuned | Δ |
 |---|---:|---:|---:|---:|
-| Tool-call exact match | 40/not run | 25.0% | not run | not run |
-| CUA action accuracy | 100/not run | 19.0% | not run | not run |
-| CUA abstain accuracy | 37/not run | 0.0% | not run | not run |
-| HumanEval+ base pass@1 | 30/not run | 60.0% | not run | not run |
-| HumanEval+ plus pass@1 | 30/not run | 56.7% | not run | not run |
-| IFEval prompt-level strict | 30/not run | 60.0% | not run | not run |
-| IFEval instruction-level strict | 30/not run | 66.7% | not run | not run |
+| Tool-call exact match | 40 | 25.0% | not run | not run |
+| CUA action accuracy | 100 | 19.0% | not run | not run |
+| CUA abstain accuracy | 37 | 0.0% | not run | not run |
+| HumanEval+ base pass@1 | 30 | 60.0% | not run | not run |
+| HumanEval+ plus pass@1 | 30 | 56.7% | not run | not run |
+| IFEval prompt-level strict | 30 | 60.0% | not run | not run |
+| IFEval instruction-level strict | 30 | 66.7% | not run | not run |
 
 [^eval-metrics]: The subsets are small. Tool-call exact match is canonicalized name+arguments equal to the reference. CUA action accuracy is the chosen candidate index or `NONE` equal to the reference, on the NEXI-CUA held-out synth set, seed 99991; CUA abstain accuracy is exact-match accuracy on rows whose reference is `NONE`. HumanEval base pass@1 and HumanEval+ plus pass@1 are the fractions of prompts whose single generated solution passes, respectively, the original HumanEval tests and the HumanEval+ tests. IFEval prompt-level strict is the fraction of prompts satisfying all instructions under strict scoring; instruction-level strict is the fraction of individual instructions satisfied under strict scoring.
 
-## Footprint
+## Footprint (llama-bench / llama-cli on the shipped base GGUF `Qwen3.5-2B-UD-Q4_K_XL.gguf`, ctx 2048)
 
 | Metric | Value |
 |---|---:|
@@ -27,28 +27,21 @@ Measured locally: CPU-only (8 vCPU, no GPU), llama.cpp b11580, Q4_K_M GGUF (24gb
 | Peak RSS | 1.784 GB |
 | Prompt tok/s | 349.669 tok/s |
 | Generation tok/s | 22.289 tok/s |
-| Base eval server peak RSS | 2,518,372 KB |
-| Tuned eval server peak RSS | not run |
+| Base eval server peak RSS (ctx 4096) | 2,518,372 KB |
+| Tuned eval server peak RSS (ctx 4096) | not run |
 
 ## Training
 
-- Steps: not run
-- Global step: not run
-- Examples: not run
-- Examples available: not run
-- Sequence length: not run
-- Wall seconds: not run
-- First loss: not run
-- Last loss: not run
+Training run in progress.
 
 ## Across tiers[^across-tiers]
 
 | Metric | nexi-4gb | nexi-8gb | nexi-16gb | nexi-24gb |
 |---|---:|---:|---:|---:|
-| Tool | 25.0% (n=40) | not run | not run | not run |
-| CUA | 19.0% (n=100) | not run | not run | not run |
-| HumanEval+ plus | 56.7% (n=30) | not run | not run | not run |
-| IFEval prompt-strict | 60.0% (n=30) | not run | not run | not run |
+| Tool | 25.0% (n=40) | 33.3% (n=30) | not run | not run |
+| CUA | 19.0% (n=100) | 53.8% (n=80) | not run | not run |
+| HumanEval+ plus | 56.7% (n=30) | 95.0% (n=20) | not run | not run |
+| IFEval prompt-strict | 60.0% (n=30) | 90.0% (n=20) | not run | not run |
 
 [^across-tiers]: n differs by tier and items are the first N of the same held-out sets.
 
