@@ -1,25 +1,29 @@
-"""SD1.5 Q4 + LCM + TAESD native CPU profile with disk-backed parameters."""
+"""SD1.5 Q4 + TAESD native CPU profiles with disk-backed parameters."""
 
 import argparse
 import json
 import os
 from pathlib import Path
 import subprocess
+import tempfile
 import time
 
 from .assets import digest, download, entries, verify
-from .driver import OFFLINE, validate
+from .driver import OFFLINE, hardware_info, validate
 
 MANIFEST = Path(__file__).resolve().parents[1] / "native-manifest.json"
 REVISION = "d637cfb935feb2254898a8f1524046c958f3df80"
 
 
 def command(binary: Path, root: Path, output: Path, prompt: str, seed: int,
-            width: int, height: int, steps: int, threads: int, params: str) -> list[str]:
+            width: int, height: int, steps: int, threads: int, params: str,
+            profile: str = "standard") -> list[str]:
+    lcm = profile == "lcm"
     return [str(binary), "-m", str(root / "sd15-q4.gguf"),
             "--taesd", str(root / "taesd.safetensors"),
-            "--lora-model-dir", str(root), "-p", prompt + "<lora:lcm:1>",
-            "--cfg-scale", "1", "--sampling-method", "lcm", "--scheduler", "lcm",
+            "--lora-model-dir", str(root), "-p", prompt + ("<lora:lcm:1>" if lcm else ""),
+            "--cfg-scale", "1" if lcm else "7", "--sampling-method", "lcm" if lcm else "euler_a",
+            "--scheduler", "lcm" if lcm else "discrete",
             "--steps", str(steps), "--seed", str(seed), "--rng", "cpu",
             "--width", str(width), "--height", str(height), "--threads", str(threads),
             "--backend", "cpu", "--params-backend", params, "--diffusion-fa", "-o", str(output)]
@@ -27,8 +31,12 @@ def command(binary: Path, root: Path, output: Path, prompt: str, seed: int,
 
 def generate(prompt: str, output: str | Path, models: str | Path = "models/native",
              binary: str | Path = Path.home() / "nexi-image-native/stable-diffusion.cpp/build/bin/sd-cli",
-             width: int = 256, height: int = 256, steps: int = 4, threads: int = 4,
-             seed: int = 42, params: str = "disk", cache_state: str = "unspecified") -> dict:
+             width: int = 256, height: int = 256, steps: int | None = None, threads: int = 4,
+             seed: int = 42, params: str = "disk", cache_state: str = "unspecified",
+             profile: str = "standard") -> dict:
+    if profile not in ("standard", "lcm"):
+        raise ValueError("profile must be standard or lcm")
+    steps = steps if steps is not None else (4 if profile == "lcm" else 10)
     validate(prompt, width, height, steps, threads, seed, "float32", 1)
     if params not in ("cpu", "disk"):
         raise ValueError("params must be cpu or disk")
@@ -37,25 +45,33 @@ def generate(prompt: str, output: str | Path, models: str | Path = "models/nativ
         raise ValueError("output must use a .png suffix")
     if not binary.is_file():
         raise ValueError("Native binary is missing; run setup_native.sh")
+    version = subprocess.check_output([str(binary), "--version"], text=True).strip()
+    if REVISION[:7] not in version:
+        raise ValueError(f"Native binary must be built at {REVISION}; got {version}")
     started = time.perf_counter()
     model_bytes = verify(root, manifest=MANIFEST)
     output.parent.mkdir(parents=True, exist_ok=True)
-    args = command(binary, root, output, prompt, seed, width, height, steps, threads, params)
-    with output.with_suffix(".log").open("w") as log:
-        process = subprocess.Popen(args, stdout=log, stderr=subprocess.STDOUT,
-                                   env={**os.environ, **OFFLINE})
-        _, status, usage = os.wait4(process.pid, 0)
-        process.returncode = os.waitstatus_to_exitcode(status)
-    if process.returncode != 0:
-        raise RuntimeError(f"Native generation failed ({process.returncode}); see {output.with_suffix('.log')}")
-    # sd-cli appends a batch index to the requested output name.
-    indexed = output.with_name(output.stem + "_1.png")
-    if indexed.is_file():
-        indexed.replace(output)
-    if not output.is_file():
-        raise RuntimeError("Native runtime returned success without an output PNG")
-    report = {"schema": 1, "model": "stable-diffusion-v1-5 Q4_0", "runtime_revision": REVISION,
-              "binary_sha256": digest(binary), "command": args, "cache_state": cache_state,
+    with tempfile.TemporaryDirectory(dir=output.parent, prefix=".nexi-native-") as tmp:
+        target = Path(tmp) / "image.png"
+        args = command(binary, root, target, prompt, seed, width, height, steps, threads, params, profile)
+        with output.with_suffix(".log").open("w") as log:
+            process = subprocess.Popen(args, stdout=log, stderr=subprocess.STDOUT,
+                                       env={**os.environ, **OFFLINE})
+            _, status, usage = os.wait4(process.pid, 0)
+            process.returncode = os.waitstatus_to_exitcode(status)
+        if process.returncode != 0:
+            raise RuntimeError(f"Native generation failed ({process.returncode}); see {output.with_suffix('.log')}")
+        indexed = target.with_name(target.stem + "_1.png")
+        if indexed.is_file():
+            indexed.replace(target)
+        if not target.is_file():
+            raise RuntimeError("Native runtime returned success without an output PNG")
+        target.replace(output)
+    report = {"schema": 1, "model": "stable-diffusion-v1-5 Q4_0", "profile": profile,
+              "runtime_revision": REVISION,
+              "runtime_version": version, "binary_sha256": digest(binary),
+              "command": args, "cache_state": cache_state,
+              "hardware": hardware_info(),
               "peak_rss_bytes": usage.ru_maxrss * 1024,
               "total_wall_seconds": time.perf_counter() - started,
               "model_disk_bytes": model_bytes, "model_files": entries(manifest=MANIFEST),
@@ -76,9 +92,10 @@ def main() -> None:
     gen.add_argument("--output", default="outputs/native.png")
     gen.add_argument("--models", default="models/native")
     gen.add_argument("--binary", default=str(Path.home() / "nexi-image-native/stable-diffusion.cpp/build/bin/sd-cli"))
-    for name, value in (("width", 256), ("height", 256), ("steps", 4), ("threads", 4), ("seed", 42)):
+    for name, value in (("width", 256), ("height", 256), ("steps", None), ("threads", 4), ("seed", 42)):
         gen.add_argument(f"--{name}", type=int, default=value)
     gen.add_argument("--params", choices=["cpu", "disk"], default="disk")
+    gen.add_argument("--profile", choices=["standard", "lcm"], default="standard")
     gen.add_argument("--cache-state", default="unspecified")
     args = vars(parser.parse_args())
     cmd = args.pop("command")

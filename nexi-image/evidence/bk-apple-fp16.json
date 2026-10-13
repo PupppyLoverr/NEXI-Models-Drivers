@@ -1,0 +1,152 @@
+{
+  "schema": 1,
+  "model": "nota-ai/bk-sdm-tiny",
+  "decoder": "madebyollin/taesd",
+  "config": {
+    "prompt": "A photo of a red apple on a wooden table, still life, studio lighting",
+    "negative": "blurry, low quality",
+    "output": "/home/ubuntu/repos/NEXI-Models-Drivers/nexi-image/outputs/bk-apple-fp16.png",
+    "models": "/home/ubuntu/repos/NEXI-Models-Drivers/nexi-image/models",
+    "width": 256,
+    "height": 256,
+    "steps": 10,
+    "seed": 42,
+    "threads": 4,
+    "dtype": "float16",
+    "guidance": 7.5,
+    "adapter": null
+  },
+  "cache_state": "fresh processes; warm OS page cache",
+  "hardware": {
+    "platform": "Linux-6.8.0-1061-aws-x86_64-with-glibc2.35",
+    "machine": "x86_64",
+    "logical_cpus": 8
+  },
+  "model_files": [
+    {
+      "repo": "nota-ai/bk-sdm-tiny",
+      "revision": "0364108e53b7f7f4d2585e817a0b7a83dc261cfa",
+      "path": "bk/text_encoder/config.json",
+      "url": "https://huggingface.co/nota-ai/bk-sdm-tiny/resolve/0364108e53b7f7f4d2585e817a0b7a83dc261cfa/text_encoder/config.json",
+      "bytes": 592,
+      "sha256": "aa210e6d6abd239a466af57a1dadb62d5ced63295064d295a549e08a6c4a2020",
+      "training_only": false
+    },
+    {
+      "repo": "nota-ai/bk-sdm-tiny",
+      "revision": "0364108e53b7f7f4d2585e817a0b7a83dc261cfa",
+      "path": "bk/text_encoder/model.fp16.safetensors",
+      "url": "https://huggingface.co/nota-ai/bk-sdm-tiny/resolve/0364108e53b7f7f4d2585e817a0b7a83dc261cfa/text_encoder/model.fp16.safetensors",
+      "bytes": 246144864,
+      "sha256": "77795e2023adcf39bc29a884661950380bd093cf0750a966d473d1718dc9ef4e",
+      "training_only": false
+    },
+    {
+      "repo": "nota-ai/bk-sdm-tiny",
+      "revision": "0364108e53b7f7f4d2585e817a0b7a83dc261cfa",
+      "path": "bk/tokenizer/merges.txt",
+      "url": "https://huggingface.co/nota-ai/bk-sdm-tiny/resolve/0364108e53b7f7f4d2585e817a0b7a83dc261cfa/tokenizer/merges.txt",
+      "bytes": 524619,
+      "sha256": "9fd691f7c8039210e0fced15865466c65820d09b63988b0174bfe25de299051a",
+      "training_only": false
+    },
+    {
+      "repo": "nota-ai/bk-sdm-tiny",
+      "revision": "0364108e53b7f7f4d2585e817a0b7a83dc261cfa",
+      "path": "bk/tokenizer/vocab.json",
+      "url": "https://huggingface.co/nota-ai/bk-sdm-tiny/resolve/0364108e53b7f7f4d2585e817a0b7a83dc261cfa/tokenizer/vocab.json",
+      "bytes": 1059962,
+      "sha256": "e089ad92ba36837a0d31433e555c8f45fe601ab5c221d4f607ded32d9f7a4349",
+      "training_only": false
+    },
+    {
+      "repo": "nota-ai/bk-sdm-tiny",
+      "revision": "0364108e53b7f7f4d2585e817a0b7a83dc261cfa",
+      "path": "bk/tokenizer/special_tokens_map.json",
+      "url": "https://huggingface.co/nota-ai/bk-sdm-tiny/resolve/0364108e53b7f7f4d2585e817a0b7a83dc261cfa/tokenizer/special_tokens_map.json",
+      "bytes": 472,
+      "sha256": "c4864a9376a8401918425bed71fc14fc0e81f9b59ec45c1cf96cccb2df508eac",
+      "training_only": false
+    },
+    {
+      "repo": "nota-ai/bk-sdm-tiny",
+      "revision": "0364108e53b7f7f4d2585e817a0b7a83dc261cfa",
+      "path": "bk/tokenizer/tokenizer_config.json",
+      "url": "https://huggingface.co/nota-ai/bk-sdm-tiny/resolve/0364108e53b7f7f4d2585e817a0b7a83dc261cfa/tokenizer/tokenizer_config.json",
+      "bytes": 806,
+      "sha256": "00439066fcba73de57644cf41e4e3b9f2dbb09d7f3fc2005898ba52399045882",
+      "training_only": false
+    },
+    {
+      "repo": "nota-ai/bk-sdm-tiny",
+      "revision": "0364108e53b7f7f4d2585e817a0b7a83dc261cfa",
+      "path": "bk/unet/config.json",
+      "url": "https://huggingface.co/nota-ai/bk-sdm-tiny/resolve/0364108e53b7f7f4d2585e817a0b7a83dc261cfa/unet/config.json",
+      "bytes": 1465,
+      "sha256": "1ff785ca27c8e050e9d695b704e2231fd52a212840c7932397acaa98f566d4ab",
+      "training_only": false
+    },
+    {
+      "repo": "nota-ai/bk-sdm-tiny",
+      "revision": "0364108e53b7f7f4d2585e817a0b7a83dc261cfa",
+      "path": "bk/unet/diffusion_pytorch_model.fp16.safetensors",
+      "url": "https://huggingface.co/nota-ai/bk-sdm-tiny/resolve/0364108e53b7f7f4d2585e817a0b7a83dc261cfa/unet/diffusion_pytorch_model.fp16.safetensors",
+      "bytes": 646813304,
+      "sha256": "b844aff8b5994067e8ea495131e60212cf7dd945a02b683c3a7dce955ea44407",
+      "training_only": false
+    },
+    {
+      "repo": "nota-ai/bk-sdm-tiny",
+      "revision": "0364108e53b7f7f4d2585e817a0b7a83dc261cfa",
+      "path": "bk/scheduler/scheduler_config.json",
+      "url": "https://huggingface.co/nota-ai/bk-sdm-tiny/resolve/0364108e53b7f7f4d2585e817a0b7a83dc261cfa/scheduler/scheduler_config.json",
+      "bytes": 313,
+      "sha256": "8335df29b53da12e9aeca35b1c2e60d88b23eae4cc5ad3d07efdcd7f003cc343",
+      "training_only": false
+    },
+    {
+      "repo": "madebyollin/taesd",
+      "revision": "614f76814bbe30edbe2e627ace1c2234c81a2c0e",
+      "path": "taesd/config.json",
+      "url": "https://huggingface.co/madebyollin/taesd/resolve/614f76814bbe30edbe2e627ace1c2234c81a2c0e/config.json",
+      "bytes": 597,
+      "sha256": "3ebefd1aa96ac474cc6430fe6ea81febccf7ee82461715691ee9315c884adeef",
+      "training_only": false
+    },
+    {
+      "repo": "madebyollin/taesd",
+      "revision": "614f76814bbe30edbe2e627ace1c2234c81a2c0e",
+      "path": "taesd/diffusion_pytorch_model.safetensors",
+      "url": "https://huggingface.co/madebyollin/taesd/resolve/614f76814bbe30edbe2e627ace1c2234c81a2c0e/diffusion_pytorch_model.safetensors",
+      "bytes": 9793292,
+      "sha256": "db169d69145ec4ff064e49d99c95fa05d3eb04ee453de35824a6d0f325513549",
+      "training_only": false
+    }
+  ],
+  "model_disk_bytes": 904340286,
+  "total_wall_seconds": 41.14633295500005,
+  "stages": [
+    {
+      "stage": "encode",
+      "wall_seconds": 4.546685900999989,
+      "peak_rss_bytes": 547086336,
+      "torch": "2.8.0+cpu"
+    },
+    {
+      "stage": "denoise",
+      "wall_seconds": 30.38134059700002,
+      "peak_rss_bytes": 1145073664,
+      "torch": "2.8.0+cpu"
+    },
+    {
+      "stage": "decode",
+      "wall_seconds": 3.089210025,
+      "peak_rss_bytes": 407433216,
+      "torch": "2.8.0+cpu"
+    }
+  ],
+  "max_worker_peak_rss_bytes": 1145073664,
+  "output_sha256": "bf77152ae0e3b5165523a071a54b1ee15794c0a667df1725a94b3ac5fd9fac34",
+  "output_bytes": 86507,
+  "adapter_sha256": null
+}

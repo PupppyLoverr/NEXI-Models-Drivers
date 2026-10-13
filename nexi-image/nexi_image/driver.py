@@ -16,6 +16,18 @@ OFFLINE = {"HF_HUB_OFFLINE": "1", "TRANSFORMERS_OFFLINE": "1",
            "HF_DATASETS_OFFLINE": "1", "HF_HUB_DISABLE_TELEMETRY": "1"}
 
 
+def hardware_info() -> dict:
+    info = {"platform": platform.platform(), "machine": platform.machine(),
+            "logical_cpus": os.cpu_count()}
+    cpuinfo = Path("/proc/cpuinfo")
+    if cpuinfo.is_file():
+        for line in cpuinfo.read_text().splitlines():
+            if line.startswith("model name"):
+                info["cpu_model"] = line.split(":", 1)[1].strip()
+                break
+    return info
+
+
 def validate(prompt: str, width: int, height: int, steps: int, threads: int,
              seed: int, dtype: str, guidance: float) -> None:
     if not prompt.strip() or len(prompt) > 4000:
@@ -42,9 +54,10 @@ def run_worker(stage: str, config: dict, workspace: Path) -> dict:
 
 def generate(prompt: str, output: str | Path, models: str | Path = "models",
              width: int = 256, height: int = 256, steps: int = 10,
-             seed: int = 42, threads: int = 4, dtype: str = "bfloat16",
+             seed: int = 42, threads: int = 4, dtype: str = "float16",
              guidance: float = 7.5, negative: str = "blurry, low quality",
-             adapter: str | None = None, cache_state: str = "unspecified") -> dict:
+             adapter: str | None = None, cache_state: str = "unspecified",
+             batched_guidance: bool = False) -> dict:
     """Generate locally, returning provenance. No network access is performed."""
     validate(prompt, width, height, steps, threads, seed, dtype, guidance)
     root = Path(models).resolve()
@@ -57,14 +70,14 @@ def generate(prompt: str, output: str | Path, models: str | Path = "models",
     config = dict(prompt=prompt, negative=negative, output=str(output), models=str(root),
                   width=width, height=height, steps=steps, seed=seed, threads=threads,
                   dtype=dtype, guidance=guidance,
+                  batched_guidance=batched_guidance,
                   adapter=str(Path(adapter).resolve()) if adapter else None)
     with tempfile.TemporaryDirectory(prefix="nexi-image-") as tmp:
         workspace = Path(tmp)
         metrics = [run_worker(stage, config, workspace) for stage in ("encode", "denoise", "decode")]
     report = {"schema": 1, "model": "nota-ai/bk-sdm-tiny", "decoder": "madebyollin/taesd",
               "config": config, "cache_state": cache_state,
-              "hardware": {"platform": platform.platform(), "machine": platform.machine(),
-                           "logical_cpus": os.cpu_count()},
+              "hardware": hardware_info(),
               "model_files": entries(), "model_disk_bytes": model_bytes,
               "total_wall_seconds": time.perf_counter() - started, "stages": metrics,
               "max_worker_peak_rss_bytes": max(m["peak_rss_bytes"] for m in metrics),
@@ -89,10 +102,11 @@ def main() -> None:
     gen.add_argument("--models", default="models")
     for name, default in (("width", 256), ("height", 256), ("steps", 10), ("threads", 4), ("seed", 42)):
         gen.add_argument(f"--{name}", type=int, default=default)
-    gen.add_argument("--dtype", choices=["float32", "bfloat16", "float16"], default="bfloat16")
+    gen.add_argument("--dtype", choices=["float32", "bfloat16", "float16"], default="float16")
     gen.add_argument("--guidance", type=float, default=7.5)
     gen.add_argument("--negative", default="blurry, low quality")
     gen.add_argument("--adapter")
+    gen.add_argument("--batched-guidance", action="store_true", help="Batch CFG branches; uses more RAM")
     gen.add_argument("--cache-state", default="unspecified")
     args = vars(parser.parse_args())
     command = args.pop("command")

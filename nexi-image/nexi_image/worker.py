@@ -51,9 +51,14 @@ def main() -> None:
                               generator=generator, dtype=torch.float32).to(dtype) * scheduler.init_noise_sigma
         with torch.inference_mode():
             for t in scheduler.timesteps:
-                batch = scheduler.scale_model_input(torch.cat([latents, latents]), t)
-                noise = unet(batch, t, encoder_hidden_states=embeddings).sample
-                unconditional, conditional = noise.chunk(2)
+                if config.get("batched_guidance"):
+                    batch = scheduler.scale_model_input(torch.cat([latents, latents]), t)
+                    noise = unet(batch, t, encoder_hidden_states=embeddings).sample
+                    unconditional, conditional = noise.chunk(2)
+                else:
+                    sample = scheduler.scale_model_input(latents, t)
+                    unconditional = unet(sample, t, encoder_hidden_states=embeddings[:1]).sample
+                    conditional = unet(sample, t, encoder_hidden_states=embeddings[1:]).sample
                 guided = unconditional + config["guidance"] * (conditional - unconditional)
                 latents = scheduler.step(guided, t, latents, eta=0).prev_sample
         torch.save(latents.float(), work / "latents.pt")
