@@ -37,7 +37,7 @@ class DriverTests(unittest.TestCase):
                 pcm16(array)
 
     def test_invalid_threads_before_assets(self) -> None:
-        for threads in (0, 9):
+        for threads in (0, 9, True, 1.5):
             with self.subTest(threads=threads), self.assertRaises(ValueError):
                 Synthesizer(threads=threads)
 
@@ -58,6 +58,8 @@ class DriverTests(unittest.TestCase):
             {"speed": True},
             {"speed": 0.1},
             {"speed": 3},
+            {"speed": 10**400},
+            {"speed": "fast"},
         ):
             with self.subTest(kwargs=kwargs), self.assertRaises(ValueError):
                 list(synth.iter_audio("hello", **kwargs))

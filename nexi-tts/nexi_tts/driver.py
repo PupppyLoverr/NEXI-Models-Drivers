@@ -15,7 +15,7 @@ from typing import Any
 import numpy as np
 from numpy.typing import NDArray
 
-from .assets import MODEL_FILE, default_model_dir, verify_assets
+from .assets import default_model_dir, profile_for, verify_assets
 from .text import chunk_text, normalize, tokenize
 
 SAMPLE_RATE = 24000
@@ -39,11 +39,15 @@ def wav_bytes(audio: Audio) -> bytes:
 
 
 class Synthesizer:
-    def __init__(self, model_dir: Path | str | None = None, threads: int = 2) -> None:
-        if not 1 <= threads <= 8:
+    def __init__(
+        self, model_dir: Path | str | None = None, threads: int = 2, *, profile: str = "nano"
+    ) -> None:
+        if isinstance(threads, bool) or not isinstance(threads, int) or not 1 <= threads <= 8:
             raise ValueError("threads must be between one and eight")
-        self.model_dir = Path(model_dir) if model_dir is not None else default_model_dir()
-        config = verify_assets(self.model_dir)
+        spec = profile_for(profile)
+        self.profile = profile
+        self.model_dir = Path(model_dir) if model_dir is not None else default_model_dir(profile)
+        config = verify_assets(self.model_dir, profile)
         import espeakng_loader
         import onnxruntime as ort
         from phonemizer.backend import EspeakBackend
@@ -61,7 +65,7 @@ class Synthesizer:
         options.enable_cpu_mem_arena = False
         options.enable_mem_pattern = False
         self.session = ort.InferenceSession(
-            str(self.model_dir / MODEL_FILE), options, providers=["CPUExecutionProvider"]
+            str(self.model_dir / spec.model_file), options, providers=["CPUExecutionProvider"]
         )
         with np.load(self.model_dir / "voices.npz", allow_pickle=False) as bundle:
             self._voices = {name: bundle[name].astype(np.float32) for name in bundle.files}
@@ -75,17 +79,28 @@ class Synthesizer:
         return list(self.voice_aliases)
 
     def iter_audio(
-        self, text: str, voice: str = "Jasper", language: str = "en", speed: float = 1.0
+        self,
+        text: str,
+        voice: str = "Jasper",
+        language: str = "en",
+        speed: float = 1.0,
+        *,
+        first_chunk_chars: int | None = None,
     ) -> Iterator[Audio]:
         if language not in ("en", "en-us"):
             raise ValueError("This Kitten 0.8 model supports only English (en or en-us)")
         if voice not in self.voice_aliases:
             raise ValueError(f"Unknown voice {voice!r}; choose from {', '.join(self.voices)}")
-        if isinstance(speed, bool) or not math.isfinite(speed) or not 0.5 <= speed <= 2.0:
+        if (
+            isinstance(speed, bool)
+            or not isinstance(speed, int | float)
+            or not 0.5 <= speed <= 2.0
+            or not math.isfinite(speed)
+        ):
             raise ValueError("speed must be finite and between 0.5 and 2.0")
         cleaned = normalize(text)
         voice_id = self.voice_aliases[voice]
-        for chunk in chunk_text(cleaned):
+        for chunk in chunk_text(cleaned, first_chunk_chars=first_chunk_chars):
             with self._lock:
                 phonemes = self.phonemizer.phonemize([chunk], njobs=1)[0]
                 tokens = tokenize(phonemes)
@@ -93,7 +108,9 @@ class Synthesizer:
                 inputs: dict[str, Any] = {
                     "input_ids": np.array([tokens], dtype=np.int64),
                     "style": self._voices[voice_id][reference : reference + 1],
-                    "speed": np.array([speed * self.speed_priors[voice_id]], dtype=np.float32),
+                    "speed": np.array(
+                        [speed * self.speed_priors.get(voice_id, 1.0)], dtype=np.float32
+                    ),
                 }
                 audio = np.asarray(self.session.run(None, inputs)[0], dtype=np.float32).reshape(-1)
             # Kitten's official 0.8 adapter removes 5000 trailing samples per chunk.

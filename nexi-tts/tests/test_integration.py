@@ -15,6 +15,7 @@ import numpy as np
 
 from nexi_tts.benchmark import deny_network, hardware, peak_rss_bytes
 from nexi_tts.driver import SAMPLE_RATE, Synthesizer, wav_bytes
+from nexi_tts.text import normalize
 
 
 @unittest.skipUnless(os.environ.get("NEXI_TTS_INTEGRATION") == "1", "opt-in local models needed")
@@ -27,12 +28,17 @@ class RealInferenceTests(unittest.TestCase):
         cls.connections.start()
         cls.addClassCleanup(cls.guard.stop)
         cls.addClassCleanup(cls.connections.stop)
-        cls.synth = Synthesizer(threads=2)
+        cls.profile = os.environ.get("NEXI_TTS_PROFILE", "nano")
+        cls.synth = Synthesizer(threads=2, profile=cls.profile)
 
     def test_all_voices_and_speed_offline(self) -> None:
-        output_dir = Path("results/integration")
+        output_dir = Path(os.environ.get("NEXI_TTS_OUTPUT_DIR", "results/integration"))
         output_dir.mkdir(parents=True, exist_ok=True)
-        evidence: dict[str, object] = {"hardware": hardware(), "python_network_guard": True}
+        evidence: dict[str, object] = {
+            "hardware": hardware(),
+            "python_network_guard": True,
+            "profile": self.profile,
+        }
         runs: list[dict[str, object]] = []
         durations: dict[float, float] = {}
         for voice, speed in [(name, 1.0) for name in self.synth.voices] + [
@@ -47,6 +53,7 @@ class RealInferenceTests(unittest.TestCase):
                 elapsed = time.perf_counter() - started
                 self.assertTrue(np.isfinite(audio).all())
                 self.assertGreater(audio.size, SAMPLE_RATE)
+                self.assertLessEqual(float(np.max(np.abs(audio))), 1.0)
                 path = output_dir / f"{voice}-{speed}.wav"
                 raw = wav_bytes(audio)
                 path.write_bytes(raw)
@@ -74,6 +81,24 @@ class RealInferenceTests(unittest.TestCase):
         (output_dir / "smoke.json").write_text(json.dumps(evidence, indent=2) + "\n")
         self.assertGreater(durations[0.75], durations[1.0])
         self.assertGreater(durations[1.0], durations[1.25])
+
+    def test_normalized_challenges_and_low_latency_chunks(self) -> None:
+        text = (
+            "Dr. Smith saved $12.50 on her 21st order, a discount of 12.5%. "
+            "The package weighs 2.5kg and contains 1.20 liters of water. "
+            "Every sample you hear is generated locally, without a cloud service."
+        )
+        self.assertIn("twelve dollars and fifty cents", normalize(text))
+        self.assertIn("twenty-first", normalize(text))
+        chunks = list(self.synth.iter_audio(text, first_chunk_chars=80))
+        self.assertGreater(len(chunks), 1)
+        for audio in chunks:
+            self.assertTrue(np.isfinite(audio).all())
+            self.assertGreater(audio.size, 0)
+            self.assertLessEqual(float(np.max(np.abs(audio))), 1.0)
+
+    def test_model_is_cpu_only(self) -> None:
+        self.assertEqual(self.synth.session.get_providers(), ["CPUExecutionProvider"])
 
     def test_invalid_requests_with_real_instance(self) -> None:
         for text, kwargs in [

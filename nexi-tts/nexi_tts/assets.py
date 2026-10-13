@@ -7,6 +7,7 @@ import json
 import os
 import tempfile
 import urllib.request
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TypedDict, cast
 
@@ -27,8 +28,49 @@ FILES = {
 }
 
 
-def default_model_dir() -> Path:
-    return Path(__file__).resolve().parent.parent / ".models" / "nano-int8"
+@dataclass(frozen=True)
+class ModelProfile:
+    repository: str
+    revision: str
+    model_file: str
+    directory: str
+    files: dict[str, tuple[int, str]]
+
+
+PROFILES = {
+    "nano": ModelProfile(REPOSITORY, REVISION, MODEL_FILE, "nano-int8", FILES),
+    "mini": ModelProfile(
+        "KittenML/kitten-tts-mini-0.8",
+        "c02725660cea441db4c383af69f1f26f5cd00947",
+        "kitten_tts_mini_v0_8.onnx",
+        "mini",
+        {
+            "kitten_tts_mini_v0_8.onnx": (
+                78268016,
+                "0f5bbae4fc4800c98dbc544a87ecfa79510de2fb8222db30d12e5bfe9177df91",
+            ),
+            "voices.npz": (
+                3278902,
+                "40ad2638952b77b7b2f30127e2608e169fc69dd256b53bd8aaa3409a33193c42",
+            ),
+            "config.json": (
+                470,
+                "6b160bc9b19e24ecb21e84bc14f8a7da21fdf47ec72d42450bc5cf514b61804a",
+            ),
+            "README.md": (734, "cab0af19aa75f409684d165407c32a0d845cc8fc660606c379f4b0663f87abae"),
+        },
+    ),
+}
+
+
+def profile_for(profile: str) -> ModelProfile:
+    if profile not in PROFILES:
+        raise ValueError(f"Unknown profile {profile!r}; choose from {', '.join(PROFILES)}")
+    return PROFILES[profile]
+
+
+def default_model_dir(profile: str = "nano") -> Path:
+    return Path(__file__).resolve().parent.parent / ".models" / profile_for(profile).directory
 
 
 def verified(path: Path, size: int, digest: str) -> bool:
@@ -41,23 +83,24 @@ def verified(path: Path, size: int, digest: str) -> bool:
     return sha.hexdigest() == digest
 
 
-def verify_assets(directory: Path) -> ModelConfig:
-    for name, (size, digest) in FILES.items():
+def verify_assets(directory: Path, profile: str = "nano") -> ModelConfig:
+    for name, (size, digest) in profile_for(profile).files.items():
         if not verified(directory / name, size, digest):
             raise ValueError(
                 f"Missing or corrupt asset: {directory / name}. "
-                "Run python -m nexi_tts download --model-dir PATH explicitly."
+                f"Run python -m nexi_tts download --profile {profile} --model-dir PATH explicitly."
             )
     return cast(ModelConfig, json.loads((directory / "config.json").read_text(encoding="utf-8")))
 
 
-def download(directory: Path) -> None:
+def download(directory: Path, profile: str = "nano") -> None:
+    spec = profile_for(profile)
     directory.mkdir(parents=True, exist_ok=True)
-    for name, (size, digest) in FILES.items():
+    for name, (size, digest) in spec.files.items():
         target = directory / name
         if verified(target, size, digest):
             continue
-        url = f"https://huggingface.co/{REPOSITORY}/resolve/{REVISION}/{name}"
+        url = f"https://huggingface.co/{spec.repository}/resolve/{spec.revision}/{name}"
         temporary: Path | None = None
         try:
             with tempfile.NamedTemporaryFile(dir=directory, suffix=".part", delete=False) as out:
@@ -76,4 +119,4 @@ def download(directory: Path) -> None:
         finally:
             if temporary is not None:
                 temporary.unlink(missing_ok=True)
-    verify_assets(directory)
+    verify_assets(directory, profile)

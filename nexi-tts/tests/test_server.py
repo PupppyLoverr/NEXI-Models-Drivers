@@ -9,6 +9,7 @@ from unittest.mock import Mock
 
 import numpy as np
 
+from nexi_tts.driver import pcm16
 from nexi_tts.server import handler_for, request_args
 
 
@@ -31,6 +32,9 @@ class RequestTests(unittest.TestCase):
             {"text": "hi", "speed": True},
             {"text": "hi", "speed": "1"},
             {"text": "hi", "speed": float("nan")},
+            {"text": "hi", "speed": 10**400},
+            {"text": "hi", "speed": 0.1},
+            {"text": "hi", "speed": 3.0},
         ):
             with self.subTest(payload=payload), self.assertRaises(ValueError):
                 request_args(payload)
@@ -83,6 +87,68 @@ class HTTPTests(unittest.TestCase):
         self.assertEqual(response.status, 400)
         response.read()
         self.synth.synthesize.assert_not_called()
+
+    def test_stream_returns_pcm_before_synthesis_completes(self) -> None:
+        release = threading.Event()
+        audio = np.full(2400, 0.25, dtype=np.float32)
+
+        def chunks():
+            yield audio
+            if not release.wait(5):
+                raise RuntimeError("Client did not receive first chunk")
+            yield audio
+
+        self.synth.iter_audio.return_value = chunks()
+        try:
+            self.client.request(
+                "POST",
+                "/stream",
+                body='{"text":"Hello"}',
+                headers={"Content-Type": "application/json"},
+            )
+            response = self.client.getresponse()
+            self.assertEqual(response.status, 200)
+            self.assertEqual(response.getheader("Transfer-Encoding"), "chunked")
+            self.assertEqual(response.getheader("X-Audio-Format"), "pcm_s16le")
+            self.assertEqual(response.getheader("X-Audio-Sample-Rate"), "24000")
+            self.assertEqual(response.read(4800), pcm16(audio))
+            release.set()
+            self.assertEqual(response.read(), pcm16(audio))
+        finally:
+            release.set()
+        self.synth.iter_audio.assert_called_once_with(
+            "Hello", voice="Jasper", language="en", speed=1.0, first_chunk_chars=80
+        )
+        self.synth.synthesize.assert_not_called()
+
+    def test_stream_validation_precedes_success_headers(self) -> None:
+        self.synth.iter_audio.side_effect = ValueError("Unknown voice")
+        self.client.request(
+            "POST",
+            "/stream",
+            body='{"text":"Hello","voice":"unknown"}',
+            headers={"Content-Type": "application/json"},
+        )
+        response = self.client.getresponse()
+        self.assertEqual(response.status, 400)
+        self.assertIn("Unknown voice", response.read().decode())
+
+    def test_midstream_failure_is_detectably_incomplete(self) -> None:
+        def chunks():
+            yield np.zeros(2400, dtype=np.float32)
+            raise RuntimeError("Model failed")
+
+        self.synth.iter_audio.return_value = chunks()
+        self.client.request(
+            "POST",
+            "/stream",
+            body='{"text":"Hello"}',
+            headers={"Content-Type": "application/json"},
+        )
+        response = self.client.getresponse()
+        self.assertEqual(response.status, 200)
+        with self.assertRaises(http.client.IncompleteRead):
+            response.read()
 
     def test_size_limit(self) -> None:
         self.client.request(
