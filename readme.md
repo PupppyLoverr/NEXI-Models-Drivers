@@ -43,3 +43,7 @@ its input, hardware, settings and model revision and separates measurements here
 published comparison figures. **Checkpoint size, total system RAM, and GPU VRAM are
 different quantities.** In particular, image generation must not be advertised as a
 sub-1-GB runtime just because its quantized weights fit in a sub-1-GB file.
+
+## NEXI-CUA (computer-use and browser-use driver + model)
+
+[`nexi-cua/`](nexi-cua/) is a local, $0 computer-use runtime. It contains the 6.3 MB NEXI-CUA-1 action ranker, a deterministic semantic resolver, and macOS AX / Windows UIA / Linux AT-SPI / Chromium CDP drivers with safety gates and verification. Start with [`nexi-cua/README.md`](nexi-cua/README.md). Installers are in `nexi-cua/install/`, the prebuilt v0.4.0 wheel/sdist in `nexi-cua/releases/`, and the measured numbers and comparisons in `nexi-cua/BENCHMARKS.md`.

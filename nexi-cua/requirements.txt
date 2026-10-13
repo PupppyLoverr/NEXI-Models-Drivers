@@ -1,0 +1,20 @@
+# core (all platforms)
+numpy>=1.26
+pillow>=10.0
+requests>=2.31
+websocket-client>=1.7
+mss>=9.0
+torch>=2.2
+
+# --- platform extras (install the ones you need) ---
+# macOS:
+# pyobjc-framework-Quartz pyobjc-framework-ApplicationServices pyobjc-framework-Cocoa
+# Windows:
+# comtypes pywin32 psutil
+# Linux:
+# pyatspi python-xlib pydbus  (plus xdotool/wtype/ydotool/grim for input+capture)
+# Vision (llama.cpp path): `brew install llama.cpp` or distro package,
+#   then `python -m nexi_cua.cli download-weights`
+# Vision (Apple Silicon preferred): mlx-vlm  — model fetches itself on first use
+# dev:
+# pytest

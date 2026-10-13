@@ -1,0 +1,14 @@
+include README.md
+include ARCHITECTURE.md
+include STATUS.md
+include LICENSE
+include RELEASE_CHECKSUMS.sha256
+include requirements.txt
+include weights/nexi-cua-1.pt
+include weights/nexi-cua-1.calib.json
+recursive-include nexi_cua/eval/fixtures *.json
+recursive-include demos *.py *.png
+recursive-include tests *.py
+recursive-include install *
+recursive-include releases *.whl
+recursive-exclude releases *.tar.gz SHA256SUMS
