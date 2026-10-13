@@ -1,0 +1,32 @@
+{
+ "label": "base",
+ "gguf": "base-merged-Q4_K_M.gguf",
+ "ctx": 4096,
+ "gguf_sha256": "eb62528a5fca6ac0a82f3f798cab313d8e8654526ee973c68d63725a9110cddc",
+ "tasks": {
+  "tool": {
+   "n": 20,
+   "correct": 8,
+   "acc": 0.4,
+   "wall_s": 1468
+  },
+  "cua": {
+   "n": 50,
+   "correct": 31,
+   "acc": 0.62,
+   "wall_s": 1333,
+   "abstain_acc": 0.4211,
+   "abstain_n": 19
+  },
+  "humaneval": {
+   "base_pass@1": 1.0,
+   "plus_pass@1": 1.0,
+   "limit": 10,
+   "wall_s": 839,
+   "returncode": 0,
+   "stdout_tail": "Greedy decoding ON (--greedy): setting bs=1, n_samples=1, temperature=0\nInitializing a decoder model: base ...\nSanitized code outputs will be saved to /home/ubuntu/he-nexi-16gb/evalplus/humaneval/base_openai_temp_0.0.jsonl\nRaw outputs will be saved to /home/ubuntu/he-nexi-16gb/evalplus/humaneval/base_openai_temp_0.0.raw.jsonl\nCodegen: HumanEval/0 @ base\nCodegen: HumanEval/1 @ base\nCodegen: HumanEval/2 @ base\nCodegen: HumanEval/3 @ base\nCodegen: HumanEval/4 @ base\nCodegen: HumanEval/5 @ base\nCodegen: HumanEval/6 @ base\nCodegen: HumanEval/7 @ base\nCodegen: HumanEval/8 @ base\nCodegen: HumanEval/9 @ base\nhumaneval \u2022100% \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501 10/10 \u2022 0:13:38\nComputing expected output...\nExpected outputs computed in 0.03s\nReading samples...\nhumaneval (base tests)\npass@1:\t1.000\nhumaneval+ (base + extra tests)\npass@1:\t1.000\n",
+   "stderr_tail": "\n0it [00:00, ?it/s]\n10it [00:00, 790.08it/s]\n\n  0%|          | 0/10 [00:00<?, ?it/s]\n100%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588| 10/10 [00:00<00:00, 122.73it/s]\n"
+  }
+ },
+ "server_peak_rss_kb": 14930676
+}

@@ -1,0 +1,16 @@
+{
+  "label": "smoke-2b",
+  "gguf": "base-merged-Q4_K_M.gguf",
+  "ctx": 4096,
+  "gguf_sha256": "82af45d96d089f10de17b10a65758672b0117602ef8182ff54dd9385760dfd9a",
+  "tasks": {
+    "ifeval": {
+      "prompt_level_strict_acc": 0.8,
+      "inst_level_strict_acc": 0.875,
+      "limit": 5,
+      "wall_s": 88,
+      "returncode": 0
+    }
+  },
+  "server_peak_rss_kb": 2311804
+}

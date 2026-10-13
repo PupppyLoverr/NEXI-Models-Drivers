@@ -11,4 +11,4 @@ peft==0.21.2
 accelerate==1.15.0
 huggingface-hub==1.33.0
 evalplus==0.3.1
-lm-eval==0.4.13
+lm-eval[api,ifeval]==0.4.13
