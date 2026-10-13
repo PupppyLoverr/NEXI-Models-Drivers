@@ -8,6 +8,7 @@ from unittest.mock import patch
 from nexi_image import assets
 from nexi_image.driver import OFFLINE, generate, validate
 from nexi_image.native import command
+from nexi_image.train_lora import samples
 
 
 class DriverTests(unittest.TestCase):
@@ -63,15 +64,50 @@ class DriverTests(unittest.TestCase):
     def test_training_files_are_optional(self):
         self.assertLess(len(assets.entries()), len(assets.entries(True)))
 
+    def test_download_verifies_before_replacement(self):
+        import io
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            manifest = root / "manifest.json"
+            manifest.write_text(json.dumps({"files": [{"path": "weights", "bytes": 3,
+                "url": "https://example.invalid/weights", "training_only": False,
+                "sha256": hashlib.sha256(b"abc").hexdigest()}]}))
+            with patch("nexi_image.assets.urlopen", return_value=io.BytesIO(b"bad")):
+                with self.assertRaisesRegex(ValueError, "integrity failure"):
+                    assets.download(root, manifest=manifest)
+            self.assertFalse((root / "weights").exists())
+            self.assertEqual(list(root.glob("*.partial")), [])
+            with patch("nexi_image.assets.urlopen", return_value=io.BytesIO(b"abc")):
+                self.assertEqual(assets.download(root, manifest=manifest), 3)
+            with patch("nexi_image.assets.urlopen", side_effect=AssertionError("network used")):
+                self.assertEqual(assets.download(root, manifest=manifest), 3)
+
+    def test_dataset_validation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "train.jsonl"
+            for row in ["", "[]", '{}', '{"image":"missing.png","caption":"apple"}']:
+                path.write_text(row)
+                with self.assertRaises(ValueError):
+                    samples(path)
+            (Path(tmp) / "image.png").write_bytes(b"not decoded in this schema test")
+            path.write_text('{"image":"image.png","caption":"apple"}\n')
+            self.assertEqual(samples(path)[0]["caption"], "apple")
+
     def test_native_command_preserves_prompt_and_seed(self):
         args = command(Path("sd-cli"), Path("models"), Path("out.png"),
-                       "an apple; not a shell command", 42, 256, 256, 4, 4, "disk")
+                       "an apple; not a shell command", 42, 256, 256, 4, 4, "disk", "lcm")
         self.assertEqual(args[args.index("--seed") + 1], "42")
         self.assertEqual(args[args.index("-p") + 1], "an apple; not a shell command<lora:lcm:1>")
         self.assertEqual(args[args.index("--params-backend") + 1], "disk")
         self.assertIn("--diffusion-fa", args)
         self.assertEqual(args, command(Path("sd-cli"), Path("models"), Path("out.png"),
-                                      "an apple; not a shell command", 42, 256, 256, 4, 4, "disk"))
+                                      "an apple; not a shell command", 42, 256, 256, 4, 4, "disk", "lcm"))
+
+    def test_native_standard_does_not_apply_lcm(self):
+        args = command(Path("sd-cli"), Path("models"), Path("out.png"), "apple",
+                       42, 256, 256, 10, 4, "disk")
+        self.assertEqual(args[args.index("-p") + 1], "apple")
+        self.assertEqual(args[args.index("--sampling-method") + 1], "euler_a")
 
 
 if __name__ == "__main__":

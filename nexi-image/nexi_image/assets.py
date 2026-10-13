@@ -3,6 +3,7 @@
 import hashlib
 import json
 from pathlib import Path
+import tempfile
 from urllib.request import urlopen
 
 MANIFEST = Path(__file__).resolve().parents[1] / "manifest.json"
@@ -41,7 +42,9 @@ def download(root: Path, training: bool = False, manifest: Path = MANIFEST) -> i
         if path.is_file() and digest(path) == item["sha256"]:
             continue
         path.parent.mkdir(parents=True, exist_ok=True)
-        temporary = path.with_suffix(path.suffix + ".partial")
+        with tempfile.NamedTemporaryFile(dir=path.parent, prefix=path.name + ".",
+                                         suffix=".partial", delete=False) as handle:
+            temporary = Path(handle.name)
         try:
             with urlopen(item["url"], timeout=120) as src, temporary.open("wb") as dst:
                 while chunk := src.read(1024 * 1024):

@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "base_model": "nota-ai/bk-sdm-tiny",
+  "rank": 2,
+  "steps": 1,
+  "resolution": 128,
+  "seed": 42,
+  "learning_rate": 0.0001,
+  "threads": 4,
+  "trainable_parameters": 215808,
+  "losses": [
+    0.52126145362854
+  ],
+  "precompute": [
+    {
+      "stage": "encode",
+      "wall_seconds": 4.095636324999987,
+      "peak_rss_bytes": 1087275008,
+      "torch": "2.8.0+cpu"
+    },
+    {
+      "stage": "training_encode",
+      "wall_seconds": 8.459092720000001,
+      "peak_rss_bytes": 824877056,
+      "torch": "2.8.0+cpu"
+    }
+  ],
+  "peak_rss_bytes": 2263867392,
+  "wall_seconds": 27.094194426,
+  "model_disk_bytes": 1071676179,
+  "adapter_bytes": 883048,
+  "adapter_sha256": "968e443289525f3328a13686b8622b6da39be9d02127306a222326b311b5cb38",
+  "dataset_sha256": "808ca3831fd9601cd58165c3afdf0f414e25546ab801ca9a92d0cf91ee00e1c9",
+  "images": [
+    {
+      "image": "/home/ubuntu/repos/NEXI-Models-Drivers/nexi-image/outputs/bk-lighthouse.png",
+      "caption": "A watercolor ocean sunset beside a rocky cliff",
+      "sha256": "f092682222e6cb73d9a04b78caeefafecdf10ff8ddef5ca7a83cef496742d5d7"
+    }
+  ],
+  "quality_claim": "none; optimizer smoke test is not evidence of useful adaptation"
+}

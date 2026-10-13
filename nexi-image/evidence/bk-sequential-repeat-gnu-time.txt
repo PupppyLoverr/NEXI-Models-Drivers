@@ -1,0 +1,23 @@
+	Command being timed: ".venv/bin/python -m nexi_image.driver generate --prompt A photo of a red apple on a wooden table, still life, studio lighting --output outputs/bk-apple-sequential-repeat.png --cache-state fresh workers; warm page cache; sequential CFG repeat"
+	User time (seconds): 185.53
+	System time (seconds): 3.35
+	Percent of CPU this job got: 270%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 1:09.95
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 1115932
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 606025
+	Voluntary context switches: 3125
+	Involuntary context switches: 1182
+	Swaps: 0
+	File system inputs: 0
+	File system outputs: 848
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0

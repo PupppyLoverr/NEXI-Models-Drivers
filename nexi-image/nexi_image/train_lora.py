@@ -18,6 +18,8 @@ def samples(path: Path) -> list[dict]:
         if not line.strip():
             continue
         row = json.loads(line)
+        if not isinstance(row, dict) or not isinstance(row.get("image"), str) or not row["image"]:
+            raise ValueError("Every dataset row requires an image path")
         if not isinstance(row.get("caption"), str) or not row["caption"].strip():
             raise ValueError("Every dataset row requires a caption")
         image = (path.parent / row["image"]).resolve()
