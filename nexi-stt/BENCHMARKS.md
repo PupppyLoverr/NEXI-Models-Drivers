@@ -305,3 +305,12 @@ python3 ../common/bench/process.py --label tiny-corpus-evaluator \
 
 Sources accessed 2026-10-13. The source papers/cards/runtime versions may differ
 from one another; retain those distinctions when reporting comparisons.
+
+## Independent review reproduction
+
+`results/review/dictation.json` records an independent run of the real PCM
+dictation regressions on the latest STT branch. Tiny peaked at **350,298,112
+bytes**; pause/EOF timestamps, buffer limits, synthetic non-speech controls and
+stateful VAD parity passed. This is reused-clip regression evidence, not new
+held-out accuracy evidence. The [review snapshot](../common/bench/reviews/modalities-2026-10-13.md)
+records scope and remaining product limitations.

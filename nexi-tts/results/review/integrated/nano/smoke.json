@@ -1,0 +1,126 @@
+{
+  "hardware": {
+    "platform": "Linux-6.8.0-1061-aws-x86_64-with-glibc2.35",
+    "python": "3.10.12 (main, Jun 22 2026, 18:55:27) [GCC 11.4.0]",
+    "logical_cpus": 8,
+    "gpu_used": false,
+    "cpu_model": "INTEL(R) XEON(R) PLATINUM 8559C",
+    "mem_total_bytes": 33653956608
+  },
+  "python_network_guard": true,
+  "profile": "nano",
+  "chunk_chars": 128,
+  "runs": [
+    {
+      "voice": "Bella",
+      "speed": 1.0,
+      "audio_seconds": 5.416666666666667,
+      "synthesis_seconds": 1.153585239000222,
+      "waveform_peak": 0.6632331609725952,
+      "clipped_samples": 0,
+      "wav_file": "Bella-1.0.wav",
+      "wav_bytes": 260044,
+      "wav_sha256": "96b0fc058be5f62a48ea9b28ff33985578e1d31f7130f1fca13bdcaba32ef343"
+    },
+    {
+      "voice": "Jasper",
+      "speed": 1.0,
+      "audio_seconds": 3.6666666666666665,
+      "synthesis_seconds": 0.9668800049998936,
+      "waveform_peak": 0.770613968372345,
+      "clipped_samples": 0,
+      "wav_file": "Jasper-1.0.wav",
+      "wav_bytes": 176044,
+      "wav_sha256": "a6bc643169dc66a6a80b343c13db7b34597152d751fe0c121ea4db7d2c4a37e4"
+    },
+    {
+      "voice": "Luna",
+      "speed": 1.0,
+      "audio_seconds": 4.291666666666667,
+      "synthesis_seconds": 0.9265413070002069,
+      "waveform_peak": 0.8061776161193848,
+      "clipped_samples": 0,
+      "wav_file": "Luna-1.0.wav",
+      "wav_bytes": 206044,
+      "wav_sha256": "a3d198b5bd27e86398dae929f7924e59c86b53eb7b8b83a0f9583936ee566b79"
+    },
+    {
+      "voice": "Bruno",
+      "speed": 1.0,
+      "audio_seconds": 3.6666666666666665,
+      "synthesis_seconds": 0.8129817439998988,
+      "waveform_peak": 0.9152113795280457,
+      "clipped_samples": 0,
+      "wav_file": "Bruno-1.0.wav",
+      "wav_bytes": 176044,
+      "wav_sha256": "c61b91f530a12afce0254fa87401aa4661d6aa37f794fd5617d6ecc674e6b659"
+    },
+    {
+      "voice": "Rosie",
+      "speed": 1.0,
+      "audio_seconds": 4.016666666666667,
+      "synthesis_seconds": 0.8717120450000948,
+      "waveform_peak": 0.4775311052799225,
+      "clipped_samples": 0,
+      "wav_file": "Rosie-1.0.wav",
+      "wav_bytes": 192844,
+      "wav_sha256": "0e54c0fadc6f39971188a66369484a7151327b8a0a2d4fd6d6e04438096326f0"
+    },
+    {
+      "voice": "Hugo",
+      "speed": 1.0,
+      "audio_seconds": 3.091666666666667,
+      "synthesis_seconds": 0.7000041669998609,
+      "waveform_peak": 0.8874070644378662,
+      "clipped_samples": 0,
+      "wav_file": "Hugo-1.0.wav",
+      "wav_bytes": 148444,
+      "wav_sha256": "4a5f1fad7c4cd075484fb7cc86f06a4cd7f19e8b3aaab73f92c1a8e80e1256af"
+    },
+    {
+      "voice": "Kiki",
+      "speed": 1.0,
+      "audio_seconds": 3.441666666666667,
+      "synthesis_seconds": 0.7538075329998719,
+      "waveform_peak": 0.5979376435279846,
+      "clipped_samples": 0,
+      "wav_file": "Kiki-1.0.wav",
+      "wav_bytes": 165244,
+      "wav_sha256": "89d477e4d397de48ec94b4dfb00be1ce38827d74fdcede4c2cdc9263cd63203c"
+    },
+    {
+      "voice": "Leo",
+      "speed": 1.0,
+      "audio_seconds": 4.441666666666666,
+      "synthesis_seconds": 1.0233568039998318,
+      "waveform_peak": 0.7527840733528137,
+      "clipped_samples": 0,
+      "wav_file": "Leo-1.0.wav",
+      "wav_bytes": 213244,
+      "wav_sha256": "51833df335c2c87dc05cd99e5cd89c4cd1f3b1f3b433978397bac037a5ba3e69"
+    },
+    {
+      "voice": "Jasper",
+      "speed": 0.75,
+      "audio_seconds": 4.966666666666667,
+      "synthesis_seconds": 1.1015856270000768,
+      "waveform_peak": 0.7605351805686951,
+      "clipped_samples": 0,
+      "wav_file": "Jasper-0.75.wav",
+      "wav_bytes": 238444,
+      "wav_sha256": "6a2b2553f853747a2d45b146bff4ea1acf9cc5ca7bc181f31f3bcba4c3ddddf2"
+    },
+    {
+      "voice": "Jasper",
+      "speed": 1.25,
+      "audio_seconds": 2.9166666666666665,
+      "synthesis_seconds": 0.6564833180000278,
+      "waveform_peak": 0.8319419026374817,
+      "clipped_samples": 0,
+      "wav_file": "Jasper-1.25.wav",
+      "wav_bytes": 140044,
+      "wav_sha256": "876bbb7e5a9aa9e5bcbbf5a96aeb9f88f02ae70bb2e94365e885ab8875826cc0"
+    }
+  ],
+  "process_peak_rss_bytes": 314155008
+}

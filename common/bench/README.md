@@ -43,3 +43,11 @@ in each model folder.
 - Published comparisons belong in a separate table from local measurements when
   hardware, datasets, precision, resolution or timing definitions differ. Unknown
   memory or quality numbers stay unknown. Cloud services do not have a local RAM figure.
+
+## Independent modality review
+
+[The 2026-10-13 review](reviews/modalities-2026-10-13.md) records the reviewed
+commits, remaining fine-tuning/quality limitations, real speech checks and an
+independent native small-image reproduction. Its JSON evidence is stored under
+each modality's own `results/review/` or `evidence/review/` subfolder; model
+weights, environments and generated media are excluded from Git.

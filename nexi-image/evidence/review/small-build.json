@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "manifest_sha256": "47efbbabb6f7b403cff7e7cf30daa218e464748f4b43c2a55ac4532d8571ea27",
+  "runtime_revision": "d637cfb935feb2254898a8f1524046c958f3df80",
+  "binary_sha256": "f83f75d92c8aebba31479a20e734f5980619a19c266acf4ca1b81403139bbfa1",
+  "sources": [
+    {
+      "repo": "nota-ai/bk-sdm-tiny",
+      "revision": "0364108e53b7f7f4d2585e817a0b7a83dc261cfa",
+      "path": "unet.safetensors",
+      "url": "https://huggingface.co/nota-ai/bk-sdm-tiny/resolve/0364108e53b7f7f4d2585e817a0b7a83dc261cfa/unet/diffusion_pytorch_model.fp16.safetensors",
+      "bytes": 646813304,
+      "sha256": "b844aff8b5994067e8ea495131e60212cf7dd945a02b683c3a7dce955ea44407",
+      "training_only": false,
+      "source_only": true
+    },
+    {
+      "repo": "nota-ai/bk-sdm-tiny",
+      "revision": "0364108e53b7f7f4d2585e817a0b7a83dc261cfa",
+      "path": "clip.safetensors",
+      "url": "https://huggingface.co/nota-ai/bk-sdm-tiny/resolve/0364108e53b7f7f4d2585e817a0b7a83dc261cfa/text_encoder/model.fp16.safetensors",
+      "bytes": 246144864,
+      "sha256": "77795e2023adcf39bc29a884661950380bd093cf0750a966d473d1718dc9ef4e",
+      "training_only": false,
+      "source_only": true
+    },
+    {
+      "repo": "madebyollin/taesd",
+      "revision": "614f76814bbe30edbe2e627ace1c2234c81a2c0e",
+      "path": "taesd.safetensors",
+      "url": "https://huggingface.co/madebyollin/taesd/resolve/614f76814bbe30edbe2e627ace1c2234c81a2c0e/diffusion_pytorch_model.safetensors",
+      "bytes": 9793292,
+      "sha256": "db169d69145ec4ff064e49d99c95fa05d3eb04ee453de35824a6d0f325513549",
+      "training_only": false,
+      "source_only": false
+    }
+  ],
+  "output": {
+    "path": "model.gguf",
+    "bytes": 576639264,
+    "sha256": "b9e4a2d627edb90eec8226b4c671fe81b452e512447cf8a1070bdde7bee2c3a1"
+  },
+  "download_bytes": 902751460,
+  "quantization": "q4_0"
+}

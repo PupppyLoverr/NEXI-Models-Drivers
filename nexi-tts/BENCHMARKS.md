@@ -221,3 +221,14 @@ generation; do not substitute its HEAD runtime for Nano's tiny footprint.
 6. [Pinned Mini card/config/assets](https://huggingface.co/KittenML/kitten-tts-mini-0.8/tree/c02725660cea441db4c383af69f1f26f5cd00947),
    [official ONNX model comparison](https://kittenml-kittentts.mintlify.app/models/overview).
    The quality labels there are upstream claims, not our independent ratings.
+
+## Independent review reproduction
+
+`results/review/{nano,mini}/{smoke,http}.json` preserves independent real CPU
+checks for all eight voices, speed controls, normalization and WAV/PCM HTTP.
+The six opt-in integration tests passed on each profile, including a complete
+process-RSS budget assertion. `results/review/integrated/` records the repeat
+after branch consolidation. These are functionality/waveform checks and
+single-run timings, not blinded listening scores or a new performance ranking.
+See the [review snapshot](../common/bench/reviews/modalities-2026-10-13.md) for
+remaining fine-tuning and deployment boundaries.

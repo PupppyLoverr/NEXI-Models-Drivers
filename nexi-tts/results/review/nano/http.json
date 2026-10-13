@@ -1,0 +1,34 @@
+{
+  "profile": "nano",
+  "chunk_chars": 128,
+  "hardware": {
+    "platform": "Linux-6.8.0-1061-aws-x86_64-with-glibc2.35",
+    "python": "3.10.12 (main, Jun 22 2026, 18:55:27) [GCC 11.4.0]",
+    "logical_cpus": 8,
+    "gpu_used": false,
+    "cpu_model": "INTEL(R) XEON(R) PLATINUM 8559C",
+    "mem_total_bytes": 33653956608
+  },
+  "text": "Your local voice assistant can read an entire answer without sending your words to a cloud service, and you can start listening to the first part while the rest of the response is still being generated on your own device.\nDr. Smith saved $12.50 on her 21st order, a discount of 12.5%. The package weighs 2.5kg. This is version v2.0, not a new language or a cloned voice. Clear speech matters more than impressive claims.\n",
+  "asset_fetch_guard": true,
+  "python_socket_guard": false,
+  "note": "Loopback sockets allowed; resident model, sequential requests, one sample each",
+  "runs": [
+    {
+      "route": "/synthesize",
+      "time_to_first_body_bytes_seconds": 8.464104297999995,
+      "complete_seconds": 8.464862141000026,
+      "response_bytes": 1633244,
+      "wav_file": "http-full.wav",
+      "wav_sha256": "b835206b6bca4e838045f754a22a724947c84458ee530bcb90b20c3bbf2142ea"
+    },
+    {
+      "route": "/stream",
+      "time_to_first_body_bytes_seconds": 1.5495004789999598,
+      "complete_seconds": 8.412349541999959,
+      "response_bytes": 1697600,
+      "wav_file": "http-stream.wav",
+      "wav_sha256": "7ad12b85c427d388d3193939b681cb086c3843cda22e25fb96192b5f8f21be8b"
+    }
+  ]
+}

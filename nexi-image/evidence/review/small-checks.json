@@ -1,0 +1,13 @@
+{
+  "tier": "small",
+  "generation_report": "/home/ubuntu/.devin-files/review-evidence/image-small/small-generate.json",
+  "editing_report": "/home/ubuntu/.devin-files/review-evidence/image-small/small-edit.json",
+  "mask_check": {
+    "zero_mask_pixels": 28287,
+    "changed_zero_mask_pixels": 0,
+    "changed_selected_pixels": 36439
+  },
+  "generation_fits_ram_target": true,
+  "editing_fits_ram_target": true,
+  "seed_pixels_identical": true
+}
