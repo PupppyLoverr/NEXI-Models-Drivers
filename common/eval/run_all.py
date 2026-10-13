@@ -1,7 +1,7 @@
 """NEXI eval harness (lead-authored). Serves a GGUF with llama-server and scores held-out tool-call + computer-use sets;
 optionally runs EvalPlus HumanEval+ and IFEval (lm-eval) against the same server.
 usage: python run_all.py --gguf X --label L --out-dir results [--ctx 4096] [--tasks tool,cua,humaneval,ifeval] [--limit-humaneval N] [--limit-tool N] [--limit-cua N] [--limit-ifeval N]"""
-import argparse, ast, collections, hashlib, json, os, re, subprocess, sys, threading, time, urllib.request
+import argparse, ast, collections, glob, hashlib, json, os, re, subprocess, sys, threading, time, urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(HERE, "..", "data", "out")
@@ -94,7 +94,7 @@ def main():
     a = ap.parse_args()
     os.makedirs(a.out_dir, exist_ok=True)
     srv = subprocess.Popen([LLAMA, "-m", a.gguf, "-t", str(os.cpu_count()), "-ngl", "0", "-c", str(a.ctx), "--port", str(PORT),
-                            "--jinja", "--cache-ram", "256", "--no-webui"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                            "--jinja", "--chat-template-kwargs", '{"enable_thinking": false}', "--cache-ram", "256", "--no-webui"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     threading.Thread(target=lambda: [None for _ in srv.stdout], daemon=True).start()
     for _ in range(600):
         try:
@@ -129,9 +129,11 @@ def main():
             p = subprocess.run([sys.executable, "-m", "lm_eval", "--model", "local-chat-completions", "--model_args",
                                 f"model={a.label},base_url={URL}/v1/chat/completions,num_concurrent=1,tokenized_requests=False",
                                 "--tasks", "ifeval", "--limit", str(a.limit_ifeval), "--apply_chat_template", "--gen_kwargs", "temperature=0,max_gen_toks=768",
-                                "--output_path", os.path.join(a.out_dir, f"ifeval_{a.label}")], env=env, capture_output=True, text=True)
-            m = re.search(r"prompt_level_strict_acc\|[^|]*\|[^|]*\|[^|]*\|\s*([0-9.]+)", p.stdout)
-            out["tasks"]["ifeval"] = {"prompt_level_strict_acc": float(m.group(1)) if m else None, "limit": a.limit_ifeval,
+                                "--output_path", os.path.join(a.out_dir, f"ifeval_{a.label}"), "--log_samples"], env=env, capture_output=True, text=True)
+            res = sorted(glob.glob(os.path.join(a.out_dir, f"ifeval_{a.label}", "**", "results_*.json"), recursive=True), key=os.path.getmtime)
+            r = json.load(open(res[-1]))["results"]["ifeval"] if res and p.returncode == 0 else {}
+            out["tasks"]["ifeval"] = {"prompt_level_strict_acc": r.get("prompt_level_strict_acc,none"),
+                                      "inst_level_strict_acc": r.get("inst_level_strict_acc,none"), "limit": a.limit_ifeval,
                                       "wall_s": round(time.time() - t0), "returncode": p.returncode,
                                       "stdout_tail": p.stdout[-1500:], "stderr_tail": p.stderr[-1500:]}
         hwm = [l for l in open(f"/proc/{srv.pid}/status") if l.startswith("VmHWM")]
