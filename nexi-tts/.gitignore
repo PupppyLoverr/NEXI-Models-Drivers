@@ -1,0 +1,11 @@
+.venv*/
+.models/
+*.wav
+*.onnx
+*.npz
+*.part
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
