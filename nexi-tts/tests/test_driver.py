@@ -37,7 +37,7 @@ class DriverTests(unittest.TestCase):
                 pcm16(array)
 
     def test_invalid_threads_before_assets(self) -> None:
-        for threads in (0, 9):
+        for threads in (0, 9, True, 1.5):
             with self.subTest(threads=threads), self.assertRaises(ValueError):
                 Synthesizer(threads=threads)
 
@@ -46,6 +46,11 @@ class DriverTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 Synthesizer(Path(directory))
             network.assert_not_called()
+
+    def test_invalid_chunk_limit_before_assets(self) -> None:
+        for chunk_chars in (0, 79, 181, True, 128.5):
+            with self.subTest(chunk_chars=chunk_chars), self.assertRaises(ValueError):
+                Synthesizer(chunk_chars=chunk_chars)
 
     def test_invalid_parameters_before_inference(self) -> None:
         synth = Synthesizer.__new__(Synthesizer)
@@ -58,6 +63,8 @@ class DriverTests(unittest.TestCase):
             {"speed": True},
             {"speed": 0.1},
             {"speed": 3},
+            {"speed": 10**400},
+            {"speed": "fast"},
         ):
             with self.subTest(kwargs=kwargs), self.assertRaises(ValueError):
                 list(synth.iter_audio("hello", **kwargs))

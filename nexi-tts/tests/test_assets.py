@@ -11,6 +11,17 @@ from nexi_tts import assets
 
 
 class AssetTests(unittest.TestCase):
+    def test_profiles_are_immutable_and_separate(self) -> None:
+        nano = assets.profile_for("nano")
+        mini = assets.profile_for("mini")
+        self.assertNotEqual(nano.model_file, mini.model_file)
+        self.assertNotEqual(assets.default_model_dir("nano"), assets.default_model_dir("mini"))
+        self.assertEqual(sum(s for s, _ in mini.files.values()), 81548122)
+        self.assertEqual(len(mini.revision), 40)
+        self.assertTrue(all(len(h) == 64 for _, h in mini.files.values()))
+        with self.assertRaises(ValueError):
+            assets.default_model_dir("unknown")
+
     def test_hash_and_size(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "asset"
@@ -32,7 +43,7 @@ class AssetTests(unittest.TestCase):
         files = {"config.json": (len(content), hashlib.sha256(content).hexdigest())}
         with (
             tempfile.TemporaryDirectory() as directory,
-            patch.object(assets, "FILES", files),
+            patch.dict(assets.FILES, files, clear=True),
             patch("urllib.request.urlopen", return_value=io.BytesIO(content)) as network,
         ):
             dest = Path(directory)
@@ -47,7 +58,7 @@ class AssetTests(unittest.TestCase):
         for response in (b"bad", b"oversize", b"a"):
             with (
                 tempfile.TemporaryDirectory() as directory,
-                patch.object(assets, "FILES", files),
+                patch.dict(assets.FILES, files, clear=True),
                 patch("urllib.request.urlopen", return_value=io.BytesIO(response)),
             ):
                 path = Path(directory) / "config.json"

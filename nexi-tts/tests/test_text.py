@@ -25,6 +25,59 @@ class TextTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             normalize("1234567890123456")
 
+    def test_currency_and_pluralization(self) -> None:
+        cases = {
+            "$1.01": "one dollar and one cent",
+            "$1,234.50": "one thousand, two hundred and thirty-four dollars and fifty cents",
+            "£2.01": "two pounds and one penny",
+            "€0.50": "zero euros and fifty cents",
+            "-$5.00": "minus five dollars",
+            "+$2": "plus two dollars",
+        }
+        for text, expected in cases.items():
+            with self.subTest(text=text):
+                self.assertEqual(normalize(text), expected)
+        with self.assertRaises(ValueError):
+            normalize("$1.999")
+
+    def test_ordinals_percent_units_and_decimal_digits(self) -> None:
+        cases = {
+            "1st, 2nd, 3rd, 11th, 21st": "first, second, third, eleventh, twenty-first",
+            "-3.04, +1.20": "minus three point zero four, plus one point two zero",
+            "12.5%": "twelve point five percent",
+            "1kg and 2.5 kg": "one kilogram and two point five kilograms",
+            "-1kg and +1mL": "minus one kilogram and plus one milliliter",
+            "24kHz, 2 GB": "twenty-four kilohertz, two gigabytes",
+        }
+        for text, expected in cases.items():
+            with self.subTest(text=text):
+                self.assertEqual(normalize(text), expected)
+
+    def test_versions_and_addresses_are_not_partially_expanded(self) -> None:
+        for text in ("v2.0", "1.2.3", "192.168.1.1", "B2B", "abc123", "1Mb"):
+            with self.subTest(text=text):
+                self.assertEqual(normalize(text), text)
+
+    def test_titles_do_not_create_sentence_breaks(self) -> None:
+        self.assertEqual(
+            chunk_text(normalize("Dr. Smith met Mr. Jones.")),
+            ["Doctor Smith met Mister Jones."],
+        )
+
+    def test_expansion_is_bounded(self) -> None:
+        with self.assertRaisesRegex(ValueError, "Expanded"):
+            normalize("999 " * 4000)
+
+    def test_first_chunk_is_short_without_losing_words(self) -> None:
+        text = " ".join(["hello"] * 50)
+        chunks = chunk_text(text, first_chunk_chars=80)
+        self.assertLessEqual(len(chunks[0]), 80)
+        self.assertTrue(any(len(chunk) > 80 for chunk in chunks[1:]))
+        self.assertEqual(" ".join(chunk.rstrip(",") for chunk in chunks), text)
+        for limit in (1, 181):
+            with self.subTest(limit=limit), self.assertRaises(ValueError):
+                chunk_text(text, first_chunk_chars=limit)
+
     def test_punctuation_preserved(self) -> None:
         self.assertEqual(chunk_text("Hello! What? Yes."), ["Hello!", "What?", "Yes."])
 

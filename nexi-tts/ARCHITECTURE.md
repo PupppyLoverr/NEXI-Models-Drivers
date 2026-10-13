@@ -24,15 +24,25 @@ this is not a sandbox for untrusted model directories.
   thread; CPU arena and memory-pattern retention disabled.
 - Local voice NPZ loaded with `allow_pickle=False`. Model inputs are int64
   `input_ids`, float32 `style`, and float32 `speed`. Style index is the bounded
-  text length; speed includes the upstream preset prior.
+  text length; speed includes the upstream preset prior when present (Mini's
+  pinned config has no speed priors, so its multiplier is 1.0).
 - One lock serializes phonemization/model calls per synthesizer instance.
   Reuse one synthesizer instead of constructing one per utterance. eSpeak's
   library configuration is process-wide; multiple independent instances are
   not a promised concurrent inference configuration.
-- Input ≤20,000 raw characters; chunk ≤180 characters; phoneme payload ≤510
+- Input ≤20,000 raw **and expanded** characters; default chunk ≤128 characters; phoneme payload ≤510
   tokens before boundary markers. Sentence/word splits normally preserve
-  words; a single word exceeding the chunk bound must be split. Abbreviations,
-  dates, currencies and identifiers need caller-side normalization.
+  words; a single word exceeding the chunk bound must be split. `first_chunk_chars`
+  optionally lowers only the first chunk's limit, reducing time to first audio
+  at a potential prosody cost. Common titles, signed numbers, decimal digits,
+  ordinals, percentages, three currencies and selected case-sensitive units
+  are normalized. Dates, phone numbers and ambiguous identifiers still need
+  caller-side disambiguation; dotted versions/addresses are preserved rather
+  than partially expanded. Dollar signs mean USD, pound signs GBP, euro signs EUR.
+  Configurable chunks (80–180 characters) trade prosody against memory/latency.
+  The previous 180-character default produced substantially higher stress-test
+  RSS. This is bounded input handling, not a hard memory quota or a claim that
+  all voices/speeds/text on every platform consume the same RAM.
 - `iter_audio` and `to_file` retain one audio chunk at a time. `synthesize`
   concatenates the whole waveform and therefore uses memory proportional to
   output duration. HTTP limits text to 2,000 characters and is sequential.
@@ -42,23 +52,32 @@ this is not a sandbox for untrusted model directories.
   saturation; benchmark JSON counts raw out-of-range samples.
 - Preset voices, English only, speed 0.5–2.0. NaN/infinity, booleans, unknown
   voices, other languages, empty text and non-finite audio are rejected.
-- No autoplay/playback dependency or network streaming protocol. Python
-  callers may play yielded chunks with their own audio device integration.
+- No autoplay/playback dependency. Python callers may play yielded chunks;
+  loopback HTTP clients can consume chunked raw PCM through `/stream`.
 
 ### API boundary
 
 `HTTPServer` binds **127.0.0.1 only**. No authentication or public exposure is
 provided. Each connection has a 15-second socket timeout. JSON bodies are
 limited to 32 KiB; text to 2,000 characters; chunked transfer and unknown fields
-are rejected. Responses are WAV bytes, or JSON errors. Request content is not
+are rejected. Responses are WAV bytes, raw PCM chunks, or JSON errors. Request content is not
 logged. This is a trusted local-process interface, not a hardened internet
 service or a multi-tenant resource scheduler. In-process Python calls are also
 a trusted typed API, not a parser for arbitrary hostile Python objects.
 
+`POST /stream` uses the same request fields as `/synthesize`, but lowers the
+first chunk bound to 80 characters. It computes and validates that chunk before
+success headers, then sends HTTP/1.1 chunked PCM16LE (24 kHz mono). A late model
+failure closes the connection **without** a successful terminator; clients must
+recognize incomplete transfer. Connections close after each response, so idle
+HTTP/1.1 keep-alive clients do not monopolize this sequential server. A slow
+consumer can still block it until the socket timeout. Streaming is a local
+transport, not authentication, CORS, concurrent scheduling or native playback.
+
 ## Model and source pinning
 
 Do **not** install the current KittenTTS HEAD package and assume it matches
-these legacy Nano weights. The current repository documents a different
+these legacy ONNX weights. The current repository documents a different
 generation (KittenTTS 2); its package metadata/frontends need not match 0.8.
 We port the documented 0.8 ONNX contract, without upstream spaCy/PyTorch:
 
@@ -66,6 +85,12 @@ We port the documented 0.8 ONNX contract, without upstream spaCy/PyTorch:
   commit `0c61f684b54fe962e4b7c2fa0285ed75f64ad402`.
 - [Nano model/config/card](https://huggingface.co/KittenML/kitten-tts-nano-0.8-int8/tree/84781d74e29ee25217551556398b42f80593a813),
   revision `84781d74e29ee25217551556398b42f80593a813`.
+- [Mini model/config/card](https://huggingface.co/KittenML/kitten-tts-mini-0.8/tree/c02725660cea441db4c383af69f1f26f5cd00947),
+  revision `c02725660cea441db4c383af69f1f26f5cd00947`. The ONNX2 input contract
+  is shared, but its voice embeddings and model file are separately pinned.
+- `--profile nano` (compatible default) and `--profile mini` select separate
+  manifests/directories. Every load verifies the selected profile; no fallback,
+  runtime model-network request or accidental shared voice archive occurs.
 - Exact sizes and SHA-256 values are maintained in `nexi_tts/assets.py` and
   reproduced in the benchmark JSON. Dependencies use exact versions and
   `pip --require-hashes` in `setup.sh`. Wheel/platform choice can vary by OS;
@@ -86,7 +111,7 @@ licenses. This inventory is not legal advice.
 
 | Direct component | Version / source | License |
 |---|---|---|
-| Kitten nano-int8 weights + frontend | revisions above | Apache-2.0 |
+| Kitten nano-int8 / Mini weights + frontend | revisions above | Apache-2.0 |
 | NumPy | 1.26.4 | BSD-3-Clause; wheels include additional numerical-library notices |
 | ONNX Runtime | 1.22.1 | MIT; bundled third-party notices also apply |
 | phonemizer | 3.3.0 | GPL-3.0-or-later |
@@ -113,13 +138,14 @@ package metadata; retain the upstream MIT notice and audit the bundled GPL
 binary/data before shipping a binary application. Do not assume suitability
 for an Apache-only/closed-source bundled distribution just from the model card.
 
-## Fine-tuning status: NOT delivered for Nano
+## Fine-tuning status: NOT delivered for Nano or Mini
 
-There is no verified released Nano 0.8 training/fine-tuning pipeline in the
+There is no verified released Kitten ONNX 0.8 training/fine-tuning pipeline in the
 pinned upstream materials. An ONNX inference graph and voice array are not a
 trainer. We did not reverse-engineer a speculative trainer, alter embeddings
 and call it a fine-tune, or relabel upstream weights. No training data, GPU,
-custom speaker weights, trained adapter or quality uplift is included.
+custom speaker weights or trained adapter is included. Mini is an additional
+upstream checkpoint, not an in-house fine-tune or measured human-quality uplift.
 
 ### Legitimate separate route: Pocket TTS training
 

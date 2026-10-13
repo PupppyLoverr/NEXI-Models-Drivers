@@ -1,0 +1,248 @@
+{
+  "schema_version": 2,
+  "measured_at_utc": "2026-10-13T08:04:27.778292+00:00",
+  "hardware": {
+    "platform": "Linux-6.8.0-1061-aws-x86_64-with-glibc2.35",
+    "python": "3.10.12 (main, Jun 22 2026, 18:55:27) [GCC 11.4.0]",
+    "logical_cpus": 8,
+    "gpu_used": false,
+    "cpu_model": "INTEL(R) XEON(R) PLATINUM 8559C",
+    "mem_total_bytes": 33653952512
+  },
+  "configuration": {
+    "profile": "nano",
+    "repository": "KittenML/kitten-tts-nano-0.8-int8",
+    "revision": "84781d74e29ee25217551556398b42f80593a813",
+    "provider": "CPUExecutionProvider",
+    "onnx_intra_threads": 2,
+    "onnx_inter_threads": 1,
+    "execution": "sequential",
+    "cpu_memory_arena": false,
+    "memory_pattern": false,
+    "voice": "Jasper",
+    "speed": 1.0,
+    "language": "en",
+    "sample_rate": 24000,
+    "chunk_chars": 128,
+    "first_chunk_chars": 80,
+    "openblas_threads": 1,
+    "cold_definition": "new interpreter, new model session; OS file cache NOT flushed",
+    "warm_definition": "same process and model session, sequential subsequent requests",
+    "memory_definition": "process ru_maxrss, including Python/native runtime/phonemizer, not total machine RAM"
+  },
+  "packages": {
+    "numpy": "1.26.4",
+    "onnxruntime": "1.22.1",
+    "phonemizer": "3.3.0",
+    "espeakng-loader": "0.2.4",
+    "num2words": "0.5.14"
+  },
+  "disk": {
+    "model_onnx_bytes": 24369971,
+    "assets_total_bytes": 27650302,
+    "files": {
+      "kitten_tts_nano_v0_8.onnx": {
+        "bytes": 24369971,
+        "sha256": "f7b0afcbee92870b32b8e0276d855b954dc25470c9f051b376ac7eee537c76fc"
+      },
+      "voices.npz": {
+        "bytes": 3278902,
+        "sha256": "8aa7cee235abb0739cb51e6559685f65a4dacd95568833d05699b1633f519b3f"
+      },
+      "config.json": {
+        "bytes": 688,
+        "sha256": "b66006ccbeccd4de5fc3c9272059c47f5725df7215fd889785c03602652fab64"
+      },
+      "README.md": {
+        "bytes": 741,
+        "sha256": "ff39adbcb653e9beaa612b405c4e301ee62eb4201b32dd77ae36f4078537b8ef"
+      }
+    }
+  },
+  "summary": {
+    "max_process_peak_rss_bytes": 446242816,
+    "median_cold_synthesis_seconds": 7.47172853699999,
+    "median_cold_load_seconds": 0.522288460000027,
+    "median_cold_import_load_first_audio_seconds": 1.7761878280000474,
+    "median_cold_rtf": 0.21126470886899124,
+    "median_warm_synthesis_seconds": 7.496414079500028,
+    "median_warm_first_chunk_seconds": 1.2469999429999916,
+    "median_warm_rtf": 0.2119626978180969
+  },
+  "runs": [
+    {
+      "import_seconds": 0.04329058000007535,
+      "load_verify_and_frontend_seconds": 0.5320427639999252,
+      "cold_import_load_to_first_audio_seconds": 1.806371463000005,
+      "process_peak_rss_bytes": 440610816,
+      "python_network_guard": true,
+      "measurements": [
+        {
+          "phase": "cold_model_first_request",
+          "text": "Your local voice assistant can read an entire answer without sending your words to a cloud service, and you can start listening to the first part while the rest of the response is still being generated on your own device.\nDr. Smith saved $12.50 on her 21st order, a discount of 12.5%. The package weighs 2.5kg. This is version v2.0, not a new language or a cloned voice. Clear speech matters more than impressive claims.\n",
+          "text_chars": 421,
+          "audio_seconds": 35.36666666666667,
+          "synthesis_and_wav_seconds": 7.528070528999933,
+          "first_chunk_seconds": 1.2310381190000044,
+          "real_time_factor": 0.2128577906409029,
+          "process_peak_rss_bytes_so_far": 440610816,
+          "waveform_rms": 0.10370662150353413,
+          "waveform_peak": 0.8849218487739563,
+          "clipped_samples": 0,
+          "wav_file": "run-0-0.wav",
+          "wav_bytes": 1697644,
+          "wav_sha256": "7d26be09b1a61c05de5b013512565302bc53261fe83236213a866db661273669"
+        },
+        {
+          "phase": "warm_model_request",
+          "text": "Your local voice assistant can read an entire answer without sending your words to a cloud service, and you can start listening to the first part while the rest of the response is still being generated on your own device.\nDr. Smith saved $12.50 on her 21st order, a discount of 12.5%. The package weighs 2.5kg. This is version v2.0, not a new language or a cloned voice. Clear speech matters more than impressive claims.\n",
+          "text_chars": 421,
+          "audio_seconds": 35.36666666666667,
+          "synthesis_and_wav_seconds": 7.65508798299993,
+          "first_chunk_seconds": 1.2702915269999266,
+          "real_time_factor": 0.2164492360885937,
+          "process_peak_rss_bytes_so_far": 440610816,
+          "waveform_rms": 0.10353707926136146,
+          "waveform_peak": 0.9119908213615417,
+          "clipped_samples": 0,
+          "wav_file": "run-0-1.wav",
+          "wav_bytes": 1697644,
+          "wav_sha256": "347a2ee6b5d39f06a3e5c165c9326b61600a4c0b44ca77c653d690d2adc2ed57"
+        },
+        {
+          "phase": "warm_model_request",
+          "text": "Your local voice assistant can read an entire answer without sending your words to a cloud service, and you can start listening to the first part while the rest of the response is still being generated on your own device.\nDr. Smith saved $12.50 on her 21st order, a discount of 12.5%. The package weighs 2.5kg. This is version v2.0, not a new language or a cloned voice. Clear speech matters more than impressive claims.\n",
+          "text_chars": 421,
+          "audio_seconds": 35.36666666666667,
+          "synthesis_and_wav_seconds": 7.47665429000017,
+          "first_chunk_seconds": 1.2237083590000566,
+          "real_time_factor": 0.21140398557964665,
+          "process_peak_rss_bytes_so_far": 440610816,
+          "waveform_rms": 0.10403978815850883,
+          "waveform_peak": 0.9235933423042297,
+          "clipped_samples": 0,
+          "wav_file": "run-0-2.wav",
+          "wav_bytes": 1697644,
+          "wav_sha256": "2eedf4dcfa34a55b84e1048a2243b891a1c6284aae15ffe683948c9445a0741f"
+        }
+      ],
+      "fresh_subprocess_wall_seconds": 23.378915837000022
+    },
+    {
+      "import_seconds": 0.033444078000002264,
+      "load_verify_and_frontend_seconds": 0.5182651009999972,
+      "cold_import_load_to_first_audio_seconds": 1.7761878280000474,
+      "process_peak_rss_bytes": 446242816,
+      "python_network_guard": true,
+      "measurements": [
+        {
+          "phase": "cold_model_first_request",
+          "text": "Your local voice assistant can read an entire answer without sending your words to a cloud service, and you can start listening to the first part while the rest of the response is still being generated on your own device.\nDr. Smith saved $12.50 on her 21st order, a discount of 12.5%. The package weighs 2.5kg. This is version v2.0, not a new language or a cloned voice. Clear speech matters more than impressive claims.\n",
+          "text_chars": 421,
+          "audio_seconds": 35.36666666666667,
+          "synthesis_and_wav_seconds": 7.47172853699999,
+          "first_chunk_seconds": 1.2244786490000479,
+          "real_time_factor": 0.21126470886899124,
+          "process_peak_rss_bytes_so_far": 440344576,
+          "waveform_rms": 0.1039924683803995,
+          "waveform_peak": 0.9410507678985596,
+          "clipped_samples": 0,
+          "wav_file": "run-1-0.wav",
+          "wav_bytes": 1697644,
+          "wav_sha256": "c0d5215a6273ae97a64fe85a614dfc6d79e951b86766b1f7f1685da9a58eed8b"
+        },
+        {
+          "phase": "warm_model_request",
+          "text": "Your local voice assistant can read an entire answer without sending your words to a cloud service, and you can start listening to the first part while the rest of the response is still being generated on your own device.\nDr. Smith saved $12.50 on her 21st order, a discount of 12.5%. The package weighs 2.5kg. This is version v2.0, not a new language or a cloned voice. Clear speech matters more than impressive claims.\n",
+          "text_chars": 421,
+          "audio_seconds": 35.36666666666667,
+          "synthesis_and_wav_seconds": 7.508805199000108,
+          "first_chunk_seconds": 1.274936321000041,
+          "real_time_factor": 0.21231305934967318,
+          "process_peak_rss_bytes_so_far": 440344576,
+          "waveform_rms": 0.10370126694990418,
+          "waveform_peak": 0.9247891902923584,
+          "clipped_samples": 0,
+          "wav_file": "run-1-1.wav",
+          "wav_bytes": 1697644,
+          "wav_sha256": "8be49e6c21b36385ccaad747510e0ada9c9390d3c3055292f0871576a1626cf2"
+        },
+        {
+          "phase": "warm_model_request",
+          "text": "Your local voice assistant can read an entire answer without sending your words to a cloud service, and you can start listening to the first part while the rest of the response is still being generated on your own device.\nDr. Smith saved $12.50 on her 21st order, a discount of 12.5%. The package weighs 2.5kg. This is version v2.0, not a new language or a cloned voice. Clear speech matters more than impressive claims.\n",
+          "text_chars": 421,
+          "audio_seconds": 35.36666666666667,
+          "synthesis_and_wav_seconds": 7.41389170399998,
+          "first_chunk_seconds": 1.1905612709999787,
+          "real_time_factor": 0.20962936015080055,
+          "process_peak_rss_bytes_so_far": 446242816,
+          "waveform_rms": 0.10365127020376753,
+          "waveform_peak": 0.9209033250808716,
+          "clipped_samples": 0,
+          "wav_file": "run-1-2.wav",
+          "wav_bytes": 1697644,
+          "wav_sha256": "b04641ac3d2a1a8a7279aa5c53cd9fff8a9df8c5aba60dc92cb625cd8f647fd3"
+        }
+      ],
+      "fresh_subprocess_wall_seconds": 23.089168382000025
+    },
+    {
+      "import_seconds": 0.03312878599990654,
+      "load_verify_and_frontend_seconds": 0.522288460000027,
+      "cold_import_load_to_first_audio_seconds": 1.7665627710000535,
+      "process_peak_rss_bytes": 432234496,
+      "python_network_guard": true,
+      "measurements": [
+        {
+          "phase": "cold_model_first_request",
+          "text": "Your local voice assistant can read an entire answer without sending your words to a cloud service, and you can start listening to the first part while the rest of the response is still being generated on your own device.\nDr. Smith saved $12.50 on her 21st order, a discount of 12.5%. The package weighs 2.5kg. This is version v2.0, not a new language or a cloned voice. Clear speech matters more than impressive claims.\n",
+          "text_chars": 421,
+          "audio_seconds": 35.36666666666667,
+          "synthesis_and_wav_seconds": 7.412563950000049,
+          "first_chunk_seconds": 1.21114552500012,
+          "real_time_factor": 0.20959181762488358,
+          "process_peak_rss_bytes_so_far": 398278656,
+          "waveform_rms": 0.1039639344490132,
+          "waveform_peak": 0.8622335195541382,
+          "clipped_samples": 0,
+          "wav_file": "run-2-0.wav",
+          "wav_bytes": 1697644,
+          "wav_sha256": "2253a821c7a03340f4bd37ea437b3d12126ef1c38fae06589bf348aef68c4f7b"
+        },
+        {
+          "phase": "warm_model_request",
+          "text": "Your local voice assistant can read an entire answer without sending your words to a cloud service, and you can start listening to the first part while the rest of the response is still being generated on your own device.\nDr. Smith saved $12.50 on her 21st order, a discount of 12.5%. The package weighs 2.5kg. This is version v2.0, not a new language or a cloned voice. Clear speech matters more than impressive claims.\n",
+          "text_chars": 421,
+          "audio_seconds": 35.36666666666667,
+          "synthesis_and_wav_seconds": 7.6944278129999475,
+          "first_chunk_seconds": 1.2756481409999196,
+          "real_time_factor": 0.21756157812440943,
+          "process_peak_rss_bytes_so_far": 422498304,
+          "waveform_rms": 0.1038471064062458,
+          "waveform_peak": 0.9238280057907104,
+          "clipped_samples": 0,
+          "wav_file": "run-2-1.wav",
+          "wav_bytes": 1697644,
+          "wav_sha256": "6792c57d860d00fccd995a5a91401ca98dfaee50d5e1f9ef6e3f66a0168c23de"
+        },
+        {
+          "phase": "warm_model_request",
+          "text": "Your local voice assistant can read an entire answer without sending your words to a cloud service, and you can start listening to the first part while the rest of the response is still being generated on your own device.\nDr. Smith saved $12.50 on her 21st order, a discount of 12.5%. The package weighs 2.5kg. This is version v2.0, not a new language or a cloned voice. Clear speech matters more than impressive claims.\n",
+          "text_chars": 421,
+          "audio_seconds": 35.36666666666667,
+          "synthesis_and_wav_seconds": 7.4840229599999475,
+          "first_chunk_seconds": 1.1938699039999392,
+          "real_time_factor": 0.21161233628652065,
+          "process_peak_rss_bytes_so_far": 432234496,
+          "waveform_rms": 0.10392090764588673,
+          "waveform_peak": 0.8560927510261536,
+          "clipped_samples": 0,
+          "wav_file": "run-2-2.wav",
+          "wav_bytes": 1697644,
+          "wav_sha256": "ffd695408f82a3a2db608b67e8c4fa2894efaa2faf16b66daa74bf252e205991"
+        }
+      ],
+      "fresh_subprocess_wall_seconds": 23.300866265999957
+    }
+  ]
+}
