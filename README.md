@@ -1,15 +1,33 @@
 # dove-driver
 
 Background computer-use driver for Dove, an MCP server for macOS (AX), Windows (UIA) and Linux (AT-SPI). It is
-a fork of [Cua Driver](https://github.com/trycua/cua/tree/cua-driver-rs-v0.34.0/libs/cua-driver)
-(`trycua/cua`, `libs/cua-driver`, tag `cua-driver-rs-v0.34.0`, commit `b0968e1`), MIT licensed.
+a fork of [Cua Driver](https://github.com/trycua/cua/tree/cua-driver-rs-v0.37.0/libs/cua-driver)
+(`trycua/cua`, `libs/cua-driver`, tag `cua-driver-rs-v0.37.0`, commit `2d2f992`), MIT licensed. It does
+everything that upstream release does (see "Branches" below).
 
 Dove does not ship this driver preinstalled. Dove installs signed `dove-driver` release assets as the
 **Dove Computer Use** plugin. This repository builds those assets.
 
 - What is planned: [ROADMAP.md](ROADMAP.md)
 - What changed from upstream, and what was left out: [NOTICE.md](NOTICE.md)
+- How it compares with nexi-cua: [NEXI_CUA_COMPARISON.md](NEXI_CUA_COMPARISON.md)
 - Upstream's own README: [docs/UPSTREAM_README.md](docs/UPSTREAM_README.md)
+
+## Where it lives
+
+dove-driver is the `dove-driver/` folder of
+[PupppyLoverr/NEXI-Models-Drivers](https://github.com/PupppyLoverr/NEXI-Models-Drivers). Work happens on that
+repository's `dove-driver/main` and `dove-driver/upstream` branches. The folder on `main` is a copy of
+`dove-driver/main`, refreshed with `scripts/dove/publish-folder.sh`. To work on it:
+
+```bash
+git clone --branch dove-driver/main --single-branch https://github.com/PupppyLoverr/NEXI-Models-Drivers.git dove-driver
+cd dove-driver
+git fetch origin dove-driver/upstream:upstream
+git checkout -b main
+```
+
+The sync and parity scripts expect the local branches to be named `main` and `upstream`.
 
 ## Build
 
