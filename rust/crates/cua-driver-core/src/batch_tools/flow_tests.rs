@@ -501,10 +501,12 @@ async fn a_check_only_step_names_the_window_to_observe() {
 #[tokio::test]
 async fn the_end_observation_diffs_against_the_batch_start() {
     let harness = Harness::new();
+    // auto_wait off: this counts the lookup reads, and auto-wait's
+    // stability read is counted in batch_tools/waits_flow_tests.rs.
     let result = harness
         .run(json!({"steps": [
             {"set_value": {"app": "Demo", "role": "textfield", "name": "Email", "value": "a@b.c"}}
-        ], "observe": true}))
+        ], "observe": true, "auto_wait": false}))
         .await;
     assert_ne!(result.is_error, Some(true), "{}", text(&result));
     let reads = harness.calls("get_window_state");
@@ -521,7 +523,7 @@ async fn the_end_observation_diffs_against_the_batch_start() {
     // Without observe there is no baseline read.
     let before = harness.calls("get_window_state").len();
     harness
-        .run(json!({"steps": [{"click": {"app": "Demo", "role": "button", "name": "Next"}}]}))
+        .run(json!({"steps": [{"click": {"app": "Demo", "role": "button", "name": "Next"}}], "auto_wait": false}))
         .await;
     assert_eq!(harness.calls("get_window_state").len(), before + 1);
 }

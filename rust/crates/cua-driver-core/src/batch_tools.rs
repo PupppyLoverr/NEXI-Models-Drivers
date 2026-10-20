@@ -21,6 +21,7 @@ use crate::{
 };
 
 pub mod locate;
+pub mod waits;
 
 use locate::{Check, ElementSpec, Locator, Window, WindowSpec};
 
@@ -218,7 +219,8 @@ impl Tool for RunStepsTool {
                 {\"click\":{\"role\":\"button\",\"name\":\"Submit\"},\"expect\":[{\"role\":\"button\",\"name\":\"Confirm\"}]},\
                 {\"click\":{\"role\":\"button\",\"name\":\"Confirm\"},\"expect\":[{\"name\":\"Confirm\",\"gone\":true},{\"text\":\"Thanks\"}]}\
                 ],\"observe\":{}}"
-                .into(),
+                .to_owned()
+                + waits::DESCRIPTION,
             input_schema: json!({
                 "type": "object",
                 "required": ["steps"],
@@ -233,9 +235,10 @@ impl Tool for RunStepsTool {
                             "properties": {
                                 "tool": { "type": "string", "enum": BATCHABLE_TOOLS, "description": "Action tool to run." },
                                 "args": { "type": "object", "description": "Arguments for that tool, as in a direct call, optionally with role/name/nth/app/window to name the target instead of pid/window_id/element_token." },
-                                "wait_for": { "type": "object", "description": "Check that must hold before the action: {role?, name?, text?, gone?, app?, window?, timeout_ms?}. Default timeout 5000 ms." },
-                                "expect": { "type": "array", "maxItems": 4, "items": {"type": "object"}, "description": "Up to 4 checks that must hold after the action: {role?, name?, text?, gone?, value?, value_contains?, enabled?, selected?, app?, window?, timeout_ms?}. Default timeout 2000 ms." },
-                                "timeout_ms": { "type": "integer", "minimum": 0, "maximum": 10000, "description": "How long a named target may take to appear. Default 3000." }
+                                "wait_for": { "type": ["object", "string"], "description": "Check that must hold before the action: {role?, name?, text?, gone?, app?, window?, timeout_ms?}. Default timeout 5000 ms. `query` means text, `timeout` means timeout_ms, and a bare string is {text}." },
+                                "expect": { "type": ["array", "object", "string"], "maxItems": 4, "items": {"type": ["object", "string"]}, "description": "Up to 4 checks that must hold after the action: {role?, name?, text?, gone?, value?, value_contains?, enabled?, selected?, app?, window?, timeout_ms?}. Default timeout 2000 ms. `query`, `timeout` and bare strings as in wait_for; an entry may also be a verify_state predicate ({element:{selector,...}} or {window:{...}})." },
+                                "timeout_ms": { "type": "integer", "minimum": 0, "maximum": 10000, "description": "How long a named target may take to appear and, with auto-wait, become actionable. Default 3000." },
+                                "auto_wait": { "type": "boolean", "description": "This step's auto-wait; overrides run_steps' own." }
                             },
                             "additionalProperties": true
                         }
@@ -270,6 +273,10 @@ impl Tool for RunStepsTool {
                     "foreground_fallback": {
                         "type": "boolean",
                         "description": "When a step is refused because its target ignores background input (Electron, LibreOffice and other toolkits), retry it once with delivery_mode:\"foreground\": the window is activated and the pointer may move. Default false."
+                    },
+                    "auto_wait": {
+                        "type": "boolean",
+                        "description": "Before acting on a target named by role/name, wait until it is enabled, on screen and stable across two reads. Default true; a step's own auto_wait wins."
                     },
                     "observe": {
                         "type": "object",
@@ -336,6 +343,7 @@ struct Step {
     /// A read-only tool placed between actions. It cannot change what later
     /// steps do, so it is skipped (with a note) instead of failing the batch.
     skipped_read: Option<&'static str>,
+    waits: waits::StepWaits,
 }
 
 impl Step {
@@ -463,6 +471,7 @@ impl Plan {
             .map(str::to_owned);
 
         let default_window = batch_window(object)?;
+        let auto_wait = waits::batch_auto_wait(object).map_err(PlanError::batch)?;
         let default_delivery = match object.get("delivery_mode") {
             None | Some(Value::Null) => None,
             Some(Value::String(mode)) if matches!(mode.as_str(), "background" | "foreground") => {
@@ -551,10 +560,12 @@ impl Plan {
                     wait_for: None,
                     expect: Vec::new(),
                     skipped_read: Some(tool),
+                    waits: Default::default(),
                 });
                 continue;
             }
             let mut step = parse_step(registry, index, raw, session.as_deref(), has_window)?;
+            step.waits.auto_wait = Some(step.waits.auto_wait.unwrap_or(auto_wait));
             if let (Some(mode), Some(action)) = (&default_delivery, step.action.as_mut()) {
                 if accepts(registry, action.tool, "delivery_mode") {
                     if let Some(object) = action.args.as_object_mut() {
@@ -782,12 +793,21 @@ impl Plan {
             (None, None) => None,
         };
         if let Some(mut args) = observe {
+            let explicit = args.get("pid").is_some() && args.get("window_id").is_some();
             let filled = fill_observed_window(&mut args, last_window.as_ref());
-            let result = if filled {
-                registry.invoke(OBSERVE_TOOL, args).await
+            let mut result = if filled {
+                registry.invoke(OBSERVE_TOOL, args.clone()).await
             } else {
                 ToolResult::error("no window to observe: no step resolved one")
             };
+            if result.is_error == Some(true) && filled && !explicit {
+                if let Some((retry, note)) =
+                    waits::observe_after_close(&locator, &args, last_window.as_ref()).await
+                {
+                    lines.push(note);
+                    result = registry.invoke(OBSERVE_TOOL, retry).await;
+                }
+            }
             let ok = result.is_error != Some(true);
             let mut report = json!({ "ok": ok, "tool": OBSERVE_TOOL });
             if ok {
@@ -964,7 +984,17 @@ async fn run_step(
                 action: Some(tool),
                 ..element
             };
-            match locator.find(&window_spec, &element, find_timeout).await {
+            match waits::find_for_action(
+                locator,
+                &window_spec,
+                &element,
+                find_timeout,
+                step.waits.auto_wait(),
+                &mut report,
+                &mut notes,
+            )
+            .await
+            {
                 Ok(found) => {
                     let object = args.as_object_mut().expect("object");
                     object.insert("pid".into(), json!(found.window.pid));
@@ -1152,6 +1182,24 @@ async fn run_step(
     if !checked.is_empty() {
         notes.push(format!("{} check(s) held", checked.len()));
         report["expect"] = Value::Array(checked);
+    }
+    if let Some(verify) = &step.waits.verify {
+        match waits::run_verify(
+            registry,
+            locator,
+            verify,
+            &fallback,
+            step_has_no_action,
+            last_window,
+            &mut report,
+        )
+        .await
+        {
+            Ok(note) => notes.push(note),
+            Err((code, message)) => {
+                return failure(index, label, Phase::Expect, code, message, report)
+            }
+        }
     }
     report["ok"] = json!(true);
     if report.get("message").is_none() {
@@ -1574,6 +1622,9 @@ fn parse_step(
     session: Option<&str>,
     inherits_window: bool,
 ) -> Result<Step, PlanError> {
+    let (raw, waits) =
+        waits::normalize_step(raw, session).map_err(|message| PlanError::step(index, message))?;
+    let raw = &raw;
     let object = raw.as_object().ok_or_else(|| {
         PlanError::step(index, "must be an object: {tool, args} or {<tool>: args}")
     })?;
@@ -1703,7 +1754,11 @@ fn parse_step(
     };
     let action = match name {
         None => {
-            if wait_for.is_none() && expect.is_empty() && intent.is_none() {
+            if wait_for.is_none()
+                && expect.is_empty()
+                && waits.verify.is_none()
+                && intent.is_none()
+            {
                 return Err(PlanError::step(
                     index,
                     "empty step: give an action ({tool, args} or {<tool>: args}) or a wait_for/expect check",
@@ -1727,6 +1782,7 @@ fn parse_step(
         wait_for,
         expect,
         skipped_read: None,
+        waits,
     })
 }
 
