@@ -7,4 +7,5 @@ DOVE_ONLY_FILES=(
   NEXI_CUA_COMPARISON.md
   .gitignore
   scripts/dove
+  rust/crates/dove-grounder
 )
