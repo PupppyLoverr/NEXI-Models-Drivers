@@ -104,13 +104,44 @@ fn parse_frontmatter(source: &str) -> Result<Value, String> {
 }
 
 fn pack() -> &'static Pack {
+    pack_for(crate::tool_disclosure::Disclosure::from_env())
+}
+
+/// Dove fork (W5): the files this transport serves. In lazy tool disclosure
+/// mode SKILL.md gains a note on `describe_tools`; otherwise they are FILES.
+fn served_files(
+    disclosure: crate::tool_disclosure::Disclosure,
+) -> &'static [(&'static str, &'static str)] {
+    static LAZY: OnceLock<Vec<(&'static str, &'static str)>> = OnceLock::new();
+    if !disclosure.is_lazy() {
+        return FILES;
+    }
+    LAZY.get_or_init(|| {
+        FILES
+            .iter()
+            .map(|(name, text)| match *name {
+                "SKILL.md" => (*name, &*crate::tool_disclosure::lazy_skill(text).leak()),
+                _ => (*name, *text),
+            })
+            .collect()
+    })
+}
+
+fn pack_for(disclosure: crate::tool_disclosure::Disclosure) -> &'static Pack {
     static PACK: OnceLock<Pack> = OnceLock::new();
-    PACK.get_or_init(|| {
+    static LAZY_PACK: OnceLock<Pack> = OnceLock::new();
+    let files = served_files(disclosure);
+    let cell = if disclosure.is_lazy() {
+        &LAZY_PACK
+    } else {
+        &PACK
+    };
+    cell.get_or_init(|| {
         let frontmatter = parse_frontmatter(include_str!("../../../Skills/cua-driver/SKILL.md"))
             .expect("embedded canonical skill must have valid JSON-compatible frontmatter");
-        let mut manifest = Vec::with_capacity(FILES.len());
-        let mut resources = Vec::with_capacity(FILES.len());
-        for (name, text) in FILES {
+        let mut manifest = Vec::with_capacity(files.len());
+        let mut resources = Vec::with_capacity(files.len());
+        for (name, text) in files {
             let uri = format!("{URI_PREFIX}{name}");
             manifest.push(json!({
                 "uri": uri,
@@ -178,7 +209,7 @@ fn result(request: &Request) -> Result<Value, &'static str> {
         "resources/read" => {
             let uri = required_uri(params)?;
             let name = uri.strip_prefix(URI_PREFIX).ok_or("unknown resource URI")?;
-            let (_, text) = FILES
+            let (_, text) = served_files(crate::tool_disclosure::Disclosure::from_env())
                 .iter()
                 .find(|(file, _)| *file == name)
                 .ok_or("unknown resource URI")?;
@@ -284,6 +315,44 @@ mod tests {
                 uri
             );
         }
+    }
+
+    #[test]
+    fn lazy_disclosure_serves_a_skill_that_points_at_describe_tools() {
+        use crate::tool_disclosure::Disclosure;
+        assert_eq!(served_files(Disclosure::Eager), FILES);
+        let lazy = served_files(Disclosure::Lazy);
+        assert_eq!(lazy.len(), FILES.len());
+        for ((name, text), (lazy_name, lazy_text)) in FILES.iter().zip(lazy) {
+            assert_eq!(name, lazy_name);
+            if *name == "SKILL.md" {
+                assert!(lazy_text.contains("`describe_tools({names:[...]})`"));
+                let note = lazy_text
+                    .find(crate::tool_disclosure::skill_note())
+                    .unwrap();
+                let loop_start = lazy_text.find("## Efficient loop").unwrap();
+                assert!(loop_start < note && note < lazy_text.find("\n1. ").unwrap());
+                assert_eq!(
+                    lazy_text.replace(crate::tool_disclosure::skill_note(), ""),
+                    *text
+                );
+            } else {
+                assert_eq!(text, lazy_text);
+            }
+        }
+        let skill = &pack_for(Disclosure::Lazy).entry["resources"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|resource| resource["uri"] == SKILL_URI)
+            .unwrap()
+            .clone();
+        let lazy_skill = lazy.iter().find(|(name, _)| *name == "SKILL.md").unwrap().1;
+        assert_eq!(skill["size"], lazy_skill.len());
+        assert_eq!(
+            skill["digest"],
+            format!("sha256:{:x}", Sha256::digest(lazy_skill.as_bytes()))
+        );
     }
 
     #[test]

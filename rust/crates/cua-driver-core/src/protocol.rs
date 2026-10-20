@@ -361,6 +361,10 @@ pub fn initialize_result() -> Value {
 /// Goose uses in its `ComputerController` extension and Open
 /// Interpreter uses for its system message.
 fn agent_instructions() -> String {
+    agent_instructions_for(crate::tool_disclosure::Disclosure::from_env())
+}
+
+fn agent_instructions_for(disclosure: crate::tool_disclosure::Disclosure) -> String {
     // macOS needs no platform pointer: its permission line below names MACOS.md.
     let (tree_kind, platform_skill_pointer) = if cfg!(target_os = "macos") {
         ("AX", "")
@@ -396,6 +400,13 @@ fn agent_instructions() -> String {
         ""
     };
 
+    // Dove fork (W5): in lazy disclosure mode, say where the schemas are.
+    let disclosure_line = if disclosure.is_lazy() {
+        format!("\n\n{}", crate::tool_disclosure::instructions_line())
+    } else {
+        String::new()
+    };
+
     format!(
         r#"cua-driver: background GUI automation. No shell: for non-GUI outcomes use an app API/SDK, CLI or filesystem and read the result back there.
 
@@ -409,7 +420,7 @@ Use the narrowest semantic route first: `set_window_frame` plus `list_windows` f
 
 Chrome/Edge/Brave page: `get_browser_state({{pid, window_id}})`, its `detail.next_call` (`browser_prepare`) if refused, then `browser_click`/`browser_type`/`browser_pointer` (hover, drag); never desktop pointer tools.
 
-`start_session` is optional; repeat a short `session` label on every call that accepts it. On continuation/recent-work, call `history_status`; if ready, make one bounded initial `history_query` before broad discovery.{permission_line}
+`start_session` is optional; repeat a short `session` label on every call that accepts it. On continuation/recent-work, call `history_status`; if ready, make one bounded initial `history_query` before broad discovery.{permission_line}{disclosure_line}
 
 Guides: `get_guide({{topic}})` (drag, browser, permissions, batching, menus), `skill://cua-driver/SKILL.md`{platform_skill_pointer}."#
     )
@@ -497,7 +508,22 @@ mod action_record_wire_tests {
 
 #[cfg(test)]
 mod agent_instruction_tests {
-    use super::{agent_instructions, initialize_result};
+    use super::{agent_instructions, agent_instructions_for, initialize_result};
+    use crate::tool_disclosure::Disclosure;
+
+    #[test]
+    fn lazy_instructions_point_at_describe_tools_and_eager_ones_do_not() {
+        let eager = agent_instructions_for(Disclosure::Eager);
+        assert!(!eager.contains("describe_tools"));
+        let lazy = agent_instructions_for(Disclosure::Lazy);
+        assert!(lazy.contains("`describe_tools({names:[...]})`"));
+        let line = format!("\n\n{}", crate::tool_disclosure::instructions_line());
+        assert_eq!(lazy.replace(&line, ""), eager);
+        assert!(
+            lazy.split_whitespace().count() <= 200,
+            "lazy instructions should stay within the documented context budget"
+        );
+    }
 
     #[test]
     fn instructions_route_structured_and_visual_verification_to_the_right_owner() {

@@ -116,6 +116,7 @@ pub mod timestamp;
 pub mod tool;
 pub mod tool_activity;
 pub mod tool_args;
+pub mod tool_disclosure;
 pub mod tool_schema;
 pub mod video;
 pub mod video_ffmpeg;

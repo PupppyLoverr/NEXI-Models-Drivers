@@ -95,12 +95,13 @@ pub async fn run_direct(driver: Arc<cua_driver_sdk::CuaDriver>) -> anyhow::Resul
             Ok(mut request) => {
                 let admission = protocol_session.validate(&request).and_then(|era| {
                     if request.method == "tools/call" {
-                        mcp_wire::validate_tool_call(
-                            &request,
-                            request.id.clone().unwrap_or_default(),
-                            era,
-                            &sdk.tools_list(),
-                        )?;
+                        cua_driver_core::tool_disclosure::Disclosure::from_env()
+                            .validate_tool_call(
+                                &request,
+                                request.id.clone().unwrap_or_default(),
+                                era,
+                                &sdk.tools_list(),
+                            )?;
                     }
                     Ok(era)
                 });
@@ -335,7 +336,7 @@ where
             }
             Ok(req) => {
                 let admission = protocol_session.validate(&req).and_then(|era| {
-                    mcp_wire::validate_tool_call(
+                    cua_driver_core::tool_disclosure::Disclosure::from_env().validate_tool_call(
                         &req,
                         req.id.clone().unwrap_or_default(),
                         era,
@@ -829,7 +830,9 @@ async fn handle_proxy_request(
         Ok(era) => era,
         Err(response) => return response,
     };
-    if let Err(response) = mcp_wire::validate_tool_call(&req, id.clone(), era, cached_tools_list) {
+    if let Err(response) = cua_driver_core::tool_disclosure::Disclosure::from_env()
+        .validate_tool_call(&req, id.clone(), era, cached_tools_list)
+    {
         return response;
     }
     let method = req.method.clone();
@@ -864,11 +867,21 @@ async fn handle_proxy_tool_request(
             Response::ok(id, initialize_result())
         }
 
-        "tools/list" => Response::ok(id, (**cached_tools_list).clone()),
+        "tools/list" => Response::ok(
+            id,
+            cua_driver_core::tool_disclosure::Disclosure::from_env()
+                .advertised((**cached_tools_list).clone()),
+        ),
 
         "tools/call" => match req.tool_call() {
             Err(e) => Response::error(id, -32602, format!("Invalid params: {e}")),
             Ok(call) => {
+                let disclosure = cua_driver_core::tool_disclosure::Disclosure::from_env();
+                if let Some(result) =
+                    disclosure.intercept_call(cached_tools_list, &call.name, &call.args)
+                {
+                    return Response::ok(id, result);
+                }
                 if let Err(error) = authorize_tool_call(&call.name, &call.args) {
                     return proxy_tool_result_response(
                         id,
@@ -882,7 +895,7 @@ async fn handle_proxy_tool_request(
                         ),
                     );
                 }
-                forward_tool_call(
+                let mut response = forward_tool_call(
                     id,
                     call.name.clone(),
                     call.args,
@@ -891,7 +904,13 @@ async fn handle_proxy_tool_request(
                     daemon_observes_tool_calls,
                     proxy_output_schema(cached_tools_list, &call.name).cloned(),
                 )
-                .await
+                .await;
+                if let cua_driver_core::protocol::ResponseBody::Result { result } =
+                    &mut response.body
+                {
+                    disclosure.annotate_result(cached_tools_list, &call.name, result);
+                }
+                response
             }
         },
 
