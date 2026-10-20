@@ -154,7 +154,12 @@ static START_DEF: OnceLock<ToolDef> = OnceLock::new();
 #[async_trait]
 impl Tool for StartSessionTool {
     fn def(&self) -> &ToolDef {
-        START_DEF.get_or_init(|| session_tool_def("start_session"))
+        START_DEF.get_or_init(|| {
+            let mut def = session_tool_def("start_session");
+            def.input_schema =
+                crate::dove_observation::extend_start_session_schema(def.input_schema);
+            def
+        })
     }
 
     async fn invoke(&self, args: Value) -> ToolResult {
@@ -180,6 +185,10 @@ impl Tool for StartSessionTool {
         }
         if let Some(error) = invalid_cursor_motion(&args) {
             return error;
+        }
+        if args.get("vision").is_some_and(|v| !v.is_boolean() && !v.is_null()) {
+            return ToolResult::error("start_session.vision must be a boolean.")
+                .with_structured(json!({ "code": "invalid_vision" }));
         }
         let input = match parse_typed_input::<StartSessionInput>("start_session", args.clone()) {
             Ok(input) => input,
@@ -255,13 +264,17 @@ impl Tool for StartSessionTool {
         if revived {
             crate::session::fire_session_revive_for_owner(&id, &owner);
         }
-        let structured = serde_json::to_value(cua_driver_contract::StartSessionOutput {
+        crate::dove_observation::record_start_session(&args);
+        let mut structured = serde_json::to_value(cua_driver_contract::StartSessionOutput {
             state: scope.output(&response_session_label(&args, &id)),
             active: true,
             revived,
             cursor_motion: input.cursor_motion.clone(),
         })
         .expect("start_session output serializes");
+        if crate::dove_observation::session_vision(&args) {
+            structured["vision"] = json!(true);
+        }
         ToolResult::text(format!(
             "✅ Session '{}' is active{}.",
             public_label.as_deref().unwrap_or("implicit"),
