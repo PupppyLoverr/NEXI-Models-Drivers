@@ -1,6 +1,7 @@
 # nexi-cua vs dove-driver
 
-Compared on 2026-10-20 from the GitHub API, without cloning:
+Compared on 2026-10-20: code and documents read through the GitHub API, then measured on Windows 11 from a temporary
+sparse clone of `nexi-cua/` only (see "Measured on this Windows 11 machine"):
 
 - nexi-cua: `PupppyLoverr/NEXI-Models-Drivers/nexi-cua`, v0.4.0, commit `fa3c797`. The private
   `gabbledobo-71588/nexi-cua` is the same v0.4.0.
@@ -74,8 +75,29 @@ nexi-cua's documents are careful about this, and the caveats matter:
    as well as the goal text.
 4. Fix the private-repo installer URLs in nexi-cua.
 
-## What a local clone would add
+## Measured on this Windows 11 machine (2026-10-20)
 
-All of the above comes from reading the code and documents. With a clone of only `nexi-cua/`, I could check its
-Windows claims on this machine: run its 19 tests, run `nexi-cua observe` and `run` against Notepad, and measure
-whether it takes the cursor, its latency, and its accuracy next to dove-driver on the same window.
+`nexi-cua/` was sparse-cloned into a temporary folder and installed in a throwaway venv with CPU PyTorch 2.14.1;
+both were deleted afterwards. Both drivers were run against the same disposable WinForms window: two text boxes,
+**Save** and **Submit Note** buttons, and a status label. Notepad was not used, because Windows 11 Notepad
+restores unsaved tabs. The desktop was in active use during the runs.
+
+| Check | nexi-cua v0.4.0 | dove-driver |
+|---|---|---|
+| Unit tests | 19/19 pass on Windows | the suites run for the crates the Dove patches touch (cua-driver, cua-driver-core, cua-driver-sdk, cursor-overlay, pip-preview) pass, apart from 2 upstream Windows path-separator test bugs in `extension_manager`; one timing test (`launch_unknown_app...`) failed once under load and passed on rerun |
+| Its own captured-web suite (`real_eval`) | **71/72 (98.6%), 10/10 abstain**, reproduced on CPU | n/a |
+| Read a window that is not in front | **No.** It only reads `GetForegroundWindow()`; the read was skipped | **Yes.** 9 elements with tokens, about 300–500 ms per `get_window_state` over MCP |
+| Act on a window that is not in front | **No.** `focus_window` called `SetForegroundWindow`, Windows' foreground lock refused it (twice, with a retry), and nothing was done | **Yes.** `set_value` and `type_text` via UIA ValuePattern, clicks via UIA Invoke. All 4 steps landed (`saved:dove-set-1`, `submitted:dove-typed-2`) with the form behind other windows and the foreground unchanged |
+| Act when the window starts in front | Not completed. In 2 runs the form was in front at launch, but lost the foreground before nexi-cua's first action: once to another app, once to the system tray, during its PyTorch load of a few seconds | not needed |
+| Cursor | its type and drag paths move the real pointer by design (`SetCursorPos`) | unchanged in 2 of 3 runs. In the third, the pointer moved during two Invoke clicks while the user was clicking the system tray. UIA Invoke itself does not move the pointer |
+
+Bugs found in nexi-cua:
+
+- `focus_window` returns `True` even when Windows refuses the focus change. It never checks the result, so its loop
+  would then type into whatever window is really in front.
+- `weights/nexi-cua-1.calib.json` is committed with CRLF line endings, but `RELEASE_CHECKSUMS.sha256` lists the
+  hash of the LF version, so a fresh checkout fails its own checksum. The policy weights `.pt` file matches.
+
+What this means: on a desktop someone is using, nexi-cua's driver can only act on the window that happens to be in
+front, and only while it stays there. dove-driver doesn't depend on focus. This supports the recommendation above:
+use nexi-cua's *decider* on top of dove-driver's tree and background actions, not its drivers.
