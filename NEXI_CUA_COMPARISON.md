@@ -106,8 +106,11 @@ Bugs found in nexi-cua:
 
 - `focus_window` returns `True` even when Windows refuses the focus change. It never checks the result, so its loop
   would then type into whatever window is really in front.
-- `weights/nexi-cua-1.calib.json` is committed with CRLF line endings, but `RELEASE_CHECKSUMS.sha256` lists the
-  hash of the LF version, so a fresh checkout fails its own checksum. The policy weights `.pt` file matches.
+- `weights/nexi-cua-1.calib.json` is stored correctly (LF, and it matches `RELEASE_CHECKSUMS.sha256`). But Git for
+  Windows checks text files out with CRLF by default (`core.autocrlf=true`), so on a Windows checkout the file no
+  longer matches its checksum. A `.gitattributes` entry marking the checksummed files `-text` fixes this. The
+  policy weights `.pt` file is binary and matches either way. (An earlier version of this note wrongly said the
+  file was committed with CRLF.)
 
 What this means: on a desktop someone is using, nexi-cua's driver can only act on the window that happens to be in
 front, and only while it stays there. dove-driver doesn't depend on focus. This supports the recommendation above:
