@@ -19,6 +19,9 @@ pub mod apps;
 pub mod ax;
 #[cfg(target_os = "macos")]
 mod background_mutation;
+// Dove (W6): safety target inspector.
+#[cfg(target_os = "macos")]
+mod dove_safety_target;
 #[cfg(target_os = "macos")]
 pub mod browser;
 #[cfg(target_os = "macos")]

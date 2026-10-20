@@ -619,6 +619,10 @@ pub(crate) fn advertised_runtime_input_schema(tool_name: &str, schema: &Value) -
             .entry("session")
             .or_insert_with(crate::tool_schema::session_schema);
     }
+    // Dove (W6): guarded actions accept `intent` and `confirm`.
+    if closed {
+        crate::dove_safety::advertise(tool_name, properties);
+    }
     if !crate::action_target::supports_typed_target(tool_name) {
         return schema;
     }
@@ -1783,6 +1787,8 @@ impl ToolRegistry {
             );
         }
         let unknown_argument = unknown_argument(tool.def(), &args);
+        // Dove (W6): platform tools never see the safety arguments.
+        let dove_safety_args = crate::dove_safety::take_safety_args(resolved_name, &mut args);
         if let Err(result) = crate::action_target::normalize_action_target(resolved_name, &mut args)
         {
             return result;
@@ -1804,6 +1810,23 @@ impl ToolRegistry {
             crate::authorization::authorize_tool_call_with_context(resolved_name, &args, context)
         {
             return permission_denied_result(error.to_string());
+        }
+        // Dove (W6): secure-target hand-off and the confirm/block classes.
+        let dove_safety_session = format!(
+            "{}:{}",
+            context.runtime_scope_key(),
+            args.get("session").and_then(Value::as_str).unwrap_or("")
+        );
+        if let Some(refusal) = crate::dove_safety::guard_call(
+            resolved_name,
+            &args,
+            &dove_safety_args,
+            context.mode(),
+            &dove_safety_session,
+        )
+        .await
+        {
+            return refusal;
         }
 
         let mut public_args = args.clone();
@@ -5814,12 +5837,14 @@ resources:
         assert_eq!(
             object.keys().map(String::as_str).collect::<Vec<_>>(),
             [
+                "change",
                 "delivery",
                 "effect",
                 "hint",
                 "next_call",
                 "route",
-                "summary"
+                "summary",
+                "via"
             ]
         );
         assert_eq!(structured["effect"], "unverifiable");

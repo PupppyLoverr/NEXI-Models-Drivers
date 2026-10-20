@@ -544,8 +544,12 @@ fn pid_window_guarded<T: Tool + 'static>(
 ) -> Box<dyn Tool> {
     Box::new(ExactPidWindowTargetGuard {
         inner: Box::new(
-            PidOnlyWindowTargetGuard::new(Box::new(tool), candidates.clone())
-                .with_token_pid_resolver(token_pid_resolver.clone()),
+            PidOnlyWindowTargetGuard::new(
+                // Dove (W2): before/after effect probe.
+                crate::dove_actions::probed(Box::new(tool)),
+                candidates.clone(),
+            )
+            .with_token_pid_resolver(token_pid_resolver.clone()),
         ),
     })
 }
@@ -6083,8 +6087,13 @@ impl Tool for SetValueTool {
                   the option whose text matches `value` and sends the app the notifications a \
                   user's choice sends (CBN_SELENDOK, CBN_SELCHANGE), without focusing the window; \
                   an editable combo gets the text typed into its edit field. A drop-down list \
-                  without that option is refused with the list of options. Other combo boxes get \
-                  a UIA value write, which the app may not treat as a selection.\n\n\
+                  without that option is refused with the list of options. A UIA combo box \
+                  selects the list item with that name; failing that it gets a UIA value write, \
+                  which the app may not treat as a selection.\n\
+                - **Check box, radio button, list item**: `value` \"on\" or \"off\" (also \
+                  true/false, checked/unchecked, selected) sets the state through TogglePattern \
+                  or SelectionItemPattern.\n\
+                The value is read back afterwards.\n\n\
                 For free-form text entry that the target accepts via keystrokes only, prefer \
                 `type_text` — UIA ValuePattern writes are ignored by some web inputs (same \
                 caveat as Swift's `AXValue`-vs-WebKit).".into(),
@@ -6192,6 +6201,14 @@ impl Tool for SetValueTool {
                 }
                 let is_combo = unsafe { elem.CurrentControlType() }
                     .is_ok_and(|control_type| control_type == UIA_ComboBoxControlTypeId);
+                // Dove (W2.3): pick a UIA combo box item by name, as a user would.
+                if is_combo {
+                    if let Some(route) =
+                        crate::dove_actions::select_combo_item(&elem, hwnd, &value)?
+                    {
+                        return Ok(SetValueRoute::Pattern(route));
+                    }
+                }
                 // Try ValuePattern first (text inputs, editable combos, etc).
                 // The SetValue is shielded by the EnableWindow bypass: a
                 // Chromium/Electron (or XAML) SetValue handler self-foregrounds via
@@ -6234,6 +6251,10 @@ impl Tool for SetValueTool {
                         return Ok(SetValueRoute::Pattern("RangeValuePattern"));
                     }
                 }
+                // Dove (W2.3): check boxes, radio buttons and list items.
+                if let Some(route) = crate::dove_actions::set_state_value(&elem, hwnd, &value)? {
+                    return Ok(SetValueRoute::Pattern(route));
+                }
                 anyhow::bail!(
                     "set_value: element [{idx}] does not implement ValuePattern or \
                  RangeValuePattern. For controls with TogglePattern (CheckBox) or \
@@ -6246,6 +6267,21 @@ impl Tool for SetValueTool {
         match result {
             Ok(Ok(SetValueRoute::Pattern(pattern_name))) => {
                 ToolResult::text(format!("✅ Set AXValue on [{idx}] (UIA {pattern_name})."))
+                    // Dove (W2): name the route; the write never activates the window.
+                    .with_structured(json!({
+                        "path": match pattern_name {
+                            "RangeValuePattern" => "uia_range_value",
+                            "TogglePattern" => "uia_toggle",
+                            "SelectionItemPattern" => "uia_selection",
+                            "InvokePattern" => "uia",
+                            _ => "ax",
+                        },
+                        "delivery_mode": if crate::input::delivery::DeliveryMode::from_args(&args)
+                            == crate::input::delivery::DeliveryMode::Foreground
+                        { "foreground" } else { "background" },
+                        "verified": false,
+                        "effect": "unverifiable",
+                    }))
             }
             Ok(Ok(SetValueRoute::ComboValuePattern)) => ToolResult::text(format!(
                 "Set the UIA value of combo box [{idx}] to '{value}'. This combo box is not a \
@@ -10305,6 +10341,10 @@ pub fn build_registry_with_provider(
     // Share the element cache with the recording-hook layer so it can
     // resolve element_index → window-local screenshot coords for click.png.
     crate::recording_hooks::set_snapshots(state.snapshots.clone());
+    // Dove (W6): what a guarded action targets, for the safety layer.
+    cua_driver_core::dove_safety::register_target_inspector(crate::dove_actions::target_inspector(
+        state.snapshots.clone(),
+    ));
 
     // Drop a session's owned cursor on `session_end` (explicit end_session, the
     // CLI `session end` verb, or the daemon idle-TTL sweep). The session id IS

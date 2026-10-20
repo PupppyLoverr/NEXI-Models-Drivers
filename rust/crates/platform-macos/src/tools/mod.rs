@@ -1058,6 +1058,10 @@ pub fn register_all(
     // Share the element cache with the recording-hook layer so it can
     // resolve element_index → window-local screenshot coords for click.png.
     crate::recording_hooks::set_snapshots(state.snapshots.clone());
+    // Dove (W6): what a guarded action targets, for the safety layer.
+    cua_driver_core::dove_safety::register_target_inspector(
+        crate::dove_safety_target::target_inspector(state.snapshots.clone()),
+    );
 
     // Drop a disconnecting session's config overrides + owned cursor on
     // `session_end`. The daemon fans the session id out to this hook;

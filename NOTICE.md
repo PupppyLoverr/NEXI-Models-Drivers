@@ -68,25 +68,11 @@ Feature patches (`scripts/dove/patches/`, applied by the same script):
     weights exist, with the reviewed risk class, recording exclusion and origin-bypass entry `run_steps` has;
   - `run_steps` accepts a `{"intent": ...}` step (refused before anything runs when the grounder is off), and its
     description mentions it only when the grounder is on. Batches without intent steps behave as upstream.
-
-## nexi-cua (Apache-2.0)
-
-`rust/crates/dove-grounder` (the Local Grounder, ROADMAP W9) is a Rust port of the decision policy of **nexi-cua
-v0.4.0**, `nexi-cua/` in this repository's `main` branch (commit `fa3c797`), licensed under the Apache License,
-Version 2.0. The full license text is in [LICENSES/nexi-cua-Apache-2.0.txt](LICENSES/nexi-cua-Apache-2.0.txt).
-nexi-cua ships no NOTICE file of its own.
-
-- Ported, with changes for Rust: `nexi_cua/policy/resolver.py`, `features.py`, `infer.py` (decision, calibrated
-  abstention, margin rescue, argument resolution), `intents.py`, the network of `model.py`, and the types and
-  candidate enumeration of `types.py` and `actions.py`. Each source file names the Python file it ports.
-- `dove-grounder/tests/goldens/` holds observations and labels from nexi-cua's eval fixtures and synthetic
-  generator, with the decisions nexi-cua itself made on them.
-- The NEXI-CUA-1 weights are not in this repository. `dove-grounder/scripts/export_onnx.py` converts nexi-cua's
-  `weights/nexi-cua-1.pt` into the optional asset the driver loads (`DOVE_DRIVER_GROUNDER_MODEL`); that asset is
-  a derivative of the nexi-cua weights and is distributed under Apache-2.0 with this notice.
-
-The rest of dove-driver stays under upstream's MIT license.
-
+- `0004-lazy-tool-disclosure.patch` (ROADMAP W5). With `DOVE_TOOL_DISCLOSURE=lazy` (or `DOVE_DRIVER_`/`CUA_DRIVER_TOOL_DISCLOSURE`),
+  `tools/list` keeps full input schemas only for `list_windows`, `get_window_state`, `run_steps`, `verify_state`,
+  `act` and the new `describe_tools {names}`, and lists every other tool with a one-line description and
+  `{"type":"object"}`. Withheld tools still run, and a bad-arguments error carries the tool's schema. Measured on
+  Linux: 31,789 bytes instead of 229,910. Default (unset) behaviour is upstream's.
 - `0005-observation.patch` (ROADMAP W1.2-W1.4). Tree-first, screenshot-optional observation. This is the one patch
   that deliberately changes an upstream default. The per-session `since:"latest"` and `start_session {vision}` are
   in `cua-driver-core` and apply on every OS. The screenshot policy, JPEG, `marks` and the kept screenshot frame are
@@ -122,6 +108,48 @@ The rest of dove-driver stays under upstream's MIT license.
   - The typed contract (`GetWindowStateInput`, SDK, generated bindings) does not carry `marks` or
     `screenshot_format` yet; they are inputs of the live tool schemas only. Typed SDK reads now get no screenshot
     unless they pass `include_screenshot:true`.
+- `0006-batching.patch` (ROADMAP W3). `run_steps` gains `wait_for {query, gone, timeout}` and `expect` steps (verify_state
+  predicates), plus Playwright-style auto-wait before actions on named targets: the target exists, is enabled, has
+  a non-zero frame and the same frame across two reads, within the step's timeout. On timeout the step fails with
+  `not_actionable` and the reason. `auto_wait:false` turns it off for a step or a batch.
+- `0007-actions-and-safety.patch` (ROADMAP W2 and W6):
+  - every action result names its exact mechanism as `via` (for example `uia_invoke`) and a `change` of
+    `changed`, `unchanged` or `unverifiable`. On Windows the change comes from a before/after comparison of the
+    target element's value and the target window's UIA tree and top-level windows; a click, key or scroll that
+    changed the window is `effect: confirmed` with `window_change` evidence, and a `set_value` that reads back the
+    requested value is `confirmed` with `value_readback` evidence. `set_value` also sets check boxes, radio
+    buttons, list items and UIA combo boxes through Toggle, SelectionItem and ExpandCollapse;
+  - text is never typed into a password or payment-card field (UIA `IsPassword`, `AXSecureTextField`, AT-SPI
+    `password text`, `input[type=password]`, `autocomplete="cc-*"`), and no action targets a UAC prompt, the secure
+    desktop or an OS credential dialog. Such calls are refused with `code: "handoff_required"` in every mode;
+  - the confirm and block classes of nexi-cua (see below) are checked against the target element and the call's
+    optional `intent`. Blocked: refused. Confirm: refused with a `confirm_token` in `standard` mode, refused in
+    `bounded` mode, run in `unrestricted` mode. `DOVE_DRIVER_SAFETY_CLASSES=off` turns the classes off.
+
+## nexi-cua (Apache-2.0)
+
+`rust/crates/dove-grounder` (the Local Grounder, ROADMAP W9) is a Rust port of the decision policy of **nexi-cua
+v0.4.0**, `nexi-cua/` in this repository's `main` branch (commit `fa3c797`), licensed under the Apache License,
+Version 2.0. The full license text is in [LICENSES/nexi-cua-Apache-2.0.txt](LICENSES/nexi-cua-Apache-2.0.txt).
+nexi-cua ships no NOTICE file of its own.
+
+- Ported, with changes for Rust: `nexi_cua/policy/resolver.py`, `features.py`, `infer.py` (decision, calibrated
+  abstention, margin rescue, argument resolution), `intents.py`, the network of `model.py`, and the types and
+  candidate enumeration of `types.py` and `actions.py`. Each source file names the Python file it ports.
+- `dove-grounder/tests/goldens/` holds observations and labels from nexi-cua's eval fixtures and synthetic
+  generator, with the decisions nexi-cua itself made on them.
+- The NEXI-CUA-1 weights are not in this repository. `dove-grounder/scripts/export_onnx.py` converts nexi-cua's
+  `weights/nexi-cua-1.pt` into the optional asset the driver loads (`DOVE_DRIVER_GROUNDER_MODEL`); that asset is
+  a derivative of the nexi-cua weights and is distributed under Apache-2.0 with this notice.
+
+- `rust/crates/cua-driver-core/src/dove_safety.rs` ports the confirm and block classes of `nexi_cua/safety.py` from
+  [PupppyLoverr/NEXI-Models-Drivers](https://github.com/PupppyLoverr/NEXI-Models-Drivers) (`nexi-cua/`), licensed
+  under the Apache License 2.0 (https://www.apache.org/licenses/LICENSE-2.0). Changes: the Python regular
+  expressions are rewritten as Rust word and phrase matching, `exfiltrat`, `keylog`, `phish` and `ransom` also match
+  their inflections, and the classes are applied to the target element and an `intent` argument rather than to
+  nexi-cua's `Action` record.
+
+The rest of dove-driver stays under upstream's MIT license.
 
 Still upstream's: internal crate names (`cua-driver-core` and the rest), `CUA_DRIVER_*` variable names (now with
 `DOVE_DRIVER_*` aliases), protocol identifiers (history schema URNs, the policy `server` name, telemetry event

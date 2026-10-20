@@ -596,6 +596,18 @@ pub enum ActionEffect {
     Refused,
 }
 
+/// Dove (W2): what a before/after check of the target saw. `changed` and
+/// `unchanged` come from an actual comparison (the target's value, or the
+/// target window's accessibility tree and top-level windows). `unverifiable`
+/// means no comparison was possible; it is not success.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, JsonSchema, PartialEq, Eq, uniffi::Enum)]
+#[serde(rename_all = "snake_case")]
+pub enum ActionChange {
+    Changed,
+    Unchanged,
+    Unverifiable,
+}
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, JsonSchema, PartialEq, Eq, uniffi::Enum)]
 #[serde(rename_all = "snake_case")]
 pub enum ActionRoute {
@@ -707,6 +719,14 @@ pub struct ActionResult {
     /// or a call that keeps the user's window where it is).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub next_call: Option<ActionNextCall>,
+    /// Dove (W2): the observed change. Absent on refusals.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub change: Option<ActionChange>,
+    /// Dove (W2): the exact mechanism the action used, for example
+    /// `uia_invoke`, `uia_value`, `ax_action` or `post_message`.
+    /// `route` is its coarse class.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub via: Option<String>,
 }
 
 /// A call an agent can make next: `{tool, arguments}`.
@@ -903,6 +923,8 @@ mod tests {
             error: None,
             hint: None,
             next_call: None,
+            change: None,
+            via: None,
         }
     }
 
@@ -958,6 +980,7 @@ mod tests {
         assert_eq!(
             properties.keys().map(String::as_str).collect::<Vec<_>>(),
             [
+                "change",
                 "delivery",
                 "effect",
                 "error",
@@ -966,7 +989,8 @@ mod tests {
                 "hint",
                 "next_call",
                 "route",
-                "summary"
+                "summary",
+                "via"
             ]
         );
         assert_eq!(

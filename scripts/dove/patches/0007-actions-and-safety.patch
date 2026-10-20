@@ -1,0 +1,3546 @@
+diff --git a/contract/manifest.json b/contract/manifest.json
+index 7fc22c7..842036e 100644
+--- a/contract/manifest.json
++++ b/contract/manifest.json
+@@ -114,6 +114,18 @@
+       "success_output_schema": {
+         "additionalProperties": false,
+         "properties": {
++          "change": {
++            "enum": [
++              "changed",
++              "unchanged",
++              "unverifiable",
++              null
++            ],
++            "type": [
++              "string",
++              "null"
++            ]
++          },
+           "delivery": {
+             "additionalProperties": false,
+             "properties": {
+@@ -274,6 +286,12 @@
+               "string",
+               "null"
+             ]
++          },
++          "via": {
++            "type": [
++              "string",
++              "null"
++            ]
+           }
+         },
+         "required": [
+@@ -555,6 +573,18 @@
+       "success_output_schema": {
+         "additionalProperties": false,
+         "properties": {
++          "change": {
++            "enum": [
++              "changed",
++              "unchanged",
++              "unverifiable",
++              null
++            ],
++            "type": [
++              "string",
++              "null"
++            ]
++          },
+           "delivery": {
+             "additionalProperties": false,
+             "properties": {
+@@ -715,6 +745,12 @@
+               "string",
+               "null"
+             ]
++          },
++          "via": {
++            "type": [
++              "string",
++              "null"
++            ]
+           }
+         },
+         "required": [
+@@ -2107,6 +2143,18 @@
+       "success_output_schema": {
+         "additionalProperties": false,
+         "properties": {
++          "change": {
++            "enum": [
++              "changed",
++              "unchanged",
++              "unverifiable",
++              null
++            ],
++            "type": [
++              "string",
++              "null"
++            ]
++          },
+           "delivery": {
+             "additionalProperties": false,
+             "properties": {
+@@ -2267,6 +2315,12 @@
+               "string",
+               "null"
+             ]
++          },
++          "via": {
++            "type": [
++              "string",
++              "null"
++            ]
+           }
+         },
+         "required": [
+@@ -2338,6 +2392,18 @@
+       "success_output_schema": {
+         "additionalProperties": false,
+         "properties": {
++          "change": {
++            "enum": [
++              "changed",
++              "unchanged",
++              "unverifiable",
++              null
++            ],
++            "type": [
++              "string",
++              "null"
++            ]
++          },
+           "delivery": {
+             "additionalProperties": false,
+             "properties": {
+@@ -2498,6 +2564,12 @@
+               "string",
+               "null"
+             ]
++          },
++          "via": {
++            "type": [
++              "string",
++              "null"
++            ]
+           }
+         },
+         "required": [
+@@ -2968,6 +3040,18 @@
+       "success_output_schema": {
+         "additionalProperties": false,
+         "properties": {
++          "change": {
++            "enum": [
++              "changed",
++              "unchanged",
++              "unverifiable",
++              null
++            ],
++            "type": [
++              "string",
++              "null"
++            ]
++          },
+           "delivery": {
+             "additionalProperties": false,
+             "properties": {
+@@ -3128,6 +3212,12 @@
+               "string",
+               "null"
+             ]
++          },
++          "via": {
++            "type": [
++              "string",
++              "null"
++            ]
+           }
+         },
+         "required": [
+@@ -3711,6 +3801,18 @@
+       "success_output_schema": {
+         "additionalProperties": false,
+         "properties": {
++          "change": {
++            "enum": [
++              "changed",
++              "unchanged",
++              "unverifiable",
++              null
++            ],
++            "type": [
++              "string",
++              "null"
++            ]
++          },
+           "delivery": {
+             "additionalProperties": false,
+             "properties": {
+@@ -3871,6 +3973,12 @@
+               "string",
+               "null"
+             ]
++          },
++          "via": {
++            "type": [
++              "string",
++              "null"
++            ]
+           }
+         },
+         "required": [
+@@ -3986,6 +4094,18 @@
+       "success_output_schema": {
+         "additionalProperties": false,
+         "properties": {
++          "change": {
++            "enum": [
++              "changed",
++              "unchanged",
++              "unverifiable",
++              null
++            ],
++            "type": [
++              "string",
++              "null"
++            ]
++          },
+           "delivery": {
+             "additionalProperties": false,
+             "properties": {
+@@ -4146,6 +4266,12 @@
+               "string",
+               "null"
+             ]
++          },
++          "via": {
++            "type": [
++              "string",
++              "null"
++            ]
+           }
+         },
+         "required": [
+@@ -4634,6 +4760,18 @@
+       "success_output_schema": {
+         "additionalProperties": false,
+         "properties": {
++          "change": {
++            "enum": [
++              "changed",
++              "unchanged",
++              "unverifiable",
++              null
++            ],
++            "type": [
++              "string",
++              "null"
++            ]
++          },
+           "delivery": {
+             "additionalProperties": false,
+             "properties": {
+@@ -4794,6 +4932,12 @@
+               "string",
+               "null"
+             ]
++          },
++          "via": {
++            "type": [
++              "string",
++              "null"
++            ]
+           }
+         },
+         "required": [
+@@ -5280,6 +5424,18 @@
+       "success_output_schema": {
+         "additionalProperties": false,
+         "properties": {
++          "change": {
++            "enum": [
++              "changed",
++              "unchanged",
++              "unverifiable",
++              null
++            ],
++            "type": [
++              "string",
++              "null"
++            ]
++          },
+           "delivery": {
+             "additionalProperties": false,
+             "properties": {
+@@ -5440,6 +5596,12 @@
+               "string",
+               "null"
+             ]
++          },
++          "via": {
++            "type": [
++              "string",
++              "null"
++            ]
+           }
+         },
+         "required": [
+diff --git a/rust/crates/cua-driver-contract/src/lib.rs b/rust/crates/cua-driver-contract/src/lib.rs
+index d412e1a..c573fd9 100644
+--- a/rust/crates/cua-driver-contract/src/lib.rs
++++ b/rust/crates/cua-driver-contract/src/lib.rs
+@@ -62,8 +62,8 @@ pub use inputs::{
+ };
+ pub use outputs::{
+     advertised_output_schema, conforming_error_envelope, is_refusal_envelope,
+-    refusal_envelope_schema, ActionDelivery, ActionDeliveryMode, ActionEffect, ActionError,
+-    ActionEscalation, ActionEscalationReason, ActionEscalationTarget, ActionEvidence,
++    refusal_envelope_schema, ActionChange, ActionDelivery, ActionDeliveryMode, ActionEffect,
++    ActionError, ActionEscalation, ActionEscalationReason, ActionEscalationTarget, ActionEvidence,
+     ActionEvidenceKind, ActionNextCall, ActionResult, ActionResultValidationError, ActionRoute,
+     AgentOverlayCapture, AgentOverlayCaptureStatus, ClipboardReadOutput, ClipboardWriteOutput,
+     CursorMotionOutput, CursorPointOutput, CursorPositionOutput, CursorThemeOutput,
+diff --git a/rust/crates/cua-driver-contract/src/outputs.rs b/rust/crates/cua-driver-contract/src/outputs.rs
+index de182f9..57de19b 100644
+--- a/rust/crates/cua-driver-contract/src/outputs.rs
++++ b/rust/crates/cua-driver-contract/src/outputs.rs
+@@ -596,6 +596,18 @@ pub enum ActionEffect {
+     Refused,
+ }
+ 
++/// Dove (W2): what a before/after check of the target saw. `changed` and
++/// `unchanged` come from an actual comparison (the target's value, or the
++/// target window's accessibility tree and top-level windows). `unverifiable`
++/// means no comparison was possible; it is not success.
++#[derive(Debug, Clone, Copy, Serialize, Deserialize, JsonSchema, PartialEq, Eq, uniffi::Enum)]
++#[serde(rename_all = "snake_case")]
++pub enum ActionChange {
++    Changed,
++    Unchanged,
++    Unverifiable,
++}
++
+ #[derive(Debug, Clone, Copy, Serialize, Deserialize, JsonSchema, PartialEq, Eq, uniffi::Enum)]
+ #[serde(rename_all = "snake_case")]
+ pub enum ActionRoute {
+@@ -707,6 +719,14 @@ pub struct ActionResult {
+     /// or a call that keeps the user's window where it is).
+     #[serde(default, skip_serializing_if = "Option::is_none")]
+     pub next_call: Option<ActionNextCall>,
++    /// Dove (W2): the observed change. Absent on refusals.
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    pub change: Option<ActionChange>,
++    /// Dove (W2): the exact mechanism the action used, for example
++    /// `uia_invoke`, `uia_value`, `ax_action` or `post_message`.
++    /// `route` is its coarse class.
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    pub via: Option<String>,
+ }
+ 
+ /// A call an agent can make next: `{tool, arguments}`.
+@@ -903,6 +923,8 @@ mod tests {
+             error: None,
+             hint: None,
+             next_call: None,
++            change: None,
++            via: None,
+         }
+     }
+ 
+@@ -958,6 +980,7 @@ mod tests {
+         assert_eq!(
+             properties.keys().map(String::as_str).collect::<Vec<_>>(),
+             [
++                "change",
+                 "delivery",
+                 "effect",
+                 "error",
+@@ -966,7 +989,8 @@ mod tests {
+                 "hint",
+                 "next_call",
+                 "route",
+-                "summary"
++                "summary",
++                "via"
+             ]
+         );
+         assert_eq!(
+diff --git a/rust/crates/cua-driver-core/src/action_record.rs b/rust/crates/cua-driver-core/src/action_record.rs
+index 424a906..adb53b1 100644
+--- a/rust/crates/cua-driver-core/src/action_record.rs
++++ b/rust/crates/cua-driver-core/src/action_record.rs
+@@ -31,6 +31,33 @@ pub fn effect_from_value_readback(
+     }
+ }
+ 
++/// Dove (W2): what a before/after comparison of the target saw.
++#[derive(Clone, Copy, Debug, Eq, PartialEq)]
++pub enum ObservedChange {
++    Changed,
++    Unchanged,
++    Unverifiable,
++}
++
++impl ObservedChange {
++    pub const fn as_str(self) -> &'static str {
++        match self {
++            Self::Changed => "changed",
++            Self::Unchanged => "unchanged",
++            Self::Unverifiable => "unverifiable",
++        }
++    }
++
++    pub fn parse(value: &str) -> Option<Self> {
++        match value {
++            "changed" => Some(Self::Changed),
++            "unchanged" => Some(Self::Unchanged),
++            "unverifiable" => Some(Self::Unverifiable),
++            _ => None,
++        }
++    }
++}
++
+ /// The delivery mode requested by the caller.
+ #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+ pub enum RequestedDelivery {
+@@ -269,6 +296,8 @@ pub struct ActionExecutionRecord {
+     pub delivered_count: Option<u32>,
+     pub detail: Option<String>,
+     pub refusal: Option<ActionRefusal>,
++    /// Dove (W2): the result of a before/after check, when one ran.
++    pub observed_change: Option<ObservedChange>,
+ }
+ 
+ impl ActionExecutionRecord {
+@@ -289,9 +318,23 @@ impl ActionExecutionRecord {
+             delivered_count: None,
+             detail: None,
+             refusal: None,
++            observed_change: None,
+         }
+     }
+ 
++    /// Dove (W2): the change to publish. A comparison that ran wins;
++    /// otherwise it follows from the effect.
++    pub fn public_change(&self) -> Option<ObservedChange> {
++        if self.effect == ActionEffect::Refused {
++            return None;
++        }
++        Some(self.observed_change.unwrap_or(match self.effect {
++            ActionEffect::Confirmed | ActionEffect::Partial => ObservedChange::Changed,
++            ActionEffect::SuspectedNoop => ObservedChange::Unchanged,
++            ActionEffect::Unverifiable | ActionEffect::Refused => ObservedChange::Unverifiable,
++        }))
++    }
++
+     pub fn builder(
+         effect: ActionEffect,
+         transport: ActionTransport,
+@@ -460,6 +503,13 @@ impl ActionExecutionRecord {
+             // The dispatch seam adds these after the record is projected.
+             hint: None,
+             next_call: None,
++            change: self.public_change().map(|change| match change {
++                ObservedChange::Changed => cua_driver_contract::ActionChange::Changed,
++                ObservedChange::Unchanged => cua_driver_contract::ActionChange::Unchanged,
++                ObservedChange::Unverifiable => cua_driver_contract::ActionChange::Unverifiable,
++            }),
++            via: (projection.effect != ActionEffect::Refused)
++                .then(|| public_via(self.transport).to_owned()),
+         })
+     }
+ 
+@@ -573,6 +623,10 @@ impl ActionExecutionRecord {
+         if effect == ActionEffect::Refused {
+             record.refusal = legacy_refusal(structured);
+         }
++        record.observed_change = structured
++            .get("change")
++            .and_then(serde_json::Value::as_str)
++            .and_then(ObservedChange::parse);
+         if effect == ActionEffect::Partial && record.delivered_count.is_none() {
+             return None;
+         }
+@@ -589,7 +643,7 @@ impl ActionExecutionRecord {
+     /// Keeping this constructor here prevents serde derives from accidentally
+     /// turning the rich record into a protocol surface.
+     pub fn debug_json(&self) -> serde_json::Value {
+-        serde_json::json!({
++        let mut value = serde_json::json!({
+             "effect": effect_name(self.effect),
+             "transport": transport_name(self.transport),
+             "route": route_name(self.transport.route()),
+@@ -619,7 +673,11 @@ impl ActionExecutionRecord {
+                 "code": refusal.code,
+                 "hint": refusal.hint,
+             })),
+-        })
++        });
++        if let (Some(change), Some(object)) = (self.observed_change, value.as_object_mut()) {
++            object.insert("observed_change".into(), change.as_str().into());
++        }
++        value
+     }
+ }
+ 
+@@ -777,6 +835,9 @@ fn transport_from_legacy(
+         "uia" if tool_name == "scroll" => ActionTransport::WindowsUiaScroll,
+         "uia" => ActionTransport::WindowsUiaInvoke,
+         "uia_expand_collapse" => ActionTransport::WindowsUiaExpandCollapse,
++        "uia_range_value" => ActionTransport::WindowsUiaRangeValue,
++        "uia_toggle" => ActionTransport::WindowsUiaToggle,
++        "uia_selection" => ActionTransport::WindowsUiaSelection,
+         "msaa" => ActionTransport::WindowsMsaaAction,
+         "post_message" | "PostMessage" => ActionTransport::WindowsPostMessage,
+         "SendInput" => ActionTransport::WindowsSendInput,
+@@ -1111,6 +1172,16 @@ fn escalation_kind_name(kind: EscalationKind) -> &'static str {
+     }
+ }
+ 
++/// Dove (W2): the published mechanism, a transport name without its platform
++/// prefix (`uia_invoke`, `ax_value`, `post_message`, `cdp_input_mouse`).
++fn public_via(transport: ActionTransport) -> &'static str {
++    let name = transport_name(transport);
++    ["windows_", "macos_", "linux_", "browser_"]
++        .iter()
++        .find_map(|prefix| name.strip_prefix(prefix))
++        .unwrap_or(name)
++}
++
+ fn transport_name(transport: ActionTransport) -> &'static str {
+     match transport {
+         ActionTransport::AgentCursorOverlay => "agent_cursor_overlay",
+@@ -1212,6 +1283,11 @@ impl ActionExecutionRecordBuilder {
+         self
+     }
+ 
++    pub fn observed_change(mut self, change: ObservedChange) -> Self {
++        self.0.observed_change = Some(change);
++        self
++    }
++
+     pub fn build(self) -> Result<ActionExecutionRecord, ActionRecordValidationError> {
+         self.0.validate()?;
+         Ok(self.0)
+@@ -1564,7 +1640,9 @@ mod tests {
+                 "effect": "confirmed",
+                 "route": "accessibility",
+                 "delivery": {"mode": "background"},
+-                "evidence": [{"kind": "value_readback", "detail": "value read back as 42"}]
++                "evidence": [{"kind": "value_readback", "detail": "value read back as 42"}],
++                "change": "changed",
++                "via": "ax_value"
+             })
+         );
+         let rendered = value.to_string();
+@@ -1606,7 +1684,9 @@ mod tests {
+                 "effect": "confirmed",
+                 "route": "system_api",
+                 "delivery": {"mode": "not_applicable"},
+-                "evidence": [{"kind": "value_readback", "detail": "GetWindowRect matched exact HWND geometry"}]
++                "evidence": [{"kind": "value_readback", "detail": "GetWindowRect matched exact HWND geometry"}],
++                "change": "changed",
++                "via": "set_window_pos"
+             })
+         );
+     }
+@@ -1812,6 +1892,8 @@ mod tests {
+                 "route": "synthetic_events",
+                 "delivery": {"mode": "background"},
+                 "evidence": [{"kind": "value_readback"}],
++                "change": "changed",
++                "via": "cg_event_pid",
+             })
+         );
+     }
+diff --git a/rust/crates/cua-driver-core/src/browser/tools.rs b/rust/crates/cua-driver-core/src/browser/tools.rs
+index 7b31ed1..5183c77 100644
+--- a/rust/crates/cua-driver-core/src/browser/tools.rs
++++ b/rust/crates/cua-driver-core/src/browser/tools.rs
+@@ -1864,6 +1864,26 @@ impl Tool for BrowserTypeTool {
+             )
+             .to_tool_result();
+         }
++        // Dove (W6): never type into a password or payment-card field.
++        if let Ok(answer) = conn
++            .call(
++                Some(cdp),
++                "Runtime.callFunctionOn",
++                json!({
++                    "objectId": object_id,
++                    "functionDeclaration": crate::dove_safety::BROWSER_SECURE_FIELD_CHECK,
++                    "returnByValue": true,
++                }),
++            )
++            .await
++        {
++            if let Some(kind) = answer["result"]["value"]
++                .as_str()
++                .and_then(crate::dove_safety::browser_secure_kind)
++            {
++                return crate::dove_safety::handoff_refusal(kind, "browser_type");
++            }
++        }
+ 
+         // Give the recording a visual target before text delivery. Keep this
+         // best-effort: editability/input semantics never depend on the overlay.
+diff --git a/rust/crates/cua-driver-core/src/dove_safety.rs b/rust/crates/cua-driver-core/src/dove_safety.rs
+new file mode 100644
+index 0000000..f855ed4
+--- /dev/null
++++ b/rust/crates/cua-driver-core/src/dove_safety.rs
+@@ -0,0 +1,1153 @@
++//! Dove (ROADMAP W6): stop and hand off at secure fields and system prompts,
++//! and gate actions through the confirm/block classes of nexi-cua.
++//!
++//! Three checks run at the canonical dispatch seam, after the reviewed
++//! authorization ladder and before the platform tool runs:
++//!
++//! 1. **Hand-off.** Text never goes into a password or payment field, and no
++//!    action targets an elevation (UAC) prompt, the secure desktop or an OS
++//!    credential dialog. The call is refused with `code: "handoff_required"`
++//!    in every permission mode, so the agent asks the user to finish that
++//!    step. The platform reports what the target is through a
++//!    [`TargetInspector`] (UIA `IsPassword`, `AXSecureTextField`, AT-SPI
++//!    `ROLE_PASSWORD_TEXT`, the owning process of the target window).
++//! 2. **Blocked classes** (`code: "safety_blocked"`): never executed by the
++//!    agent, in any mode.
++//! 3. **Confirm classes** (`code: "confirmation_required"`): in `standard`
++//!    mode the refusal carries a `confirm_token`. The agent asks the user, and
++//!    after a yes repeats the call with `confirm: "<token>"`; the grant then
++//!    covers that verb and class for the rest of the session, as nexi-cua's
++//!    `SafetyGate.confirm` does. In `bounded` mode nobody is there to ask, so
++//!    the call is refused without a token. `unrestricted` mode runs it.
++//!
++//! The classes are matched against the target element (its role, name and,
++//! for non-editable elements, its value), the optional `intent` argument and
++//! an `invoke_menu` path. They are a port of `nexi_cua/safety.py` from
++//! PupppyLoverr/NEXI-Models-Drivers (Apache-2.0); see NOTICE.md.
++//!
++//! `DOVE_DRIVER_SAFETY_CLASSES=off` in the daemon's environment turns the
++//! confirm/block classes off. The hand-off check cannot be turned off.
++
++use std::collections::{HashMap, HashSet};
++use std::sync::{Arc, Mutex, OnceLock, RwLock};
++use std::time::{Duration, Instant};
++
++use serde_json::{json, Map, Value};
++
++use crate::authorization::PermissionMode;
++use crate::protocol::ToolResult;
++
++/// Daemon environment switch for the confirm/block classes.
++pub const SAFETY_CLASSES_ENV: &str = "DOVE_DRIVER_SAFETY_CLASSES";
++
++/// Why a target needs the user instead of the agent.
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++pub enum SecureKind {
++    /// UIA `IsPassword`, `AXSecureTextField`, AT-SPI `ROLE_PASSWORD_TEXT`,
++    /// `input[type=password]`.
++    Password,
++    /// A payment-card field (`autocomplete="cc-*"`, a card-number, CVC or
++    /// expiry field).
++    Payment,
++    /// An OS credential dialog (Windows Security, a keychain or polkit
++    /// password prompt).
++    CredentialPrompt,
++    /// An elevation prompt (UAC `consent.exe`) or the secure desktop.
++    ElevationPrompt,
++}
++
++impl SecureKind {
++    pub const fn reason(self) -> &'static str {
++        match self {
++            Self::Password => "password_field",
++            Self::Payment => "payment_field",
++            Self::CredentialPrompt => "credential_prompt",
++            Self::ElevationPrompt => "elevation_prompt",
++        }
++    }
++
++    /// Whether the kind stops every action, not only text entry.
++    const fn blocks_every_action(self) -> bool {
++        matches!(self, Self::CredentialPrompt | Self::ElevationPrompt)
++    }
++
++    fn hint(self) -> &'static str {
++        match self {
++            Self::Password => {
++                "This is a password field. Do not type secrets: stop and ask the user to enter \
++                 the password themselves, then continue after they say it is done."
++            }
++            Self::Payment => {
++                "This is a payment-card field. Stop and ask the user to enter the card details \
++                 themselves, then continue after they say it is done."
++            }
++            Self::CredentialPrompt => {
++                "An OS credential dialog is showing. Stop and ask the user to answer it \
++                 themselves, then continue after they say it is done."
++            }
++            Self::ElevationPrompt => {
++                "An administrator (UAC) prompt or the secure desktop is active. Stop and ask the \
++                 user to answer it themselves, then continue after they say it is done."
++            }
++        }
++    }
++}
++
++/// What the platform knows about an action's target before it runs.
++#[derive(Clone, Debug, Default, PartialEq, Eq)]
++pub struct TargetInfo {
++    /// Accessibility role, for example `Button`, `AXButton`, `push button`.
++    pub role: String,
++    /// Accessible name (label).
++    pub name: String,
++    /// Current value, when the element has one.
++    pub value: Option<String>,
++    /// The element holds user text (edit, document, terminal). Its value is
++    /// content, not a label, so it is left out of the class match.
++    pub editable: bool,
++    /// Set when the target must be handed to the user.
++    pub secure: Option<SecureKind>,
++}
++
++/// Platform hook that describes the target of an action call. It runs on a
++/// blocking thread and must return quickly; `None` means unknown.
++pub type TargetInspector = Arc<dyn Fn(&str, &Value) -> Option<TargetInfo> + Send + Sync>;
++
++/// Inspectors by dispatch runtime scope, plus the latest one.
++type InspectorSlots = (HashMap<String, TargetInspector>, Option<TargetInspector>);
++
++fn inspector_slots() -> &'static RwLock<InspectorSlots> {
++    static SLOTS: OnceLock<RwLock<InspectorSlots>> = OnceLock::new();
++    SLOTS.get_or_init(|| RwLock::new((HashMap::new(), None)))
++}
++
++fn runtime_scope() -> String {
++    crate::tool::current_dispatch_runtime_scope().unwrap_or_else(|| "legacy".into())
++}
++
++/// Install the platform's target inspector for the runtime being built.
++pub fn register_target_inspector(inspector: TargetInspector) {
++    let mut slots = inspector_slots().write().unwrap_or_else(|e| e.into_inner());
++    slots.0.insert(runtime_scope(), inspector.clone());
++    slots.1 = Some(inspector);
++}
++
++fn current_inspector() -> Option<TargetInspector> {
++    let slots = inspector_slots().read().unwrap_or_else(|e| e.into_inner());
++    slots
++        .0
++        .get(&runtime_scope())
++        .cloned()
++        .or_else(|| slots.1.clone())
++}
++
++/// Tools the safety layer checks.
++pub fn is_guarded_tool(tool: &str) -> bool {
++    matches!(
++        tool,
++        "click"
++            | "double_click"
++            | "right_click"
++            | "type_text"
++            | "type_text_chars"
++            | "set_value"
++            | "press_key"
++            | "hotkey"
++            | "invoke_menu"
++            | "drag"
++            | "browser_click"
++            | "browser_type"
++    )
++}
++
++fn is_text_entry_tool(tool: &str) -> bool {
++    matches!(
++        tool,
++        "type_text" | "type_text_chars" | "set_value" | "browser_type"
++    )
++}
++
++/// Add the `intent` and `confirm` arguments to a guarded tool's advertised
++/// schema.
++pub fn advertise(tool: &str, properties: &mut Map<String, Value>) {
++    if !is_guarded_tool(tool) {
++        return;
++    }
++    properties.entry("intent").or_insert_with(|| {
++        json!({
++            "type": "string",
++            "maxLength": 500,
++            "description": "Optional: what this action is for, in a few words (the user's goal). \
++                Checked against the safety classes together with the target element."
++        })
++    });
++    properties.entry("confirm").or_insert_with(|| {
++        json!({
++            "type": "string",
++            "description": "The confirm_token from a confirmation_required refusal. Pass it only \
++                after the user said yes to that action."
++        })
++    });
++}
++
++/// The safety arguments of one call, removed from the platform arguments.
++#[derive(Clone, Debug, Default, PartialEq, Eq)]
++pub struct SafetyArgs {
++    pub intent: Option<String>,
++    pub confirm: Option<String>,
++}
++
++/// Remove `intent` and `confirm` so platform tools never see them.
++pub fn take_safety_args(tool: &str, args: &mut Value) -> SafetyArgs {
++    if !is_guarded_tool(tool) {
++        return SafetyArgs::default();
++    }
++    let Some(object) = args.as_object_mut() else {
++        return SafetyArgs::default();
++    };
++    let take = |object: &mut Map<String, Value>, key: &str| {
++        object
++            .remove(key)
++            .and_then(|value| value.as_str().map(str::to_owned))
++            .filter(|value| !value.trim().is_empty())
++    };
++    SafetyArgs {
++        intent: take(object, "intent"),
++        confirm: take(object, "confirm"),
++    }
++}
++
++fn classes_enabled() -> bool {
++    !matches!(
++        std::env::var(SAFETY_CLASSES_ENV)
++            .ok()
++            .map(|value| value.trim().to_ascii_lowercase())
++            .as_deref(),
++        Some("0" | "off" | "false" | "no")
++    )
++}
++
++/// Risk of an action under the nexi-cua classes.
++#[derive(Clone, Debug, PartialEq, Eq)]
++pub enum Risk {
++    Safe,
++    Confirm(&'static str),
++    Blocked(&'static str),
++}
++
++fn words(haystack: &str) -> Vec<String> {
++    haystack
++        .to_lowercase()
++        .split(|c: char| !c.is_alphanumeric())
++        .filter(|word| !word.is_empty())
++        .map(str::to_owned)
++        .collect()
++}
++
++fn normalized(haystack: &str) -> String {
++    haystack
++        .to_lowercase()
++        .split_whitespace()
++        .collect::<Vec<_>>()
++        .join(" ")
++}
++
++/// `first ... second` in word order, as nexi-cua's `\b(a)\b.*\b(b)\b`.
++fn word_then_word(words: &[String], first: &[&str], second: &[&str]) -> bool {
++    words
++        .iter()
++        .position(|word| first.contains(&word.as_str()))
++        .is_some_and(|start| {
++            words[start + 1..]
++                .iter()
++                .any(|word| second.contains(&word.as_str()))
++        })
++}
++
++fn any_word(words: &[String], set: &[&str]) -> bool {
++    words.iter().any(|word| set.contains(&word.as_str()))
++}
++
++/// Two adjacent words, also written as one (`sign in`, `signin`).
++fn phrase(words: &[String], first: &str, second: &str) -> bool {
++    let joined = format!("{first}{second}");
++    words.iter().any(|word| *word == joined)
++        || words
++            .windows(2)
++            .any(|pair| pair[0] == first && pair[1] == second)
++}
++
++/// Classify `haystack` (target role, name and value, intent, menu path).
++/// `keys` are the keys of a `press_key`/`hotkey` call; `typing` is set for
++/// text-entry tools. The order and the classes follow `nexi_cua.safety`:
++/// blocked classes first, then confirm classes, then the key and
++/// credential-field rules.
++pub fn assess(haystack: &str, keys: &[String], typing: bool) -> Risk {
++    let w = words(haystack);
++    let flat = normalized(haystack);
++
++    // Blocked classes.
++    if any_word(&w, &["sudo", "mkfs"])
++        || flat.contains("rm -rf /")
++        || flat.contains("dd if=")
++        || flat.contains(":(){ :|:& };:")
++    {
++        return Risk::Blocked("destructive shell");
++    }
++    // `steal` and `malware` match whole words only, as in nexi-cua; the
++    // other stems also match their inflections (`exfiltrate`, `phishing`).
++    if any_word(&w, &["steal", "malware"])
++        || w.iter().any(|word| {
++            ["exfiltrat", "keylog", "phish", "ransom"]
++                .iter()
++                .any(|stem| word.starts_with(stem))
++        })
++    {
++        return Risk::Blocked("malicious intent");
++    }
++    if word_then_word(
++        &w,
++        &["bypass", "evade", "disable"],
++        &["safety", "guardrail", "detection", "audit"],
++    ) || (any_word(&w, &["bypass", "evade", "disable"]) && flat.contains("security control"))
++    {
++        return Risk::Blocked("safety-control bypass");
++    }
++
++    // Confirm classes.
++    if any_word(
++        &w,
++        &[
++            "delete", "remove", "trash", "erase", "wipe", "format", "unlink",
++        ],
++    ) || flat.contains("rm -rf")
++    {
++        return Risk::Confirm("file/data deletion");
++    }
++    if any_word(
++        &w,
++        &[
++            "buy",
++            "purchase",
++            "checkout",
++            "pay",
++            "order",
++            "subscribe",
++            "billing",
++            "transfer",
++            "wire",
++            "crypto",
++        ],
++    ) || phrase(&w, "card", "number")
++        || phrase(&w, "send", "money")
++    {
++        return Risk::Confirm("purchase/payment/financial transfer");
++    }
++    if any_word(
++        &w,
++        &[
++            "send", "post", "tweet", "publish", "reply", "comment", "submit",
++        ],
++    ) {
++        return Risk::Confirm("sending/submitting content");
++    }
++    if any_word(
++        &w,
++        &[
++            "password",
++            "credential",
++            "2fa",
++            "totp",
++            "security",
++            "privacy",
++            "permission",
++        ],
++    ) || phrase(&w, "sign", "in")
++        || phrase(&w, "log", "in")
++    {
++        return Risk::Confirm("account/security settings");
++    }
++    if any_word(
++        &w,
++        &[
++            "overwrite",
++            "replace",
++            "reset",
++            "factory",
++            "uninstall",
++            "revoke",
++            "deactivate",
++        ],
++    ) {
++        return Risk::Confirm("irreversible change");
++    }
++    if any_word(
++        &w,
++        &["share", "invite", "grant", "authorize", "allow", "approve"],
++    ) {
++        return Risk::Confirm("granting access");
++    }
++    if word_then_word(
++        &w,
++        &[
++            "install",
++            "uninstall",
++            "download",
++            "run",
++            "execute",
++            "launch",
++        ],
++        &[
++            "app",
++            "application",
++            "package",
++            "installer",
++            "executable",
++            "script",
++            "extension",
++        ],
++    ) {
++        return Risk::Confirm("software installation/execution");
++    }
++    let config_verb =
++        any_word(&w, &["change", "modify", "disable", "enable"]) || phrase(&w, "turn", "off");
++    if config_verb
++        && (word_then_word(
++            &w,
++            &["change", "modify", "disable", "enable", "off"],
++            &[
++                "firewall",
++                "antivirus",
++                "security",
++                "permission",
++                "encryption",
++            ],
++        ) || flat.contains("system setting"))
++    {
++        return Risk::Confirm("system/security configuration");
++    }
++
++    let lowered: HashSet<String> = keys.iter().map(|key| key.to_lowercase()).collect();
++    for combo in [&["cmd", "backspace"][..], &["ctrl", "alt", "delete"][..]] {
++        if combo.iter().all(|key| lowered.contains(*key)) {
++            return Risk::Confirm("destructive key combo");
++        }
++    }
++    if typing
++        && w.iter().any(|word| {
++            ["password", "passwd", "secret", "token", "apikey"].contains(&word.as_str())
++        })
++        || typing && (phrase(&w, "api", "key"))
++    {
++        return Risk::Confirm("typing into a credential field");
++    }
++    Risk::Safe
++}
++
++/// A run of 13 to 19 digits (spaces and dashes allowed) that passes the Luhn
++/// check: a payment-card number.
++pub fn contains_card_number(text: &str) -> bool {
++    let mut digits: Vec<u32> = Vec::new();
++    let flush = |digits: &mut Vec<u32>| -> bool {
++        let found = (13..=19).contains(&digits.len()) && luhn(digits);
++        digits.clear();
++        found
++    };
++    for c in text.chars() {
++        if let Some(d) = c.to_digit(10) {
++            digits.push(d);
++        } else if c == ' ' || c == '-' {
++            continue;
++        } else if flush(&mut digits) {
++            return true;
++        }
++    }
++    flush(&mut digits)
++}
++
++fn luhn(digits: &[u32]) -> bool {
++    let sum: u32 = digits
++        .iter()
++        .rev()
++        .enumerate()
++        .map(|(i, &d)| {
++            if i % 2 == 1 {
++                let doubled = d * 2;
++                if doubled > 9 {
++                    doubled - 9
++                } else {
++                    doubled
++                }
++            } else {
++                d
++            }
++        })
++        .sum();
++    sum % 10 == 0
++}
++
++/// Field names that mark a payment-card field when the platform exposes no
++/// `autocomplete` attribute (native toolkits, UIA over a web page).
++pub fn is_payment_field_name(name: &str) -> bool {
++    let w = words(name);
++    let flat = normalized(name);
++    phrase(&w, "card", "number")
++        || any_word(&w, &["cvv", "cvc", "cvv2", "cc", "ccv"])
++        || flat.contains("credit card")
++        || flat.contains("security code")
++        || flat.contains("cc-number")
++        || flat.contains("cc-csc")
++        || flat.contains("cc-exp")
++        || (flat.contains("expir") && (flat.contains("card") || flat.contains("mm")))
++}
++
++/// Keys of a `press_key` (`key`) or `hotkey` (`keys`) call.
++fn call_keys(args: &Value) -> Vec<String> {
++    let mut keys = Vec::new();
++    if let Some(key) = args.get("key").and_then(Value::as_str) {
++        keys.extend(key.split('+').map(|k| k.trim().to_owned()));
++    }
++    if let Some(list) = args.get("keys").and_then(Value::as_array) {
++        keys.extend(
++            list.iter()
++                .filter_map(Value::as_str)
++                .map(|k| k.trim().to_owned()),
++        );
++    }
++    if let Some(modifiers) = args.get("modifiers").and_then(Value::as_array) {
++        keys.extend(
++            modifiers
++                .iter()
++                .filter_map(Value::as_str)
++                .map(|k| k.trim().to_owned()),
++        );
++    }
++    keys
++}
++
++/// Whether a key call would put text into the focused field: a single
++/// printable key, or paste (`ctrl+v`, `cmd+v`, `shift+insert`).
++fn key_call_enters_text(tool: &str, args: &Value) -> bool {
++    let keys: Vec<String> = call_keys(args).iter().map(|k| k.to_lowercase()).collect();
++    let modifiers = [
++        "ctrl", "control", "cmd", "command", "meta", "win", "super", "alt", "option",
++    ];
++    let has = |name: &str| keys.iter().any(|key| key == name);
++    let paste = (has("v") && keys.iter().any(|k| modifiers[..7].contains(&k.as_str())))
++        || (has("shift") && has("insert"));
++    let printable = tool == "press_key"
++        && keys.len() == 1
++        && keys[0].chars().count() == 1
++        && !keys.iter().any(|k| modifiers.contains(&k.as_str()));
++    paste || printable
++}
++
++fn typed_text(tool: &str, args: &Value) -> Option<String> {
++    match tool {
++        "type_text" | "type_text_chars" | "browser_type" => {
++            args.get("text").and_then(Value::as_str).map(str::to_owned)
++        }
++        "set_value" => args.get("value").and_then(Value::as_str).map(str::to_owned),
++        _ => None,
++    }
++}
++
++const VALUE_MATCH_LIMIT: usize = 200;
++
++/// The text the classes are matched against.
++pub fn haystack(
++    tool: &str,
++    args: &Value,
++    target: Option<&TargetInfo>,
++    safety: &SafetyArgs,
++) -> String {
++    let mut parts: Vec<String> = Vec::new();
++    if let Some(target) = target {
++        parts.push(target.name.clone());
++        if !target.editable {
++            if let Some(value) = target.value.as_deref() {
++                parts.push(value.chars().take(VALUE_MATCH_LIMIT).collect());
++            }
++        }
++    }
++    if tool == "invoke_menu" {
++        if let Some(path) = args.get("path").and_then(Value::as_array) {
++            parts.extend(path.iter().filter_map(Value::as_str).map(str::to_owned));
++        }
++    }
++    if let Some(intent) = safety.intent.as_deref() {
++        parts.push(intent.to_owned());
++    }
++    parts.retain(|part| !part.trim().is_empty());
++    parts.join(" ")
++}
++
++/// Session grants for confirmed classes, and tokens waiting for the user.
++#[derive(Default)]
++struct ConfirmState {
++    /// token → (session key, grant key, issued at)
++    pending: HashMap<String, (String, String, Instant)>,
++    /// (session key, grant key)
++    granted: HashSet<(String, String)>,
++}
++
++const TOKEN_TTL: Duration = Duration::from_secs(10 * 60);
++
++fn confirm_state() -> &'static Mutex<ConfirmState> {
++    static STATE: OnceLock<Mutex<ConfirmState>> = OnceLock::new();
++    STATE.get_or_init(Default::default)
++}
++
++fn verb(tool: &str) -> &str {
++    match tool {
++        "type_text_chars" => "type_text",
++        other => other,
++    }
++}
++
++/// Outcome of the confirm-class gate for one call.
++enum ConfirmGate {
++    Allowed,
++    NeedsUser { token: String },
++}
++
++fn confirm_gate(session: &str, tool: &str, class: &str, presented: Option<&str>) -> ConfirmGate {
++    let grant = format!("{}:{class}", verb(tool));
++    let mut state = confirm_state().lock().unwrap_or_else(|e| e.into_inner());
++    state
++        .pending
++        .retain(|_, (_, _, issued)| issued.elapsed() < TOKEN_TTL);
++    if state.granted.contains(&(session.to_owned(), grant.clone())) {
++        return ConfirmGate::Allowed;
++    }
++    if let Some(token) = presented {
++        if let Some((token_session, token_grant, _)) = state.pending.get(token) {
++            if token_session == session && *token_grant == grant {
++                state.pending.remove(token);
++                state.granted.insert((session.to_owned(), grant));
++                return ConfirmGate::Allowed;
++            }
++        }
++    }
++    let token = format!("cf-{}", &uuid::Uuid::new_v4().simple().to_string()[..12]);
++    state
++        .pending
++        .insert(token.clone(), (session.to_owned(), grant, Instant::now()));
++    ConfirmGate::NeedsUser { token }
++}
++
++/// Forget the grants of a session (for example at `end_session`).
++pub fn forget_session(session: &str) {
++    let mut state = confirm_state().lock().unwrap_or_else(|e| e.into_inner());
++    state.granted.retain(|(owner, _)| owner != session);
++    state.pending.retain(|_, (owner, _, _)| owner != session);
++}
++
++/// Page function (`Runtime.callFunctionOn` on the target node) that names a
++/// secure browser field: `"password"` for `input[type=password]` and
++/// password autocomplete tokens, `"payment"` for `autocomplete="cc-*"` and
++/// inputs inside a known hosted payment-field frame, `""` otherwise.
++pub const BROWSER_SECURE_FIELD_CHECK: &str = r#"function() {
++  const el = this;
++  if (!el || el.nodeType !== 1) return "";
++  const type = String(el.type || el.getAttribute("type") || "").toLowerCase();
++  if (type === "password") return "password";
++  const ac = String(el.getAttribute("autocomplete") || "").toLowerCase().split(/\s+/);
++  if (ac.includes("current-password") || ac.includes("new-password")) return "password";
++  if (ac.some(t => t.startsWith("cc-"))) return "payment";
++  let host = "";
++  try { host = String(el.ownerDocument.location.hostname || "").toLowerCase(); } catch (e) {}
++  const payHosts = ["js.stripe.com", "m.stripe.network", "assets.braintreegateway.com",
++    "checkoutshopper-live.adyen.com", "checkoutshopper-test.adyen.com",
++    "secure.checkout.com", "flex.cybersource.com", "pay.google.com", "www.paypal.com"];
++  if (payHosts.some(h => host === h || host.endsWith("." + h))) return "payment";
++  return "";
++}"#;
++
++/// The hand-off kind for a [`BROWSER_SECURE_FIELD_CHECK`] answer.
++pub fn browser_secure_kind(answer: &str) -> Option<SecureKind> {
++    match answer {
++        "password" => Some(SecureKind::Password),
++        "payment" => Some(SecureKind::Payment),
++        _ => None,
++    }
++}
++
++/// The `handoff_required` refusal for `kind`.
++pub fn handoff_refusal(kind: SecureKind, tool: &str) -> ToolResult {
++    handoff_result(kind, tool)
++}
++
++fn handoff_result(kind: SecureKind, tool: &str) -> ToolResult {
++    ToolResult::error(format!(
++        "{tool} refused: {}. Hand this step to the user.",
++        kind.hint()
++    ))
++    .with_structured(json!({
++        "code": "handoff_required",
++        "effect": "refused",
++        "reason": kind.reason(),
++        "handoff": { "to": "user", "reason": kind.reason() },
++        "hint": kind.hint(),
++    }))
++}
++
++fn describe_target(target: Option<&TargetInfo>) -> String {
++    match target {
++        Some(target) if !target.name.trim().is_empty() => {
++            format!(" on {} \"{}\"", target.role, target.name.trim())
++        }
++        Some(target) if !target.role.is_empty() => format!(" on a {}", target.role),
++        _ => String::new(),
++    }
++}
++
++/// Decide a call against the secure-target hand-off and the safety classes.
++/// Pure: the caller supplies what the platform reported about the target.
++pub fn decide(
++    tool: &str,
++    args: &Value,
++    target: Option<&TargetInfo>,
++    safety: &SafetyArgs,
++    mode: PermissionMode,
++    session: &str,
++    classes: bool,
++) -> Option<ToolResult> {
++    if !is_guarded_tool(tool) {
++        return None;
++    }
++    let text_entry = is_text_entry_tool(tool)
++        || (matches!(tool, "press_key" | "hotkey") && key_call_enters_text(tool, args));
++    if let Some(kind) = target.and_then(|target| target.secure) {
++        if kind.blocks_every_action() || text_entry {
++            return Some(handoff_result(kind, tool));
++        }
++    }
++    if let Some(text) = typed_text(tool, args) {
++        if contains_card_number(&text) {
++            return Some(handoff_result(SecureKind::Payment, tool));
++        }
++    }
++    if !classes {
++        return None;
++    }
++    let haystack = haystack(tool, args, target, safety);
++    let typing = is_text_entry_tool(tool);
++    match assess(&haystack, &call_keys(args), typing) {
++        Risk::Safe => None,
++        Risk::Blocked(class) => Some(
++            ToolResult::error(format!(
++                "{tool} refused: the action{} falls in the blocked class \"{class}\", which the \
++                 agent never runs. Tell the user what you were about to do and stop.",
++                describe_target(target)
++            ))
++            .with_structured(json!({
++                "code": "safety_blocked",
++                "effect": "refused",
++                "class": class,
++                "hint": "Blocked actions are never run by the agent. Explain the step to the \
++                         user and let them do it, or choose another approach.",
++            })),
++        ),
++        Risk::Confirm(class) => match mode {
++            PermissionMode::Unrestricted => None,
++            PermissionMode::Bounded => Some(
++                ToolResult::error(format!(
++                    "{tool} refused: the action{} is in the guarded class \"{class}\", which \
++                     needs the user's confirmation, and bounded mode runs without one. Hand \
++                     this step to the user.",
++                    describe_target(target)
++                ))
++                .with_structured(json!({
++                    "code": "confirmation_required",
++                    "effect": "refused",
++                    "class": class,
++                    "handoff": { "to": "user", "reason": "confirmation_required" },
++                    "hint": "Bounded mode cannot confirm guarded actions. Hand this step to the \
++                             user.",
++                })),
++            ),
++            PermissionMode::Standard => {
++                match confirm_gate(session, tool, class, safety.confirm.as_deref()) {
++                    ConfirmGate::Allowed => None,
++                    ConfirmGate::NeedsUser { token } => Some(
++                        ToolResult::error(format!(
++                            "{tool} needs the user's confirmation: the action{} is in the \
++                             guarded class \"{class}\". Ask the user; if they say yes, repeat \
++                             the same call with confirm:\"{token}\".",
++                            describe_target(target)
++                        ))
++                        .with_structured(json!({
++                            "code": "confirmation_required",
++                            "effect": "refused",
++                            "class": class,
++                            "confirm_token": token,
++                            "hint": format!(
++                                "Ask the user to confirm this {class} action. Only after a yes, \
++                                 repeat the same call with confirm:\"{token}\"."
++                            ),
++                        })),
++                    ),
++                }
++            }
++        },
++    }
++}
++
++const INSPECT_TIMEOUT: Duration = Duration::from_millis(1500);
++
++/// Check one call at the dispatch seam. Returns the refusal to send instead
++/// of running the tool, or `None` to run it.
++pub async fn guard_call(
++    tool: &str,
++    args: &Value,
++    safety: &SafetyArgs,
++    mode: PermissionMode,
++    session: &str,
++) -> Option<ToolResult> {
++    if !is_guarded_tool(tool) {
++        return None;
++    }
++    let target = match current_inspector() {
++        Some(inspector) => {
++            let tool_owned = tool.to_owned();
++            let args_owned = args.clone();
++            let task = tokio::task::spawn_blocking(move || inspector(&tool_owned, &args_owned));
++            match tokio::time::timeout(INSPECT_TIMEOUT, task).await {
++                Ok(Ok(info)) => info,
++                _ => None,
++            }
++        }
++        None => None,
++    };
++    decide(
++        tool,
++        args,
++        target.as_ref(),
++        safety,
++        mode,
++        session,
++        classes_enabled(),
++    )
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    fn target(role: &str, name: &str) -> TargetInfo {
++        TargetInfo {
++            role: role.into(),
++            name: name.into(),
++            ..Default::default()
++        }
++    }
++
++    #[test]
++    fn nexi_classes_port() {
++        assert_eq!(
++            assess("Delete file", &[], false),
++            Risk::Confirm("file/data deletion")
++        );
++        assert_eq!(
++            assess("Place your order", &[], false),
++            Risk::Confirm("purchase/payment/financial transfer")
++        );
++        assert_eq!(
++            assess("Card Number", &[], false),
++            Risk::Confirm("purchase/payment/financial transfer")
++        );
++        assert_eq!(
++            assess("Submit", &[], false),
++            Risk::Confirm("sending/submitting content")
++        );
++        assert_eq!(
++            assess("Sign in", &[], false),
++            Risk::Confirm("account/security settings")
++        );
++        assert_eq!(
++            assess("Login", &[], false),
++            Risk::Confirm("account/security settings")
++        );
++        assert_eq!(
++            assess("Reset", &[], false),
++            Risk::Confirm("irreversible change")
++        );
++        assert_eq!(
++            assess("Share", &[], false),
++            Risk::Confirm("granting access")
++        );
++        assert_eq!(
++            assess("download the installer", &[], false),
++            Risk::Confirm("software installation/execution")
++        );
++        assert_eq!(
++            assess("turn off firewall", &[], false),
++            Risk::Confirm("system/security configuration")
++        );
++        assert_eq!(
++            assess("sudo reboot", &[], false),
++            Risk::Blocked("destructive shell")
++        );
++        assert_eq!(
++            assess("phishing kit", &[], false),
++            Risk::Blocked("malicious intent")
++        );
++        assert_eq!(
++            assess("disable the audit log", &[], false),
++            Risk::Blocked("safety-control bypass")
++        );
++        assert_eq!(assess("OK", &[], false), Risk::Safe);
++        assert_eq!(assess("Formatting toolbar", &[], false), Risk::Safe);
++        assert_eq!(
++            assess("", &["ctrl".into(), "alt".into(), "delete".into()], false),
++            Risk::Confirm("destructive key combo")
++        );
++        assert_eq!(
++            assess("API key", &[], true),
++            Risk::Confirm("typing into a credential field")
++        );
++        assert_eq!(assess("API key", &[], false), Risk::Safe);
++    }
++
++    #[test]
++    fn card_numbers_are_luhn_checked() {
++        assert!(contains_card_number("4111 1111 1111 1111"));
++        assert!(contains_card_number("pay with 4242-4242-4242-4242 now"));
++        assert!(!contains_card_number("4111 1111 1111 1112"));
++        assert!(!contains_card_number("call 555 1234"));
++    }
++
++    #[test]
++    fn password_target_hands_off_text_but_not_clicks() {
++        let mut field = target("Edit", "Password");
++        field.secure = Some(SecureKind::Password);
++        field.editable = true;
++        let refused = decide(
++            "type_text",
++            &json!({"text": "hunter2"}),
++            Some(&field),
++            &SafetyArgs::default(),
++            PermissionMode::Unrestricted,
++            "s",
++            true,
++        )
++        .unwrap();
++        let structured = refused.structured_content.unwrap();
++        assert_eq!(structured["code"], "handoff_required");
++        assert_eq!(structured["reason"], "password_field");
++        // Clicking into it to hand focus to the user is allowed by the
++        // hand-off rule (the name still meets the account class).
++        let click = decide(
++            "click",
++            &json!({}),
++            Some(&field),
++            &SafetyArgs::default(),
++            PermissionMode::Unrestricted,
++            "s",
++            true,
++        );
++        assert!(click.is_none());
++        // A paste into it is text entry.
++        assert!(decide(
++            "hotkey",
++            &json!({"keys": ["ctrl", "v"]}),
++            Some(&field),
++            &SafetyArgs::default(),
++            PermissionMode::Unrestricted,
++            "s",
++            false,
++        )
++        .is_some());
++        // Enter is not.
++        assert!(decide(
++            "press_key",
++            &json!({"key": "return"}),
++            Some(&field),
++            &SafetyArgs::default(),
++            PermissionMode::Unrestricted,
++            "s",
++            false,
++        )
++        .is_none());
++    }
++
++    #[test]
++    fn elevation_prompt_stops_every_action_in_every_mode() {
++        let mut prompt = target("Button", "Yes");
++        prompt.secure = Some(SecureKind::ElevationPrompt);
++        for mode in [
++            PermissionMode::Standard,
++            PermissionMode::Bounded,
++            PermissionMode::Unrestricted,
++        ] {
++            let refused = decide(
++                "click",
++                &json!({}),
++                Some(&prompt),
++                &SafetyArgs::default(),
++                mode,
++                "s",
++                false,
++            )
++            .unwrap();
++            assert_eq!(
++                refused.structured_content.unwrap()["reason"],
++                "elevation_prompt"
++            );
++        }
++    }
++
++    #[test]
++    fn confirm_class_by_mode_and_token() {
++        let button = target("Button", "Delete account");
++        let args = json!({"element_token": "s00000001:3"});
++        assert!(decide(
++            "click",
++            &args,
++            Some(&button),
++            &SafetyArgs::default(),
++            PermissionMode::Unrestricted,
++            "sess-a",
++            true
++        )
++        .is_none());
++        let bounded = decide(
++            "click",
++            &args,
++            Some(&button),
++            &SafetyArgs::default(),
++            PermissionMode::Bounded,
++            "sess-a",
++            true,
++        )
++        .unwrap()
++        .structured_content
++        .unwrap();
++        assert_eq!(bounded["code"], "confirmation_required");
++        assert!(bounded.get("confirm_token").is_none());
++
++        let first = decide(
++            "click",
++            &args,
++            Some(&button),
++            &SafetyArgs::default(),
++            PermissionMode::Standard,
++            "sess-a",
++            true,
++        )
++        .unwrap()
++        .structured_content
++        .unwrap();
++        let token = first["confirm_token"].as_str().unwrap().to_owned();
++        // A token from another session does not confirm.
++        let other = SafetyArgs {
++            intent: None,
++            confirm: Some(token.clone()),
++        };
++        assert!(decide(
++            "click",
++            &args,
++            Some(&button),
++            &other,
++            PermissionMode::Standard,
++            "sess-b",
++            true
++        )
++        .is_some());
++        assert!(decide(
++            "click",
++            &args,
++            Some(&button),
++            &other,
++            PermissionMode::Standard,
++            "sess-a",
++            true
++        )
++        .is_none());
++        // The grant covers the class for the rest of the session.
++        assert!(decide(
++            "click",
++            &args,
++            Some(&target("Button", "Remove item")),
++            &SafetyArgs::default(),
++            PermissionMode::Standard,
++            "sess-a",
++            true
++        )
++        .is_none());
++        forget_session("sess-a");
++    }
++
++    #[test]
++    fn intent_is_checked_and_editable_values_are_not() {
++        let mut doc = target("Document", "Editor");
++        doc.editable = true;
++        doc.value = Some("please delete this paragraph".into());
++        assert!(decide(
++            "type_text",
++            &json!({"text": "hello"}),
++            Some(&doc),
++            &SafetyArgs::default(),
++            PermissionMode::Bounded,
++            "s",
++            true
++        )
++        .is_none());
++        let intent = SafetyArgs {
++            intent: Some("buy the cheapest flight".into()),
++            confirm: None,
++        };
++        assert!(decide(
++            "click",
++            &json!({}),
++            None,
++            &intent,
++            PermissionMode::Bounded,
++            "s",
++            true
++        )
++        .is_some());
++    }
++
++    #[test]
++    fn typed_card_number_hands_off_without_target_info() {
++        let refused = decide(
++            "type_text",
++            &json!({"text": "4111111111111111"}),
++            None,
++            &SafetyArgs::default(),
++            PermissionMode::Unrestricted,
++            "s",
++            false,
++        )
++        .unwrap();
++        assert_eq!(
++            refused.structured_content.unwrap()["reason"],
++            "payment_field"
++        );
++    }
++
++    #[test]
++    fn safety_args_are_removed_from_guarded_calls_only() {
++        let mut args = json!({"pid": 1, "intent": "pay rent", "confirm": "cf-1"});
++        let taken = take_safety_args("click", &mut args);
++        assert_eq!(taken.intent.as_deref(), Some("pay rent"));
++        assert_eq!(taken.confirm.as_deref(), Some("cf-1"));
++        assert_eq!(args, json!({"pid": 1}));
++        let mut read = json!({"intent": "x"});
++        assert_eq!(
++            take_safety_args("get_window_state", &mut read),
++            SafetyArgs::default()
++        );
++        assert_eq!(read, json!({"intent": "x"}));
++    }
++
++    #[test]
++    fn payment_field_names() {
++        assert!(is_payment_field_name("Card number"));
++        assert!(is_payment_field_name("CVV"));
++        assert!(is_payment_field_name("Expiration date (MM/YY)"));
++        assert!(!is_payment_field_name("User name"));
++    }
++}
+diff --git a/rust/crates/cua-driver-core/src/lib.rs b/rust/crates/cua-driver-core/src/lib.rs
+index f341320..cb2cb1c 100644
+--- a/rust/crates/cua-driver-core/src/lib.rs
++++ b/rust/crates/cua-driver-core/src/lib.rs
+@@ -71,6 +71,7 @@ pub mod cursor_sampler;
+ pub mod cursor_shape;
+ pub mod daemon;
+ pub mod delivery;
++pub mod dove_safety;
+ pub mod desktop_capture_scale;
+ pub mod element_frame;
+ pub mod element_query;
+diff --git a/rust/crates/cua-driver-core/src/tool.rs b/rust/crates/cua-driver-core/src/tool.rs
+index 5493c6c..097168f 100644
+--- a/rust/crates/cua-driver-core/src/tool.rs
++++ b/rust/crates/cua-driver-core/src/tool.rs
+@@ -619,6 +619,10 @@ pub(crate) fn advertised_runtime_input_schema(tool_name: &str, schema: &Value) -
+             .entry("session")
+             .or_insert_with(crate::tool_schema::session_schema);
+     }
++    // Dove (W6): guarded actions accept `intent` and `confirm`.
++    if closed {
++        crate::dove_safety::advertise(tool_name, properties);
++    }
+     if !crate::action_target::supports_typed_target(tool_name) {
+         return schema;
+     }
+@@ -1777,6 +1781,8 @@ impl ToolRegistry {
+             );
+         }
+         let unknown_argument = unknown_argument(tool.def(), &args);
++        // Dove (W6): platform tools never see the safety arguments.
++        let dove_safety_args = crate::dove_safety::take_safety_args(resolved_name, &mut args);
+         if let Err(result) = crate::action_target::normalize_action_target(resolved_name, &mut args)
+         {
+             return result;
+@@ -1799,6 +1805,23 @@ impl ToolRegistry {
+         {
+             return permission_denied_result(error.to_string());
+         }
++        // Dove (W6): secure-target hand-off and the confirm/block classes.
++        let dove_safety_session = format!(
++            "{}:{}",
++            context.runtime_scope_key(),
++            args.get("session").and_then(Value::as_str).unwrap_or("")
++        );
++        if let Some(refusal) = crate::dove_safety::guard_call(
++            resolved_name,
++            &args,
++            &dove_safety_args,
++            context.mode(),
++            &dove_safety_session,
++        )
++        .await
++        {
++            return refusal;
++        }
+ 
+         let mut public_args = args.clone();
+ 
+@@ -5807,12 +5830,14 @@ resources:
+         assert_eq!(
+             object.keys().map(String::as_str).collect::<Vec<_>>(),
+             [
++                "change",
+                 "delivery",
+                 "effect",
+                 "hint",
+                 "next_call",
+                 "route",
+-                "summary"
++                "summary",
++                "via"
+             ]
+         );
+         assert_eq!(structured["effect"], "unverifiable");
+diff --git a/rust/crates/platform-linux/src/dove_safety_target.rs b/rust/crates/platform-linux/src/dove_safety_target.rs
+new file mode 100644
+index 0000000..7bfb1b9
+--- /dev/null
++++ b/rust/crates/platform-linux/src/dove_safety_target.rs
+@@ -0,0 +1,82 @@
++//! Dove (ROADMAP W6) on Linux: what a guarded action targets, for
++//! `cua_driver_core::dove_safety`.
++//!
++//! - An element whose AT-SPI role is `password text` (`ROLE_PASSWORD_TEXT`)
++//!   → password. The role comes from the snapshot row the `element_token`
++//!   names, so no D-Bus call is made.
++//! - A target process that is a polkit authentication agent, the GNOME
++//!   keyring prompter (`gcr-prompter`), `pinentry` or the KDE wallet daemon →
++//!   credential prompt, for every action.
++//!
++//! The element's accessible name is not in the snapshot row, so the
++//! confirm/block classes see only the role and the call's `intent`.
++//!
++//! Unverified until W7 CI: written against the upstream AT-SPI snapshot
++//! types, not compiled or run on Linux in this change.
++
++use std::sync::Arc;
++
++use cua_driver_core::dove_safety::{SecureKind, TargetInfo, TargetInspector};
++use serde_json::Value;
++
++use crate::atspi::snapshot::Snapshots;
++
++/// A credential prompt process, by its `/proc/<pid>/comm` name.
++pub(crate) fn is_prompt_process(comm: &str) -> bool {
++    comm.starts_with("polkit-") && comm.contains("agent")
++        || comm == "polkit-agent-helper-1"
++        || comm == "gcr-prompter"
++        || comm.starts_with("pinentry")
++        || comm.starts_with("kwalletd")
++        || comm == "ksecretd"
++}
++
++fn editable_role(role: &str) -> bool {
++    matches!(
++        role,
++        "text" | "entry" | "terminal" | "document text" | "paragraph" | "editbar" | "password text"
++    )
++}
++
++fn inspect(snapshots: &Snapshots, _tool: &str, args: &Value) -> Option<TargetInfo> {
++    let mut info = TargetInfo::default();
++    let pid = args
++        .get("pid")
++        .and_then(Value::as_i64)
++        .and_then(|pid| i32::try_from(pid).ok())
++        .or_else(|| snapshots.pid_for_token(args))?;
++    let comm = std::fs::read_to_string(format!("/proc/{pid}/comm")).unwrap_or_default();
++    if is_prompt_process(comm.trim()) {
++        info.secure = Some(SecureKind::CredentialPrompt);
++        return Some(info);
++    }
++    if let Ok(cua_driver_core::element_token::ResolvedElement::Element { element, .. }) =
++        snapshots.resolve(pid, args)
++    {
++        let role = element.role.to_lowercase();
++        info.editable = editable_role(&role);
++        if role == "password text" {
++            info.secure = Some(SecureKind::Password);
++        }
++        info.role = element.role.clone();
++    }
++    Some(info)
++}
++
++/// The inspector `cua_driver_core::dove_safety` calls before a guarded action.
++pub(crate) fn target_inspector(snapshots: Arc<Snapshots>) -> TargetInspector {
++    Arc::new(move |tool, args| inspect(&snapshots, tool, args))
++}
++
++#[cfg(test)]
++mod tests {
++    #[test]
++    fn prompt_processes() {
++        assert!(super::is_prompt_process(
++            "polkit-gnome-authentication-agent-1"
++        ));
++        assert!(super::is_prompt_process("gcr-prompter"));
++        assert!(super::is_prompt_process("pinentry-gnome3"));
++        assert!(!super::is_prompt_process("gedit"));
++    }
++}
+diff --git a/rust/crates/platform-linux/src/lib.rs b/rust/crates/platform-linux/src/lib.rs
+index fc866c3..9b31c5d 100644
+--- a/rust/crates/platform-linux/src/lib.rs
++++ b/rust/crates/platform-linux/src/lib.rs
+@@ -65,6 +65,10 @@ mod clipboard;
+ #[cfg(target_os = "linux")]
+ pub mod atspi;
+ 
++// Dove (W6): safety target inspector.
++#[cfg(target_os = "linux")]
++mod dove_safety_target;
++
+ #[cfg(any(target_os = "linux", test))]
+ mod snapshot_queries;
+ 
+diff --git a/rust/crates/platform-linux/src/tools/impl_.rs b/rust/crates/platform-linux/src/tools/impl_.rs
+index 3be7007..cc05424 100644
+--- a/rust/crates/platform-linux/src/tools/impl_.rs
++++ b/rust/crates/platform-linux/src/tools/impl_.rs
+@@ -14469,6 +14469,10 @@ pub fn build_registry_with_provider(
+ ) -> ToolRegistry {
+     let mut r = ToolRegistry::new_with_protected_consent_provider(provider);
+     let state = ToolState::new_with_capture_service(r.capture_service());
++    // Dove (W6): what a guarded action targets, for the safety layer.
++    cua_driver_core::dove_safety::register_target_inspector(
++        crate::dove_safety_target::target_inspector(state.snapshots.clone()),
++    );
+     if crate::wayland::is_wayland() && crate::wayland::hyprland::is_session() {
+         let recording_state = Arc::downgrade(&state);
+         r.recording
+diff --git a/rust/crates/platform-macos/src/dove_safety_target.rs b/rust/crates/platform-macos/src/dove_safety_target.rs
+new file mode 100644
+index 0000000..0756225
+--- /dev/null
++++ b/rust/crates/platform-macos/src/dove_safety_target.rs
+@@ -0,0 +1,101 @@
++//! Dove (ROADMAP W6) on macOS: what a guarded action targets, for
++//! `cua_driver_core::dove_safety`.
++//!
++//! - `AXSecureTextField` (subrole) or `AXSecureTextField` role → password.
++//! - An editable field named like a card number, CVC or expiry → payment.
++//! - The authorization and Touch ID / password agents (`SecurityAgent`,
++//!   `coreautha`/`CoreAuthUI`, the LocalAuthentication UI agent) → credential
++//!   prompt, for every action.
++//!
++//! Without an `element_token`, text and keys go to the app's
++//! `AXFocusedUIElement`, so that element is inspected.
++//!
++//! Unverified until W7 CI: written against the upstream AX bindings, not
++//! compiled or run on macOS in this change.
++
++use std::sync::Arc;
++
++use cua_driver_core::dove_safety::{
++    is_payment_field_name, SecureKind, TargetInfo, TargetInspector,
++};
++use serde_json::Value;
++
++use crate::ax::bindings::{copy_string_attr, focused_element_of_pid, AXUIElementRef};
++use crate::ax::snapshot::Snapshots;
++
++const PROMPT_BUNDLES: &[&str] = &[
++    "com.apple.SecurityAgent",
++    "com.apple.CoreAuthUI",
++    "com.apple.LocalAuthentication.UIAgent",
++    "com.apple.coreautha",
++];
++
++fn describe(element: AXUIElementRef, info: &mut TargetInfo) {
++    unsafe {
++        let role = copy_string_attr(element, "AXRole").unwrap_or_default();
++        let subrole = copy_string_attr(element, "AXSubrole").unwrap_or_default();
++        info.name = copy_string_attr(element, "AXTitle")
++            .filter(|s| !s.trim().is_empty())
++            .or_else(|| copy_string_attr(element, "AXDescription"))
++            .or_else(|| copy_string_attr(element, "AXPlaceholderValue"))
++            .unwrap_or_default();
++        info.editable = matches!(
++            role.as_str(),
++            "AXTextField" | "AXTextArea" | "AXComboBox" | "AXSearchField"
++        );
++        if role == "AXSecureTextField" || subrole == "AXSecureTextField" {
++            info.role = role;
++            info.editable = true;
++            info.secure = Some(SecureKind::Password);
++            return;
++        }
++        let identifier = copy_string_attr(element, "AXIdentifier").unwrap_or_default();
++        if info.editable
++            && (is_payment_field_name(&info.name) || is_payment_field_name(&identifier))
++        {
++            info.secure = Some(SecureKind::Payment);
++        }
++        info.value = copy_string_attr(element, "AXValue").map(|v| v.chars().take(256).collect());
++        info.role = role;
++    }
++}
++
++fn inspect(snapshots: &Snapshots, tool: &str, args: &Value) -> Option<TargetInfo> {
++    let mut info = TargetInfo::default();
++    let pid = args
++        .get("pid")
++        .and_then(Value::as_i64)
++        .and_then(|pid| i32::try_from(pid).ok())
++        .or_else(|| snapshots.pid_for_token(args))?;
++    if crate::apps::bundle_id_for_pid(pid)
++        .is_some_and(|bundle| PROMPT_BUNDLES.contains(&bundle.as_str()))
++    {
++        info.secure = Some(SecureKind::CredentialPrompt);
++        return Some(info);
++    }
++    if args.get("element_token").is_some() {
++        if let Ok(cua_driver_core::element_token::ResolvedElement::Element { element, .. }) =
++            snapshots.resolve(pid, args)
++        {
++            describe(element.as_ptr() as AXUIElementRef, &mut info);
++        }
++        return Some(info);
++    }
++    if matches!(
++        tool,
++        "type_text" | "type_text_chars" | "press_key" | "hotkey" | "set_value"
++    ) {
++        unsafe {
++            if let Some(focused) = focused_element_of_pid(pid) {
++                describe(focused, &mut info);
++                core_foundation::base::CFRelease(focused as core_foundation::base::CFTypeRef);
++            }
++        }
++    }
++    Some(info)
++}
++
++/// The inspector `cua_driver_core::dove_safety` calls before a guarded action.
++pub(crate) fn target_inspector(snapshots: Arc<Snapshots>) -> TargetInspector {
++    Arc::new(move |tool, args| inspect(&snapshots, tool, args))
++}
+diff --git a/rust/crates/platform-macos/src/lib.rs b/rust/crates/platform-macos/src/lib.rs
+index 6b847b4..602b5d4 100644
+--- a/rust/crates/platform-macos/src/lib.rs
++++ b/rust/crates/platform-macos/src/lib.rs
+@@ -19,6 +19,9 @@ pub mod apps;
+ pub mod ax;
+ #[cfg(target_os = "macos")]
+ mod background_mutation;
++// Dove (W6): safety target inspector.
++#[cfg(target_os = "macos")]
++mod dove_safety_target;
+ #[cfg(target_os = "macos")]
+ pub mod browser;
+ #[cfg(target_os = "macos")]
+diff --git a/rust/crates/platform-macos/src/tools/mod.rs b/rust/crates/platform-macos/src/tools/mod.rs
+index 7b0efb0..77ae4e5 100644
+--- a/rust/crates/platform-macos/src/tools/mod.rs
++++ b/rust/crates/platform-macos/src/tools/mod.rs
+@@ -1058,6 +1058,10 @@ pub fn register_all(
+     // Share the element cache with the recording-hook layer so it can
+     // resolve element_index → window-local screenshot coords for click.png.
+     crate::recording_hooks::set_snapshots(state.snapshots.clone());
++    // Dove (W6): what a guarded action targets, for the safety layer.
++    cua_driver_core::dove_safety::register_target_inspector(
++        crate::dove_safety_target::target_inspector(state.snapshots.clone()),
++    );
+ 
+     // Drop a disconnecting session's config overrides + owned cursor on
+     // `session_end`. The daemon fans the session id out to this hook;
+diff --git a/rust/crates/platform-windows/src/dove_actions.rs b/rust/crates/platform-windows/src/dove_actions.rs
+new file mode 100644
+index 0000000..2503e49
+--- /dev/null
++++ b/rust/crates/platform-windows/src/dove_actions.rs
+@@ -0,0 +1,1351 @@
++//! Dove (ROADMAP W2 + W6) on Windows.
++//!
++//! - [`probed`] wraps the action tools. Before the action it records the
++//!   target element's value and a fingerprint of the target window (its UIA
++//!   control-view tree, read in one cached call, plus the pid's visible
++//!   top-level windows). After the action it reads them again, polling
++//!   briefly, and reports `change: changed | unchanged | unverifiable`. A
++//!   click, key or scroll whose window changed becomes `effect: confirmed`
++//!   with `window_change` evidence; a `set_value` whose element reads back the
++//!   requested value becomes `confirmed` with `value_readback` evidence.
++//!   Text typed with `type_text` keeps upstream's effect (the insertion point
++//!   is unknown) and only gains `change`.
++//! - [`target_inspector`] tells `cua_driver_core::dove_safety` what an action
++//!   targets: the element's role, name and value, UIA `IsPassword`, a
++//!   payment-card field, the UAC (`consent.exe`) prompt, the secure desktop
++//!   and the Windows Security credential dialog.
++//!
++//! Chromium/Electron windows and LibreOffice (SAL) windows are not
++//! fingerprinted: their trees are large or hang under a subtree cache, and a
++//! Chromium UIA write is echoed back without reaching the page. They report
++//! `unverifiable` unless the element value says otherwise.
++
++use std::collections::HashMap;
++use std::sync::{Arc, Mutex, OnceLock};
++use std::time::{Duration, Instant};
++
++use async_trait::async_trait;
++use cua_driver_core::action_record::{ActionEffect, ActionEvidence, EvidenceKind, ObservedChange};
++use cua_driver_core::dove_safety::{
++    is_payment_field_name, SecureKind, TargetInfo, TargetInspector,
++};
++use cua_driver_core::protocol::ToolResult;
++use cua_driver_core::tool::{Tool, ToolDef};
++use serde_json::{json, Value};
++use windows::core::Interface;
++use windows::Win32::Foundation::HWND;
++use windows::Win32::System::Com::{
++    CoCreateInstance, CoInitializeEx, CLSCTX_INPROC_SERVER, COINIT_MULTITHREADED,
++};
++use windows::Win32::UI::Accessibility::*;
++
++use crate::uia::snapshot::{RetainedElement, UiaSnapshot};
++
++// ── UIA helpers ──────────────────────────────────────────────────────────────
++
++fn automation() -> Option<IUIAutomation> {
++    unsafe {
++        let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
++        CoCreateInstance(&CUIAutomation, None, CLSCTX_INPROC_SERVER).ok()
++    }
++}
++
++fn role_name(control_type: i32) -> String {
++    match control_type {
++        50000 => "Button",
++        50002 => "CheckBox",
++        50003 => "ComboBox",
++        50004 => "Edit",
++        50005 => "Hyperlink",
++        50007 => "ListItem",
++        50008 => "List",
++        50011 => "MenuItem",
++        50013 => "RadioButton",
++        50015 => "Slider",
++        50019 => "TabItem",
++        50020 => "Text",
++        50024 => "TreeItem",
++        50030 => "Document",
++        50031 => "SplitButton",
++        50032 => "Window",
++        _ => return format!("ControlType{control_type}"),
++    }
++    .to_owned()
++}
++
++fn is_editable_role(control_type: i32) -> bool {
++    matches!(control_type, 50004 | 50030)
++}
++
++/// The value of a live element: ValuePattern, then RangeValuePattern, then
++/// the TextPattern document.
++fn element_value(element: &IUIAutomationElement) -> Option<String> {
++    unsafe {
++        if let Some(value) = element
++            .GetCurrentPattern(UIA_ValuePatternId)
++            .ok()
++            .and_then(|p| p.cast::<IUIAutomationValuePattern>().ok())
++            .and_then(|p| p.CurrentValue().ok())
++        {
++            return Some(value.to_string());
++        }
++        if let Some(value) = element
++            .GetCurrentPattern(UIA_RangeValuePatternId)
++            .ok()
++            .and_then(|p| p.cast::<IUIAutomationRangeValuePattern>().ok())
++            .and_then(|p| p.CurrentValue().ok())
++        {
++            return Some(format_number(value));
++        }
++        if let Some(state) = element
++            .GetCurrentPattern(UIA_TogglePatternId)
++            .ok()
++            .and_then(|p| p.cast::<IUIAutomationTogglePattern>().ok())
++            .and_then(|p| p.CurrentToggleState().ok())
++        {
++            return Some(toggle_word(state).to_owned());
++        }
++        if let Some(selected) = element
++            .GetCurrentPattern(UIA_SelectionItemPatternId)
++            .ok()
++            .and_then(|p| p.cast::<IUIAutomationSelectionItemPattern>().ok())
++            .and_then(|p| p.CurrentIsSelected().ok())
++        {
++            return Some(
++                if selected.as_bool() {
++                    "selected"
++                } else {
++                    "unselected"
++                }
++                .to_owned(),
++            );
++        }
++        if let Some(names) = element
++            .GetCurrentPattern(UIA_SelectionPatternId)
++            .ok()
++            .and_then(|p| p.cast::<IUIAutomationSelectionPattern>().ok())
++            .and_then(|p| p.GetCurrentSelection().ok())
++            .map(|items| {
++                let count = items.Length().unwrap_or(0);
++                (0..count)
++                    .filter_map(|i| items.GetElement(i).ok())
++                    .filter_map(|item| item.CurrentName().ok().map(|n| n.to_string()))
++                    .collect::<Vec<_>>()
++            })
++            .filter(|names| !names.is_empty())
++        {
++            return Some(names.join(", "));
++        }
++        element
++            .GetCurrentPattern(UIA_TextPatternId)
++            .ok()
++            .and_then(|p| p.cast::<IUIAutomationTextPattern>().ok())
++            .and_then(|p| p.DocumentRange().ok())
++            .and_then(|r| r.GetText(4096).ok())
++            .map(|text| text.to_string())
++    }
++}
++
++fn toggle_word(state: ToggleState) -> &'static str {
++    match state.0 {
++        0 => "off",
++        1 => "on",
++        _ => "mixed",
++    }
++}
++
++/// A requested on/off/selected value in one spelling.
++fn canonical_state(value: &str) -> Option<&'static str> {
++    match value.trim().to_ascii_lowercase().as_str() {
++        "on" | "true" | "checked" | "yes" | "1" | "selected" => Some("on"),
++        "off" | "false" | "unchecked" | "no" | "0" | "unselected" | "not selected" => Some("off"),
++        "mixed" | "indeterminate" => Some("mixed"),
++        _ => None,
++    }
++}
++
++/// Dove (W2.3): `set_value` on an element without Value/RangeValue: set a
++/// check box through TogglePattern, or select a radio button or list item
++/// through SelectionItemPattern, until its state reads back as requested.
++/// `Ok(None)` when the element has neither pattern or `value` is not a
++/// state word.
++pub(crate) fn set_state_value(
++    element: &IUIAutomationElement,
++    hwnd: u64,
++    value: &str,
++) -> anyhow::Result<Option<&'static str>> {
++    let Some(want) = canonical_state(value) else {
++        return Ok(None);
++    };
++    unsafe {
++        if let Some(toggle) = element
++            .GetCurrentPattern(UIA_TogglePatternId)
++            .ok()
++            .and_then(|p| p.cast::<IUIAutomationTogglePattern>().ok())
++        {
++            for _ in 0..3 {
++                if toggle.CurrentToggleState().map(toggle_word).ok() == Some(want) {
++                    return Ok(Some("TogglePattern"));
++                }
++                crate::uia::fg_bypass::run_with_uwp_bypass(hwnd as isize, || toggle.Toggle())?;
++            }
++            if toggle.CurrentToggleState().map(toggle_word).ok() == Some(want) {
++                return Ok(Some("TogglePattern"));
++            }
++            anyhow::bail!("set_value: the toggle did not reach '{want}' after three toggles");
++        }
++        if let Some(item) = element
++            .GetCurrentPattern(UIA_SelectionItemPatternId)
++            .ok()
++            .and_then(|p| p.cast::<IUIAutomationSelectionItemPattern>().ok())
++        {
++            let selected = || {
++                item.CurrentIsSelected()
++                    .map(|b| b.as_bool())
++                    .unwrap_or(false)
++            };
++            match want {
++                "on" => {
++                    if selected() {
++                        return Ok(Some("SelectionItemPattern"));
++                    }
++                    crate::uia::fg_bypass::run_with_uwp_bypass(hwnd as isize, || item.Select())?;
++                    // Some providers (WinForms radio buttons) accept Select
++                    // without selecting; their Invoke is the click.
++                    if !selected() {
++                        if let Some(invoke) = element
++                            .GetCurrentPattern(UIA_InvokePatternId)
++                            .ok()
++                            .and_then(|p| p.cast::<IUIAutomationInvokePattern>().ok())
++                        {
++                            crate::uia::fg_bypass::run_with_uwp_bypass(hwnd as isize, || {
++                                invoke.Invoke()
++                            })?;
++                            return Ok(Some("InvokePattern"));
++                        }
++                    }
++                }
++                "off" => crate::uia::fg_bypass::run_with_uwp_bypass(hwnd as isize, || {
++                    item.RemoveFromSelection()
++                })?,
++                _ => return Ok(None),
++            }
++            return Ok(Some("SelectionItemPattern"));
++        }
++    }
++    Ok(None)
++}
++
++/// Dove (W2.3): pick the item named `value` in a UIA combo box (not a native
++/// Win32 one): ExpandCollapse to publish the items, SelectionItem.Select on
++/// the match, collapse again. `Ok(None)` when no item has that name, so the
++/// caller can fall back to a ValuePattern write.
++pub(crate) fn select_combo_item(
++    element: &IUIAutomationElement,
++    hwnd: u64,
++    value: &str,
++) -> anyhow::Result<Option<&'static str>> {
++    let Some(automation) = automation() else {
++        return Ok(None);
++    };
++    unsafe {
++        let expand = element
++            .GetCurrentPattern(UIA_ExpandCollapsePatternId)
++            .ok()
++            .and_then(|p| p.cast::<IUIAutomationExpandCollapsePattern>().ok());
++        let was_collapsed = expand
++            .as_ref()
++            .and_then(|p| p.CurrentExpandCollapseState().ok())
++            .is_some_and(|state| state == ExpandCollapseState_Collapsed);
++        if let (Some(expand), true) = (expand.as_ref(), was_collapsed) {
++            let _ = crate::uia::fg_bypass::run_with_uwp_bypass(hwnd as isize, || expand.Expand());
++        }
++        let condition = automation.CreatePropertyCondition(
++            UIA_ControlTypePropertyId,
++            &windows::core::VARIANT::from(UIA_ListItemControlTypeId.0),
++        )?;
++        let mut found = None;
++        if let Ok(items) = element.FindAll(TreeScope_Descendants, &condition) {
++            for i in 0..items.Length().unwrap_or(0) {
++                let Ok(item) = items.GetElement(i) else {
++                    continue;
++                };
++                let name = item
++                    .CurrentName()
++                    .map(|n| n.to_string())
++                    .unwrap_or_default();
++                if name.trim().eq_ignore_ascii_case(value.trim()) {
++                    found = Some(item);
++                    break;
++                }
++            }
++        }
++        let selected = match found
++            .as_ref()
++            .and_then(|item| item.GetCurrentPattern(UIA_SelectionItemPatternId).ok())
++            .and_then(|p| p.cast::<IUIAutomationSelectionItemPattern>().ok())
++        {
++            Some(pattern) => {
++                crate::uia::fg_bypass::run_with_uwp_bypass(hwnd as isize, || pattern.Select())?;
++                true
++            }
++            None => false,
++        };
++        if let (Some(expand), true) = (expand.as_ref(), was_collapsed) {
++            let _ = crate::uia::fg_bypass::run_with_uwp_bypass(hwnd as isize, || expand.Collapse());
++        }
++        Ok(selected.then_some("SelectionItemPattern"))
++    }
++}
++
++fn format_number(value: f64) -> String {
++    if value.fract() == 0.0 && value.abs() < 1e15 {
++        format!("{}", value as i64)
++    } else {
++        format!("{value}")
++    }
++}
++
++/// Borrow the COM element a retained snapshot row holds, without releasing it.
++fn with_retained<T>(
++    retained: &RetainedElement,
++    f: impl FnOnce(&IUIAutomationElement) -> T,
++) -> Option<T> {
++    if !retained.is_uia() || retained.as_ptr() == 0 {
++        return None;
++    }
++    let element = std::mem::ManuallyDrop::new(unsafe {
++        IUIAutomationElement::from_raw(retained.as_ptr() as *mut _)
++    });
++    Some(f(&element))
++}
++
++// ── Window fingerprint ───────────────────────────────────────────────────────
++
++/// Rows longer than this are cut, so a large document does not dominate.
++const ROW_TEXT_LIMIT: usize = 160;
++const MAX_ROWS: usize = 4000;
++/// A window whose fingerprint takes longer than this is not probed again for
++/// a while: the probe would cost more than it tells.
++const SLOW_FINGERPRINT: Duration = Duration::from_millis(400);
++const SLOW_RETRY_AFTER: Duration = Duration::from_secs(120);
++
++#[derive(Clone, Debug, PartialEq, Eq)]
++pub(crate) struct WindowFingerprint {
++    rows: Vec<String>,
++    windows: Vec<String>,
++}
++
++fn slow_windows() -> &'static Mutex<HashMap<u64, Instant>> {
++    static SLOW: OnceLock<Mutex<HashMap<u64, Instant>>> = OnceLock::new();
++    SLOW.get_or_init(Default::default)
++}
++
++fn window_class(hwnd: u64) -> String {
++    use windows::Win32::UI::WindowsAndMessaging::GetClassNameW;
++    let mut buf = [0u16; 128];
++    let n = unsafe { GetClassNameW(HWND(hwnd as *mut _), &mut buf) };
++    if n <= 0 {
++        return String::new();
++    }
++    String::from_utf16_lossy(&buf[..n as usize])
++}
++
++fn window_title(hwnd: u64) -> String {
++    use windows::Win32::UI::WindowsAndMessaging::GetWindowTextW;
++    let mut buf = [0u16; 256];
++    let n = unsafe { GetWindowTextW(HWND(hwnd as *mut _), &mut buf) };
++    if n <= 0 {
++        return String::new();
++    }
++    String::from_utf16_lossy(&buf[..n as usize])
++}
++
++fn fingerprintable(hwnd: u64) -> bool {
++    if hwnd == 0
++        || crate::input::is_chromium_target_window(hwnd)
++        || window_class(hwnd).starts_with("SAL")
++    {
++        return false;
++    }
++    let mut slow = slow_windows().lock().unwrap_or_else(|e| e.into_inner());
++    slow.retain(|_, since| since.elapsed() < SLOW_RETRY_AFTER);
++    !slow.contains_key(&hwnd)
++}
++
++fn cached_text(element: &IUIAutomationElement, property: UIA_PROPERTY_ID) -> String {
++    unsafe { element.GetCachedPropertyValue(property) }
++        .map(|value| value.to_string())
++        .unwrap_or_default()
++}
++
++/// `before` is the check ahead of an action: it skips windows known to be
++/// slow. The checks after an action always run once the first one did.
++fn fingerprint(hwnd: u64, pid: u32, before: bool) -> Option<WindowFingerprint> {
++    if before && !fingerprintable(hwnd) {
++        return None;
++    }
++    let started = Instant::now();
++    let automation = automation()?;
++    let rows = unsafe {
++        let cache = automation.CreateCacheRequest().ok()?;
++        for property in [
++            UIA_ControlTypePropertyId,
++            UIA_NamePropertyId,
++            UIA_AutomationIdPropertyId,
++            UIA_IsEnabledPropertyId,
++            UIA_ValueValuePropertyId,
++            UIA_ToggleToggleStatePropertyId,
++            UIA_SelectionItemIsSelectedPropertyId,
++            UIA_ExpandCollapseExpandCollapseStatePropertyId,
++            UIA_RangeValueValuePropertyId,
++            UIA_IsPasswordPropertyId,
++        ] {
++            let _ = cache.AddProperty(property);
++        }
++        let _ = cache.SetTreeScope(TreeScope_Subtree);
++        if let Ok(condition) = automation.ControlViewCondition() {
++            let _ = cache.SetTreeFilter(&condition);
++        }
++        let root = match automation
++            .ElementFromHandle(HWND(hwnd as *mut _))
++            .and_then(|element| element.BuildUpdatedCache(&cache))
++        {
++            Ok(root) => root,
++            Err(error) => {
++                tracing::debug!(target: "dove_actions", "fingerprint 0x{hwnd:x}: {error}");
++                return None;
++            }
++        };
++        let mut rows = Vec::new();
++        collect_rows(&root, 0, &mut rows);
++        rows
++    };
++    let windows = crate::win32::list_windows_via_win32(Some(pid))
++        .into_iter()
++        .filter(|window| window.is_on_screen)
++        .map(|window| format!("{:x}|{}", window.hwnd, window.title))
++        .collect();
++    if started.elapsed() > SLOW_FINGERPRINT {
++        slow_windows()
++            .lock()
++            .unwrap_or_else(|e| e.into_inner())
++            .insert(hwnd, Instant::now());
++    }
++    Some(WindowFingerprint { rows, windows })
++}
++
++unsafe fn collect_rows(element: &IUIAutomationElement, depth: usize, rows: &mut Vec<String>) {
++    if rows.len() >= MAX_ROWS || depth > 64 {
++        return;
++    }
++    let control_type = element.CachedControlType().map(|c| c.0).unwrap_or(0);
++    let password = element
++        .GetCachedPropertyValue(UIA_IsPasswordPropertyId)
++        .ok()
++        .and_then(|v| bool::try_from(&v).ok())
++        .unwrap_or(false);
++    // A password field's value is never read into the fingerprint; its
++    // length still shows that it changed.
++    let value = cached_text(element, UIA_ValueValuePropertyId);
++    let value = if password {
++        format!("<{} chars>", value.chars().count())
++    } else {
++        value.chars().take(ROW_TEXT_LIMIT).collect()
++    };
++    rows.push(format!(
++        "{depth}|{}|{}|{}|{}|{value}|{}|{}|{}|{}",
++        role_name(control_type),
++        cached_text(element, UIA_AutomationIdPropertyId),
++        cached_text(element, UIA_NamePropertyId)
++            .chars()
++            .take(ROW_TEXT_LIMIT)
++            .collect::<String>(),
++        cached_text(element, UIA_IsEnabledPropertyId),
++        cached_text(element, UIA_ToggleToggleStatePropertyId),
++        cached_text(element, UIA_SelectionItemIsSelectedPropertyId),
++        cached_text(element, UIA_ExpandCollapseExpandCollapseStatePropertyId),
++        cached_text(element, UIA_RangeValueValuePropertyId),
++    ));
++    let Ok(children) = element.GetCachedChildren() else {
++        return;
++    };
++    let count = children.Length().unwrap_or(0);
++    for index in 0..count {
++        if let Ok(child) = children.GetElement(index) {
++            collect_rows(&child, depth + 1, rows);
++        }
++    }
++}
++
++/// What differs between two fingerprints, in a few words, or `None` when
++/// nothing does.
++fn describe_difference(before: &WindowFingerprint, after: &WindowFingerprint) -> Option<String> {
++    if before == after {
++        return None;
++    }
++    let mut parts = Vec::new();
++    let opened: Vec<&String> = after
++        .windows
++        .iter()
++        .filter(|w| !before.windows.contains(w))
++        .collect();
++    let closed: Vec<&String> = before
++        .windows
++        .iter()
++        .filter(|w| !after.windows.contains(w))
++        .collect();
++    let title = |w: &String| {
++        w.split_once('|')
++            .map(|(_, t)| t.to_owned())
++            .unwrap_or_default()
++    };
++    if !opened.is_empty() {
++        parts.push(format!(
++            "window opened: {}",
++            opened
++                .iter()
++                .map(|w| format!("'{}'", title(w)))
++                .collect::<Vec<_>>()
++                .join(", ")
++        ));
++    }
++    if !closed.is_empty() {
++        parts.push(format!(
++            "window closed: {}",
++            closed
++                .iter()
++                .map(|w| format!("'{}'", title(w)))
++                .collect::<Vec<_>>()
++                .join(", ")
++        ));
++    }
++    let mut remaining: HashMap<&str, usize> = HashMap::new();
++    for row in &before.rows {
++        *remaining.entry(row.as_str()).or_default() += 1;
++    }
++    let mut new_rows = Vec::new();
++    for row in &after.rows {
++        match remaining.get_mut(row.as_str()) {
++            Some(count) if *count > 0 => *count -= 1,
++            _ => new_rows.push(row),
++        }
++    }
++    let gone = remaining.values().sum::<usize>();
++    if !new_rows.is_empty() || gone > 0 {
++        let shown: Vec<String> = new_rows
++            .iter()
++            .take(3)
++            .map(|row| {
++                let fields: Vec<&str> = row.split('|').collect();
++                let role = fields.get(1).copied().unwrap_or_default();
++                let name = fields.get(3).copied().unwrap_or_default();
++                let value = fields.get(5).copied().unwrap_or_default();
++                match (name.is_empty(), value.is_empty()) {
++                    (false, false) => format!("{role} '{name}' = '{value}'"),
++                    (false, true) => format!("{role} '{name}'"),
++                    (true, false) => format!("{role} = '{value}'"),
++                    (true, true) => role.to_owned(),
++                }
++            })
++            .collect();
++        parts.push(format!(
++            "{} element(s) changed or appeared, {gone} changed or gone{}",
++            new_rows.len(),
++            if shown.is_empty() {
++                String::new()
++            } else {
++                format!(" (now: {})", shown.join("; "))
++            }
++        ));
++    }
++    Some(parts.join("; "))
++}
++
++// ── Before/after probe ───────────────────────────────────────────────────────
++
++/// Tools whose effect is probed.
++fn probed_tool(tool: &str) -> bool {
++    matches!(
++        tool,
++        "click"
++            | "double_click"
++            | "right_click"
++            | "set_value"
++            | "type_text"
++            | "press_key"
++            | "hotkey"
++            | "scroll"
++            | "drag"
++    )
++}
++
++/// Tools whose window change may upgrade an unverifiable effect to
++/// `confirmed`.
++fn window_change_confirms(tool: &str) -> bool {
++    matches!(
++        tool,
++        "click" | "double_click" | "right_click" | "press_key" | "hotkey" | "scroll" | "drag"
++    )
++}
++
++#[derive(Clone)]
++struct ProbeTarget {
++    pid: u32,
++    hwnd: u64,
++    element: Option<RetainedElement>,
++}
++
++#[derive(Default)]
++struct Observation {
++    window: Option<WindowFingerprint>,
++    value: Option<String>,
++}
++
++fn observe(
++    target: &ProbeTarget,
++    read_value: bool,
++    fingerprint_window: bool,
++    before: bool,
++) -> Observation {
++    let value = if read_value {
++        target
++            .element
++            .as_ref()
++            .and_then(|element| {
++                with_retained(element, |e| {
++                    // Never read a password field's value.
++                    let password = unsafe { e.CurrentIsPassword() }
++                        .map(|b| b.as_bool())
++                        .unwrap_or(false);
++                    if password {
++                        None
++                    } else {
++                        element_value(e)
++                    }
++                })
++            })
++            .flatten()
++    } else {
++        None
++    };
++    let window = if fingerprint_window {
++        fingerprint(target.hwnd, target.pid, before)
++    } else {
++        None
++    };
++    Observation { window, value }
++}
++
++/// How long the probe waits for a change after the action, in steps.
++const AFTER_POLL_MS: [u64; 5] = [0, 40, 60, 100, 150];
++
++/// Two read-backs of one element are the same value ("42" and "42.0" are).
++fn same_value(a: &str, b: &str) -> bool {
++    a == b
++        || matches!(
++            (a.trim().parse::<f64>(), b.trim().parse::<f64>()),
++            (Ok(x), Ok(y)) if (x - y).abs() < 1e-9
++        )
++}
++
++fn requested_value_matches(requested: &str, seen: &str) -> bool {
++    if requested == seen || requested.trim().eq_ignore_ascii_case(seen.trim()) {
++        return true;
++    }
++    if let (Some(a), Some(b)) = (canonical_state(requested), canonical_state(seen)) {
++        return a == b;
++    }
++    match (requested.trim().parse::<f64>(), seen.trim().parse::<f64>()) {
++        (Ok(a), Ok(b)) => (a - b).abs() < 1e-9,
++        _ => false,
++    }
++}
++
++struct Verdict {
++    change: ObservedChange,
++    evidence: Option<ActionEvidence>,
++}
++
++fn verdict(
++    tool: &str,
++    args: &Value,
++    before: &Observation,
++    after: &Observation,
++    chromium: bool,
++) -> Verdict {
++    let value_tool = matches!(tool, "set_value" | "type_text");
++    let window_diff = match (&before.window, &after.window) {
++        (Some(b), Some(a)) => Some(describe_difference(b, a)),
++        _ => None,
++    };
++    let change = match (&before.value, &after.value) {
++        (Some(b), Some(a)) if value_tool => {
++            if !same_value(a, b) {
++                ObservedChange::Changed
++            } else {
++                ObservedChange::Unchanged
++            }
++        }
++        _ => match &window_diff {
++            Some(Some(_)) => ObservedChange::Changed,
++            Some(None) => ObservedChange::Unchanged,
++            None => ObservedChange::Unverifiable,
++        },
++    };
++    let evidence = if tool == "set_value" && !chromium {
++        let requested = args
++            .get("value")
++            .and_then(Value::as_str)
++            .unwrap_or_default();
++        after
++            .value
++            .as_deref()
++            .filter(|seen| requested_value_matches(requested, seen))
++            .map(|seen| ActionEvidence {
++                kind: EvidenceKind::ValueReadback,
++                detail: format!(
++                    "the element reads back '{}'",
++                    seen.chars().take(ROW_TEXT_LIMIT).collect::<String>()
++                ),
++            })
++    } else if window_change_confirms(tool) && change == ObservedChange::Changed && !chromium {
++        window_diff.flatten().map(|detail| ActionEvidence {
++            kind: EvidenceKind::WindowChange,
++            detail,
++        })
++    } else {
++        None
++    };
++    Verdict { change, evidence }
++}
++
++fn evidence_kind_name(kind: EvidenceKind) -> &'static str {
++    match kind {
++        EvidenceKind::ValueReadback => "value_readback",
++        EvidenceKind::WindowChange => "window_change",
++        _ => "accessibility_readback",
++    }
++}
++
++/// Write the verdict into the result, in its record or its legacy payload.
++fn apply_verdict(result: &mut ToolResult, verdict: Verdict) {
++    if result.is_error == Some(true) {
++        return;
++    }
++    if let Some(record) = result.action_record.as_mut() {
++        if record.effect == ActionEffect::Refused {
++            return;
++        }
++        record.observed_change = Some(verdict.change);
++        if let Some(evidence) = verdict.evidence {
++            if matches!(
++                record.effect,
++                ActionEffect::Unverifiable | ActionEffect::SuspectedNoop
++            ) {
++                record.effect = ActionEffect::Confirmed;
++                record.escalation = None;
++            }
++            if !record.evidence.iter().any(|e| e.kind == evidence.kind) {
++                record.evidence.push(evidence);
++            }
++        }
++        return;
++    }
++    let structured = result.structured_content.get_or_insert_with(|| json!({}));
++    let Some(object) = structured.as_object_mut() else {
++        return;
++    };
++    if object.get("effect").and_then(Value::as_str) == Some("refused")
++        || object.get("status").and_then(Value::as_str) == Some("refused")
++    {
++        return;
++    }
++    object.insert("change".into(), verdict.change.as_str().into());
++    if let Some(evidence) = verdict.evidence {
++        if !matches!(
++            object.get("effect").and_then(Value::as_str),
++            Some("confirmed" | "partial")
++        ) {
++            object.insert("effect".into(), "confirmed".into());
++            object.remove("escalation");
++        }
++        let item = json!({ "kind": evidence_kind_name(evidence.kind), "detail": evidence.detail });
++        match object.get_mut("evidence").and_then(Value::as_array_mut) {
++            Some(items) => items.push(item),
++            None => {
++                object.insert("evidence".into(), json!([item]));
++            }
++        }
++    }
++}
++
++fn resolve_probe_target(args: &Value) -> Option<ProbeTarget> {
++    if args.get("scope").and_then(Value::as_str) == Some("desktop") {
++        return None;
++    }
++    let snapshots = cua_driver_core::snapshot_store::current_runtime_store::<UiaSnapshot>()
++        .or_else(latest_snapshots);
++    let pid = args
++        .get("pid")
++        .and_then(Value::as_u64)
++        .and_then(|pid| u32::try_from(pid).ok())
++        .or_else(|| {
++            snapshots
++                .as_ref()
++                .and_then(|s| s.pid_for_token(args))
++                .and_then(|pid| u32::try_from(pid).ok())
++        })?;
++    let (window, element) = match snapshots.as_ref().map(|s| s.resolve(pid as i32, args)) {
++        Some(Ok(resolved)) => {
++            let (_, window, element) =
++                resolved.into_parts(args.get("window_id").and_then(Value::as_u64));
++            (window, element)
++        }
++        // A stale token: the tool refuses it, nothing to probe.
++        Some(Err(_)) => return None,
++        None => (args.get("window_id").and_then(Value::as_u64), None),
++    };
++    let hwnd = match window {
++        Some(hwnd) => hwnd,
++        None => {
++            crate::win32::list_windows_via_win32(Some(pid))
++                .first()?
++                .hwnd
++        }
++    };
++    Some(ProbeTarget { pid, hwnd, element })
++}
++
++/// Wrap an action tool with the before/after probe.
++pub(crate) fn probed(inner: Box<dyn Tool>) -> Box<dyn Tool> {
++    Box::new(DoveActionProbe { inner })
++}
++
++struct DoveActionProbe {
++    inner: Box<dyn Tool>,
++}
++
++#[async_trait]
++impl Tool for DoveActionProbe {
++    fn def(&self) -> &ToolDef {
++        self.inner.def()
++    }
++
++    fn has_independent_input_lane(&self, args: &Value) -> bool {
++        self.inner.has_independent_input_lane(args)
++    }
++
++    async fn protected_resource_ownership(
++        &self,
++        adapter_id: &str,
++        args: &Value,
++    ) -> cua_driver_core::tool::ProtectedResourceOwnership {
++        self.inner
++            .protected_resource_ownership(adapter_id, args)
++            .await
++    }
++
++    async fn protected_resource_scope(
++        &self,
++        adapter_id: &str,
++        args: &Value,
++    ) -> Result<Option<Value>, String> {
++        self.inner.protected_resource_scope(adapter_id, args).await
++    }
++
++    async fn validate_protected_resource_scope(
++        &self,
++        adapter_id: &str,
++        args: &Value,
++        approved_scope: &Value,
++    ) -> Result<(), String> {
++        self.inner
++            .validate_protected_resource_scope(adapter_id, args, approved_scope)
++            .await
++    }
++
++    async fn invoke(&self, args: Value) -> ToolResult {
++        let tool = self.inner.def().name.clone();
++        if !probed_tool(&tool) {
++            return self.inner.invoke(args).await;
++        }
++        let Some(target) = resolve_probe_target(&args) else {
++            tracing::debug!(target: "dove_actions", "{tool}: no probe target");
++            return self.inner.invoke(args).await;
++        };
++        let read_value =
++            matches!(tool.as_str(), "set_value" | "type_text") && target.element.is_some();
++        let chromium = crate::input::is_chromium_target_window(target.hwnd);
++        let before_target = target.clone();
++        let before =
++            tokio::task::spawn_blocking(move || observe(&before_target, read_value, true, true))
++                .await
++                .unwrap_or_default();
++        tracing::debug!(
++            target: "dove_actions",
++            "{tool}: hwnd=0x{:x} pid={} fingerprint={} value={}",
++            target.hwnd,
++            target.pid,
++            before.window.as_ref().map_or(0, |w| w.rows.len()),
++            before.value.is_some()
++        );
++        if before.window.is_none() && before.value.is_none() {
++            return self.inner.invoke(args).await;
++        }
++        let fingerprint_window = before.window.is_some();
++        let mut result = self.inner.invoke(args.clone()).await;
++        if result.is_error == Some(true) {
++            return result;
++        }
++        let tool_for_task = tool.clone();
++        let args_for_task = args.clone();
++        let verdict = tokio::task::spawn_blocking(move || {
++            let mut last = Observation::default();
++            for wait in AFTER_POLL_MS {
++                std::thread::sleep(Duration::from_millis(wait));
++                last = observe(&target, read_value, fingerprint_window, false);
++                let verdict = verdict(&tool_for_task, &args_for_task, &before, &last, chromium);
++                if verdict.change == ObservedChange::Changed
++                    && (tool_for_task != "set_value" || verdict.evidence.is_some())
++                {
++                    return verdict;
++                }
++            }
++            verdict(&tool_for_task, &args_for_task, &before, &last, chromium)
++        })
++        .await;
++        if let Ok(verdict) = verdict {
++            tracing::debug!(target: "dove_actions", "{tool}: change={}", verdict.change.as_str());
++            apply_verdict(&mut result, verdict);
++        }
++        result
++    }
++}
++
++// ── Target inspector (W6) ────────────────────────────────────────────────────
++
++fn process_file_name(pid: u32) -> String {
++    crate::history::process_executable_path(pid)
++        .and_then(|path| path.file_name().map(|n| n.to_string_lossy().to_lowercase()))
++        .unwrap_or_default()
++}
++
++/// The OS prompt a window belongs to, if any.
++pub(crate) fn prompt_kind(process: &str, class: &str, title: &str) -> Option<SecureKind> {
++    match process {
++        "consent.exe" => return Some(SecureKind::ElevationPrompt),
++        "credentialuibroker.exe" | "logonui.exe" => return Some(SecureKind::CredentialPrompt),
++        _ => {}
++    }
++    if class == "Credential Dialog Xaml Host"
++        || (title == "Windows Security"
++            && matches!(class, "#32770" | "Credential Dialog Xaml Host"))
++    {
++        return Some(SecureKind::CredentialPrompt);
++    }
++    None
++}
++
++fn window_prompt_kind(hwnd: u64) -> Option<SecureKind> {
++    let pid = crate::win32::window_owner_pid(hwnd)?;
++    prompt_kind(
++        &process_file_name(pid),
++        &window_class(hwnd),
++        &window_title(hwnd),
++    )
++}
++
++/// The input desktop is not `Default`: the UAC secure desktop or the lock
++/// screen. A process on `Default` cannot open `Winlogon`, so access denied in
++/// an interactive session means the same.
++fn secure_desktop_active() -> bool {
++    use windows::Win32::System::RemoteDesktop::ProcessIdToSessionId;
++    use windows::Win32::System::StationsAndDesktops::{
++        CloseDesktop, GetUserObjectInformationW, OpenInputDesktop, DESKTOP_ACCESS_FLAGS,
++        DESKTOP_CONTROL_FLAGS, UOI_NAME,
++    };
++    unsafe {
++        match OpenInputDesktop(
++            DESKTOP_CONTROL_FLAGS(0),
++            windows::Win32::Foundation::BOOL::from(false),
++            DESKTOP_ACCESS_FLAGS(0),
++        ) {
++            Ok(desktop) => {
++                let mut buf = [0u16; 64];
++                let mut needed = 0u32;
++                let ok = GetUserObjectInformationW(
++                    windows::Win32::Foundation::HANDLE(desktop.0),
++                    UOI_NAME,
++                    Some(buf.as_mut_ptr().cast()),
++                    (buf.len() * 2) as u32,
++                    Some(&mut needed as *mut u32),
++                )
++                .is_ok();
++                let _ = CloseDesktop(desktop);
++                if !ok {
++                    return false;
++                }
++                let len = buf.iter().position(|&c| c == 0).unwrap_or(buf.len());
++                let name = String::from_utf16_lossy(&buf[..len]);
++                !name.is_empty() && !name.eq_ignore_ascii_case("Default")
++            }
++            Err(error) => {
++                let mut session = 0u32;
++                let interactive =
++                    ProcessIdToSessionId(std::process::id(), &mut session).is_ok() && session != 0;
++                interactive && error.code() == windows::Win32::Foundation::E_ACCESSDENIED
++            }
++        }
++    }
++}
++
++fn describe_element(element: &IUIAutomationElement, info: &mut TargetInfo) {
++    unsafe {
++        let control_type = element.CurrentControlType().map(|c| c.0).unwrap_or(0);
++        info.role = role_name(control_type);
++        info.name = element
++            .CurrentName()
++            .map(|n| n.to_string())
++            .unwrap_or_default();
++        info.editable = is_editable_role(control_type);
++        let password = element
++            .CurrentIsPassword()
++            .map(|b| b.as_bool())
++            .unwrap_or(false);
++        if password {
++            info.secure = Some(SecureKind::Password);
++            return;
++        }
++        let automation_id = element
++            .CurrentAutomationId()
++            .map(|n| n.to_string())
++            .unwrap_or_default();
++        if info.editable
++            && (is_payment_field_name(&info.name) || is_payment_field_name(&automation_id))
++        {
++            info.secure = Some(SecureKind::Payment);
++        }
++        info.value = element
++            .GetCurrentPattern(UIA_ValuePatternId)
++            .ok()
++            .and_then(|p| p.cast::<IUIAutomationValuePattern>().ok())
++            .and_then(|p| p.CurrentValue().ok())
++            .map(|v| v.to_string().chars().take(256).collect());
++    }
++}
++
++/// A focused Win32 edit with `ES_PASSWORD` or a password character.
++fn win32_password_edit(hwnd: u64) -> bool {
++    use windows::Win32::UI::WindowsAndMessaging::{
++        GetWindowLongW, SendMessageTimeoutW, GWL_STYLE, SMTO_ABORTIFHUNG,
++    };
++    const ES_PASSWORD: i32 = 0x0020;
++    const EM_GETPASSWORDCHAR: u32 = 0x00D2;
++    let window = HWND(hwnd as *mut _);
++    let class = window_class(hwnd).to_ascii_lowercase();
++    if !(class == "edit" || class.contains("edit")) {
++        return false;
++    }
++    unsafe {
++        if GetWindowLongW(window, GWL_STYLE) & ES_PASSWORD != 0 {
++            return true;
++        }
++        let mut result = 0usize;
++        let sent = SendMessageTimeoutW(
++            window,
++            EM_GETPASSWORDCHAR,
++            windows::Win32::Foundation::WPARAM(0),
++            windows::Win32::Foundation::LPARAM(0),
++            SMTO_ABORTIFHUNG,
++            200,
++            Some(&mut result as *mut usize),
++        );
++        sent.0 != 0 && result != 0
++    }
++}
++
++fn inspect(
++    snapshots: &crate::uia::snapshot::Snapshots,
++    tool: &str,
++    args: &Value,
++) -> Option<TargetInfo> {
++    let mut info = TargetInfo::default();
++    if secure_desktop_active() {
++        info.secure = Some(SecureKind::ElevationPrompt);
++        return Some(info);
++    }
++    let has_token = args.get("element_token").is_some();
++    let pid = args
++        .get("pid")
++        .and_then(Value::as_u64)
++        .and_then(|pid| u32::try_from(pid).ok())
++        .or_else(|| {
++            snapshots
++                .pid_for_token(args)
++                .and_then(|pid| u32::try_from(pid).ok())
++        });
++    let desktop_scope = args.get("scope").and_then(Value::as_str) == Some("desktop")
++        || (pid.is_none() && args.get("window_id").is_none() && !has_token);
++    let mut element: Option<RetainedElement> = None;
++    let mut window = args.get("window_id").and_then(Value::as_u64);
++    if let (Some(pid), true) = (pid, has_token) {
++        if let Ok(resolved) = snapshots.resolve(pid as i32, args) {
++            let (_, token_window, retained) = resolved.into_parts(window);
++            window = token_window;
++            element = retained;
++        }
++    }
++    let hwnd = match (window, pid) {
++        (Some(hwnd), _) => Some(hwnd),
++        _ if desktop_scope => crate::input::mouse::foreground_window().ok(),
++        (None, Some(pid)) => crate::win32::list_windows_via_win32(Some(pid))
++            .first()
++            .map(|w| w.hwnd),
++        (None, None) => None,
++    };
++    if let Some(kind) = hwnd.and_then(window_prompt_kind) {
++        info.secure = Some(kind);
++        return Some(info);
++    }
++    if let Some(pid) = pid {
++        if let Some(kind) = prompt_kind(&process_file_name(pid), "", "") {
++            info.secure = Some(kind);
++            return Some(info);
++        }
++    }
++    if let Some(retained) = element.as_ref() {
++        with_retained(retained, |e| describe_element(e, &mut info));
++        return Some(info);
++    }
++    // No element token: text and keys go to the window's focused control.
++    let keyboard = matches!(
++        tool,
++        "type_text" | "type_text_chars" | "press_key" | "hotkey" | "set_value"
++    );
++    if keyboard {
++        if let Some(focus) = hwnd.and_then(|hwnd| {
++            crate::input::keyboard::wait_for_focused_descendant(hwnd, Duration::ZERO)
++        }) {
++            if win32_password_edit(focus) {
++                info.role = "Edit".into();
++                info.editable = true;
++                info.secure = Some(SecureKind::Password);
++                return Some(info);
++            }
++            if let Some(automation) = automation() {
++                if let Ok(element) = unsafe { automation.ElementFromHandle(HWND(focus as *mut _)) }
++                {
++                    describe_element(&element, &mut info);
++                }
++            }
++            return Some(info);
++        }
++    }
++    hwnd.map(|_| info)
++}
++
++fn latest_slot() -> &'static Mutex<Option<Arc<crate::uia::snapshot::Snapshots>>> {
++    static LATEST: OnceLock<Mutex<Option<Arc<crate::uia::snapshot::Snapshots>>>> = OnceLock::new();
++    LATEST.get_or_init(Default::default)
++}
++
++/// The snapshot store of the registry built last, for a dispatch that runs
++/// outside a runtime scope.
++fn latest_snapshots() -> Option<Arc<crate::uia::snapshot::Snapshots>> {
++    latest_slot()
++        .lock()
++        .unwrap_or_else(|e| e.into_inner())
++        .clone()
++}
++
++/// The inspector `cua_driver_core::dove_safety` calls before a guarded action.
++pub(crate) fn target_inspector(snapshots: Arc<crate::uia::snapshot::Snapshots>) -> TargetInspector {
++    *latest_slot().lock().unwrap_or_else(|e| e.into_inner()) = Some(snapshots.clone());
++    Arc::new(move |tool, args| inspect(&snapshots, tool, args))
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    fn print(rows: &[&str], windows: &[&str]) -> WindowFingerprint {
++        WindowFingerprint {
++            rows: rows.iter().map(|r| r.to_string()).collect(),
++            windows: windows.iter().map(|w| w.to_string()).collect(),
++        }
++    }
++
++    #[test]
++    fn identical_fingerprints_have_no_difference() {
++        let a = print(&["0|Window||Form|True|||||"], &["1|Form"]);
++        assert_eq!(describe_difference(&a, &a.clone()), None);
++    }
++
++    #[test]
++    fn a_changed_label_is_described() {
++        let before = print(
++            &["0|Window||Form|True|||||", "1|Text|status|Ready|True|||||"],
++            &["1|Form"],
++        );
++        let after = print(
++            &[
++                "0|Window||Form|True|||||",
++                "1|Text|status|Clicked|True|||||",
++            ],
++            &["1|Form"],
++        );
++        let detail = describe_difference(&before, &after).unwrap();
++        assert!(detail.contains("Text 'Clicked'"), "{detail}");
++    }
++
++    #[test]
++    fn a_new_window_is_described() {
++        let before = print(&["0|Window||Form|True|||||"], &["1|Form"]);
++        let after = print(&["0|Window||Form|True|||||"], &["1|Form", "2|Save As"]);
++        assert!(describe_difference(&before, &after)
++            .unwrap()
++            .contains("window opened: 'Save As'"));
++    }
++
++    #[test]
++    fn prompts_are_recognised() {
++        assert_eq!(
++            prompt_kind("consent.exe", "", ""),
++            Some(SecureKind::ElevationPrompt)
++        );
++        assert_eq!(
++            prompt_kind("credentialuibroker.exe", "", ""),
++            Some(SecureKind::CredentialPrompt)
++        );
++        assert_eq!(
++            prompt_kind("app.exe", "#32770", "Windows Security"),
++            Some(SecureKind::CredentialPrompt)
++        );
++        assert_eq!(prompt_kind("app.exe", "#32770", "Save As"), None);
++    }
++
++    fn observed(window: Option<WindowFingerprint>, value: Option<&str>) -> Observation {
++        Observation {
++            window,
++            value: value.map(str::to_owned),
++        }
++    }
++
++    #[test]
++    fn click_window_change_confirms() {
++        let a = print(&["1|Text|s|Ready|True|||||"], &[]);
++        let b = print(&["1|Text|s|Done|True|||||"], &[]);
++        let v = verdict(
++            "click",
++            &json!({}),
++            &observed(Some(a.clone()), None),
++            &observed(Some(b), None),
++            false,
++        );
++        assert_eq!(v.change, ObservedChange::Changed);
++        assert_eq!(v.evidence.unwrap().kind, EvidenceKind::WindowChange);
++        let v = verdict(
++            "click",
++            &json!({}),
++            &observed(Some(a.clone()), None),
++            &observed(Some(a.clone()), None),
++            false,
++        );
++        assert_eq!(v.change, ObservedChange::Unchanged);
++        assert!(v.evidence.is_none());
++        // Chromium echoes: never confirm from its tree.
++        let b = print(&["1|Text|s|Done|True|||||"], &[]);
++        let v = verdict(
++            "click",
++            &json!({}),
++            &observed(Some(a), None),
++            &observed(Some(b), None),
++            true,
++        );
++        assert!(v.evidence.is_none());
++    }
++
++    #[test]
++    fn set_value_readback_confirms_even_when_unchanged() {
++        let args = json!({"value": "42"});
++        let v = verdict(
++            "set_value",
++            &args,
++            &observed(None, Some("42")),
++            &observed(None, Some("42.0")),
++            false,
++        );
++        assert_eq!(v.change, ObservedChange::Unchanged);
++        assert_eq!(v.evidence.unwrap().kind, EvidenceKind::ValueReadback);
++        let v = verdict(
++            "set_value",
++            &args,
++            &observed(None, Some("1")),
++            &observed(None, Some("2")),
++            false,
++        );
++        assert_eq!(v.change, ObservedChange::Changed);
++        assert!(v.evidence.is_none());
++    }
++
++    #[test]
++    fn state_words_match_across_spellings() {
++        assert!(requested_value_matches("true", "on"));
++        assert!(requested_value_matches("checked", "on"));
++        assert!(requested_value_matches("selected", "on"));
++        assert!(requested_value_matches("Banana", "banana"));
++        assert!(!requested_value_matches("on", "off"));
++        assert!(!requested_value_matches("Apple", "Banana"));
++    }
++
++    #[test]
++    fn verdict_updates_legacy_and_record_results() {
++        let mut legacy = ToolResult::text("ok").with_structured(json!({
++            "path": "ax", "effect": "unverifiable",
++            "escalation": {"recommended": "foreground"}
++        }));
++        apply_verdict(
++            &mut legacy,
++            Verdict {
++                change: ObservedChange::Changed,
++                evidence: Some(ActionEvidence {
++                    kind: EvidenceKind::WindowChange,
++                    detail: "x".into(),
++                }),
++            },
++        );
++        let s = legacy.structured_content.unwrap();
++        assert_eq!(s["effect"], "confirmed");
++        assert_eq!(s["change"], "changed");
++        assert_eq!(s["evidence"][0]["kind"], "window_change");
++        assert!(s.get("escalation").is_none());
++
++        use cua_driver_core::action_record::{
++            ActionExecutionRecord, ActionTransport, ActualDelivery, RequestedDelivery,
++        };
++        let mut record = ActionExecutionRecord::new(
++            ActionEffect::Unverifiable,
++            ActionTransport::WindowsUiaInvoke,
++            RequestedDelivery::Background,
++        );
++        record.actual_delivery = Some(ActualDelivery::Background);
++        let mut with_record = ToolResult::text("ok").with_action_record(record);
++        apply_verdict(
++            &mut with_record,
++            Verdict {
++                change: ObservedChange::Changed,
++                evidence: Some(ActionEvidence {
++                    kind: EvidenceKind::WindowChange,
++                    detail: "label".into(),
++                }),
++            },
++        );
++        let record = with_record.action_record.unwrap();
++        assert_eq!(record.effect, ActionEffect::Confirmed);
++        let public = serde_json::to_value(record.public_result().unwrap()).unwrap();
++        assert_eq!(public["change"], "changed");
++        assert_eq!(public["via"], "uia_invoke");
++        assert_eq!(public["delivery"]["mode"], "background");
++    }
++}
+diff --git a/rust/crates/platform-windows/src/lib.rs b/rust/crates/platform-windows/src/lib.rs
+index b38d163..eaff794 100644
+--- a/rust/crates/platform-windows/src/lib.rs
++++ b/rust/crates/platform-windows/src/lib.rs
+@@ -110,6 +110,10 @@ mod browser_setup_ui;
+ #[cfg(target_os = "windows")]
+ pub mod uia;
+ 
++// Dove (W2 + W6): action effect probe and safety target inspector.
++#[cfg(target_os = "windows")]
++mod dove_actions;
++
+ #[cfg(target_os = "windows")]
+ pub mod msaa;
+ 
+diff --git a/rust/crates/platform-windows/src/tools/impl_.rs b/rust/crates/platform-windows/src/tools/impl_.rs
+index 94d1c68..31152b5 100644
+--- a/rust/crates/platform-windows/src/tools/impl_.rs
++++ b/rust/crates/platform-windows/src/tools/impl_.rs
+@@ -544,8 +544,12 @@ fn pid_window_guarded<T: Tool + 'static>(
+ ) -> Box<dyn Tool> {
+     Box::new(ExactPidWindowTargetGuard {
+         inner: Box::new(
+-            PidOnlyWindowTargetGuard::new(Box::new(tool), candidates.clone())
+-                .with_token_pid_resolver(token_pid_resolver.clone()),
++            PidOnlyWindowTargetGuard::new(
++                // Dove (W2): before/after effect probe.
++                crate::dove_actions::probed(Box::new(tool)),
++                candidates.clone(),
++            )
++            .with_token_pid_resolver(token_pid_resolver.clone()),
+         ),
+     })
+ }
+@@ -6024,8 +6028,13 @@ impl Tool for SetValueTool {
+                   the option whose text matches `value` and sends the app the notifications a \
+                   user's choice sends (CBN_SELENDOK, CBN_SELCHANGE), without focusing the window; \
+                   an editable combo gets the text typed into its edit field. A drop-down list \
+-                  without that option is refused with the list of options. Other combo boxes get \
+-                  a UIA value write, which the app may not treat as a selection.\n\n\
++                  without that option is refused with the list of options. A UIA combo box \
++                  selects the list item with that name; failing that it gets a UIA value write, \
++                  which the app may not treat as a selection.\n\
++                - **Check box, radio button, list item**: `value` \"on\" or \"off\" (also \
++                  true/false, checked/unchecked, selected) sets the state through TogglePattern \
++                  or SelectionItemPattern.\n\
++                The value is read back afterwards.\n\n\
+                 For free-form text entry that the target accepts via keystrokes only, prefer \
+                 `type_text` — UIA ValuePattern writes are ignored by some web inputs (same \
+                 caveat as Swift's `AXValue`-vs-WebKit).".into(),
+@@ -6133,6 +6142,14 @@ impl Tool for SetValueTool {
+                 }
+                 let is_combo = unsafe { elem.CurrentControlType() }
+                     .is_ok_and(|control_type| control_type == UIA_ComboBoxControlTypeId);
++                // Dove (W2.3): pick a UIA combo box item by name, as a user would.
++                if is_combo {
++                    if let Some(route) =
++                        crate::dove_actions::select_combo_item(&elem, hwnd, &value)?
++                    {
++                        return Ok(SetValueRoute::Pattern(route));
++                    }
++                }
+                 // Try ValuePattern first (text inputs, editable combos, etc).
+                 // The SetValue is shielded by the EnableWindow bypass: a
+                 // Chromium/Electron (or XAML) SetValue handler self-foregrounds via
+@@ -6175,6 +6192,10 @@ impl Tool for SetValueTool {
+                         return Ok(SetValueRoute::Pattern("RangeValuePattern"));
+                     }
+                 }
++                // Dove (W2.3): check boxes, radio buttons and list items.
++                if let Some(route) = crate::dove_actions::set_state_value(&elem, hwnd, &value)? {
++                    return Ok(SetValueRoute::Pattern(route));
++                }
+                 anyhow::bail!(
+                     "set_value: element [{idx}] does not implement ValuePattern or \
+                  RangeValuePattern. For controls with TogglePattern (CheckBox) or \
+@@ -6187,6 +6208,21 @@ impl Tool for SetValueTool {
+         match result {
+             Ok(Ok(SetValueRoute::Pattern(pattern_name))) => {
+                 ToolResult::text(format!("✅ Set AXValue on [{idx}] (UIA {pattern_name})."))
++                    // Dove (W2): name the route; the write never activates the window.
++                    .with_structured(json!({
++                        "path": match pattern_name {
++                            "RangeValuePattern" => "uia_range_value",
++                            "TogglePattern" => "uia_toggle",
++                            "SelectionItemPattern" => "uia_selection",
++                            "InvokePattern" => "uia",
++                            _ => "ax",
++                        },
++                        "delivery_mode": if crate::input::delivery::DeliveryMode::from_args(&args)
++                            == crate::input::delivery::DeliveryMode::Foreground
++                        { "foreground" } else { "background" },
++                        "verified": false,
++                        "effect": "unverifiable",
++                    }))
+             }
+             Ok(Ok(SetValueRoute::ComboValuePattern)) => ToolResult::text(format!(
+                 "Set the UIA value of combo box [{idx}] to '{value}'. This combo box is not a \
+@@ -10246,6 +10282,10 @@ pub fn build_registry_with_provider(
+     // Share the element cache with the recording-hook layer so it can
+     // resolve element_index → window-local screenshot coords for click.png.
+     crate::recording_hooks::set_snapshots(state.snapshots.clone());
++    // Dove (W6): what a guarded action targets, for the safety layer.
++    cua_driver_core::dove_safety::register_target_inspector(crate::dove_actions::target_inspector(
++        state.snapshots.clone(),
++    ));
+ 
+     // Drop a session's owned cursor on `session_end` (explicit end_session, the
+     // CLI `session end` verb, or the daemon idle-TTL sweep). The session id IS

@@ -65,6 +65,10 @@ mod clipboard;
 #[cfg(target_os = "linux")]
 pub mod atspi;
 
+// Dove (W6): safety target inspector.
+#[cfg(target_os = "linux")]
+mod dove_safety_target;
+
 #[cfg(any(target_os = "linux", test))]
 mod snapshot_queries;
 

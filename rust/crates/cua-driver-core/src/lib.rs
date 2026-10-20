@@ -72,6 +72,7 @@ pub mod cursor_sampler;
 pub mod cursor_shape;
 pub mod daemon;
 pub mod delivery;
+pub mod dove_safety;
 pub mod desktop_capture_scale;
 pub mod dove_observation;
 pub mod element_frame;

@@ -31,6 +31,33 @@ pub fn effect_from_value_readback(
     }
 }
 
+/// Dove (W2): what a before/after comparison of the target saw.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ObservedChange {
+    Changed,
+    Unchanged,
+    Unverifiable,
+}
+
+impl ObservedChange {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Changed => "changed",
+            Self::Unchanged => "unchanged",
+            Self::Unverifiable => "unverifiable",
+        }
+    }
+
+    pub fn parse(value: &str) -> Option<Self> {
+        match value {
+            "changed" => Some(Self::Changed),
+            "unchanged" => Some(Self::Unchanged),
+            "unverifiable" => Some(Self::Unverifiable),
+            _ => None,
+        }
+    }
+}
+
 /// The delivery mode requested by the caller.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum RequestedDelivery {
@@ -269,6 +296,8 @@ pub struct ActionExecutionRecord {
     pub delivered_count: Option<u32>,
     pub detail: Option<String>,
     pub refusal: Option<ActionRefusal>,
+    /// Dove (W2): the result of a before/after check, when one ran.
+    pub observed_change: Option<ObservedChange>,
 }
 
 impl ActionExecutionRecord {
@@ -289,7 +318,21 @@ impl ActionExecutionRecord {
             delivered_count: None,
             detail: None,
             refusal: None,
+            observed_change: None,
         }
+    }
+
+    /// Dove (W2): the change to publish. A comparison that ran wins;
+    /// otherwise it follows from the effect.
+    pub fn public_change(&self) -> Option<ObservedChange> {
+        if self.effect == ActionEffect::Refused {
+            return None;
+        }
+        Some(self.observed_change.unwrap_or(match self.effect {
+            ActionEffect::Confirmed | ActionEffect::Partial => ObservedChange::Changed,
+            ActionEffect::SuspectedNoop => ObservedChange::Unchanged,
+            ActionEffect::Unverifiable | ActionEffect::Refused => ObservedChange::Unverifiable,
+        }))
     }
 
     pub fn builder(
@@ -460,6 +503,13 @@ impl ActionExecutionRecord {
             // The dispatch seam adds these after the record is projected.
             hint: None,
             next_call: None,
+            change: self.public_change().map(|change| match change {
+                ObservedChange::Changed => cua_driver_contract::ActionChange::Changed,
+                ObservedChange::Unchanged => cua_driver_contract::ActionChange::Unchanged,
+                ObservedChange::Unverifiable => cua_driver_contract::ActionChange::Unverifiable,
+            }),
+            via: (projection.effect != ActionEffect::Refused)
+                .then(|| public_via(self.transport).to_owned()),
         })
     }
 
@@ -573,6 +623,10 @@ impl ActionExecutionRecord {
         if effect == ActionEffect::Refused {
             record.refusal = legacy_refusal(structured);
         }
+        record.observed_change = structured
+            .get("change")
+            .and_then(serde_json::Value::as_str)
+            .and_then(ObservedChange::parse);
         if effect == ActionEffect::Partial && record.delivered_count.is_none() {
             return None;
         }
@@ -589,7 +643,7 @@ impl ActionExecutionRecord {
     /// Keeping this constructor here prevents serde derives from accidentally
     /// turning the rich record into a protocol surface.
     pub fn debug_json(&self) -> serde_json::Value {
-        serde_json::json!({
+        let mut value = serde_json::json!({
             "effect": effect_name(self.effect),
             "transport": transport_name(self.transport),
             "route": route_name(self.transport.route()),
@@ -619,7 +673,11 @@ impl ActionExecutionRecord {
                 "code": refusal.code,
                 "hint": refusal.hint,
             })),
-        })
+        });
+        if let (Some(change), Some(object)) = (self.observed_change, value.as_object_mut()) {
+            object.insert("observed_change".into(), change.as_str().into());
+        }
+        value
     }
 }
 
@@ -777,6 +835,9 @@ fn transport_from_legacy(
         "uia" if tool_name == "scroll" => ActionTransport::WindowsUiaScroll,
         "uia" => ActionTransport::WindowsUiaInvoke,
         "uia_expand_collapse" => ActionTransport::WindowsUiaExpandCollapse,
+        "uia_range_value" => ActionTransport::WindowsUiaRangeValue,
+        "uia_toggle" => ActionTransport::WindowsUiaToggle,
+        "uia_selection" => ActionTransport::WindowsUiaSelection,
         "msaa" => ActionTransport::WindowsMsaaAction,
         "post_message" | "PostMessage" => ActionTransport::WindowsPostMessage,
         "SendInput" => ActionTransport::WindowsSendInput,
@@ -1111,6 +1172,16 @@ fn escalation_kind_name(kind: EscalationKind) -> &'static str {
     }
 }
 
+/// Dove (W2): the published mechanism, a transport name without its platform
+/// prefix (`uia_invoke`, `ax_value`, `post_message`, `cdp_input_mouse`).
+fn public_via(transport: ActionTransport) -> &'static str {
+    let name = transport_name(transport);
+    ["windows_", "macos_", "linux_", "browser_"]
+        .iter()
+        .find_map(|prefix| name.strip_prefix(prefix))
+        .unwrap_or(name)
+}
+
 fn transport_name(transport: ActionTransport) -> &'static str {
     match transport {
         ActionTransport::AgentCursorOverlay => "agent_cursor_overlay",
@@ -1209,6 +1280,11 @@ impl ActionExecutionRecordBuilder {
 
     pub fn detail(mut self, detail: impl Into<String>) -> Self {
         self.0.detail = Some(detail.into());
+        self
+    }
+
+    pub fn observed_change(mut self, change: ObservedChange) -> Self {
+        self.0.observed_change = Some(change);
         self
     }
 
@@ -1564,7 +1640,9 @@ mod tests {
                 "effect": "confirmed",
                 "route": "accessibility",
                 "delivery": {"mode": "background"},
-                "evidence": [{"kind": "value_readback", "detail": "value read back as 42"}]
+                "evidence": [{"kind": "value_readback", "detail": "value read back as 42"}],
+                "change": "changed",
+                "via": "ax_value"
             })
         );
         let rendered = value.to_string();
@@ -1606,7 +1684,9 @@ mod tests {
                 "effect": "confirmed",
                 "route": "system_api",
                 "delivery": {"mode": "not_applicable"},
-                "evidence": [{"kind": "value_readback", "detail": "GetWindowRect matched exact HWND geometry"}]
+                "evidence": [{"kind": "value_readback", "detail": "GetWindowRect matched exact HWND geometry"}],
+                "change": "changed",
+                "via": "set_window_pos"
             })
         );
     }
@@ -1812,6 +1892,8 @@ mod tests {
                 "route": "synthetic_events",
                 "delivery": {"mode": "background"},
                 "evidence": [{"kind": "value_readback"}],
+                "change": "changed",
+                "via": "cg_event_pid",
             })
         );
     }
