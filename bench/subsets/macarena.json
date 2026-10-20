@@ -1,0 +1,72 @@
+{
+  "suite": "MacArena",
+  "source": "upstream-index/macarena_machine_0_test.json: 20 from macarena/* (native, MIT) and 20 from macosworld/* (CC BY-NC 4.0); osworld/* ports are left out because they overlap the Linux suite",
+  "tasks": {
+    "macarena/advanced_apps": [
+      "a08d4ef6-e2de-476a-8097-d3a07776d619",
+      "c377a2d0-5844-41af-b80b-a48d44bfc756",
+      "d2b53cf2-aa18-44aa-a8d5-84194a7791d0",
+      "ff75f02b-e0b1-46b0-ac1f-6cd6b33408d2"
+    ],
+    "macarena/file_management": [
+      "6b2f9a53-9034-46f7-a96b-a8232c316aca",
+      "d012561d-e446-47bc-965a-1717abba9eff",
+      "dcd13aac-8c9a-4bff-b182-b5e2045b4d39"
+    ],
+    "macarena/productivity": [
+      "46649835-9e26-4f1e-aab7-0e57900a4730",
+      "5649b5ef-5592-4c35-bed0-631809292b61",
+      "57d79cb5-ea19-4079-af27-200bf53421cd",
+      "9530fcb9-4665-4fd9-a411-0fa3e8653dd7",
+      "ace64a35-bae6-49ba-ad4c-d91637bb2200"
+    ],
+    "macarena/system_and_interface": [
+      "258922d0-23a3-4070-97c6-efa577da0dc4",
+      "2a7bdd6e-e903-440b-bcbe-5186d2f0d938",
+      "385645e8-b520-4611-ad07-9a6173af2bfc"
+    ],
+    "macarena/system_apps": [
+      "1de17bab-6774-4a80-ae2b-683f543c9ee0",
+      "24f5dc8b-5238-4757-a023-83d5d8b28a19",
+      "9e632e2e-aebc-44f7-a2da-0168a73822f5",
+      "ddba99e4-015a-4155-8a5f-fce8f4ee9c88",
+      "e7480f08-f2f3-486d-a507-63749992b401"
+    ],
+    "macosworld/advanced": [
+      "86b5d27f-e61e-1eb1-3b5c-267952a90cd3",
+      "95266846-5e3a-b067-e251-28b26fbb47a5"
+    ],
+    "macosworld/file_management": [
+      "4c97119f-df06-35cf-1957-4285e7d1e405",
+      "6fec56ac-f003-a621-332b-e08f50d600c3",
+      "b54a5de1-587e-4a8e-a787-ffa939cdf04a"
+    ],
+    "macosworld/media": [
+      "79520236-7b21-20e7-7b23-1d4d2b98e2b9",
+      "bb36c34e-b664-4ab9-6943-15af7d68e629",
+      "daa28096-f9e8-879a-b3a0-2b90aa0e2f83"
+    ],
+    "macosworld/multi_apps": [
+      "00b5dad9-ead7-4146-cc99-45043a06bff6",
+      "3550dc5b-bfa3-ff1f-711c-1317c3a86d38",
+      "4fb31f99-0748-3a41-a11f-e166f194e4c8"
+    ],
+    "macosworld/productivity": [
+      "12c3de99-51a3-371b-7a00-47887565bfd0",
+      "140d3f1f-c35a-e0ca-4c35-cd8b3a6220d0",
+      "ab20159e-5936-c90d-cf67-270a28e9dd67"
+    ],
+    "macosworld/sys_and_interface": [
+      "1dac89be-62ba-6311-f6c4-19f4e5fad534",
+      "2624f017-eaaa-7cab-0ba4-4fed26f2c812",
+      "efddc032-eccb-d287-09d9-34adf351ca67"
+    ],
+    "macosworld/sys_apps": [
+      "b071a2dc-6b16-5e76-16a8-72803d557495",
+      "d516fdbf-5bb8-955c-3e94-a13efa1b11e5",
+      "ea12a7de-2cf2-57b2-7e8c-13da58cc626a"
+    ]
+  },
+  "salt": "dove-bench-subset-v1:",
+  "count": 40
+}

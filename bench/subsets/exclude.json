@@ -1,0 +1,6 @@
+{
+  "_comment": "Tasks left out of a subset, each with a reason and the evidence. Adding or removing one is a harness version bump. Fill this from the first full runs: a task whose checker disagrees with a human check, or flips on identical trajectories, is flaky.",
+  "osworld": [],
+  "waa": [],
+  "macarena": []
+}

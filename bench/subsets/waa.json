@@ -1,0 +1,92 @@
+{
+  "suite": "Windows Agent Arena",
+  "source": "upstream-index/waa_test_all.json minus exclude.json",
+  "tasks": {
+    "chrome": [
+      "2ae9ba84-3a0d-4d4c-8338-3a1478dc5fe3-wos",
+      "480bcfea-d68f-4aaa-a0a9-2589ef319381-wos",
+      "7b6c7e24-c58a-49fc-a5bb-d57b80e5b4c3-wos",
+      "9656a811-9b5b-4ddf-99c7-5117bcef0626-wos",
+      "99146c54-4f37-4ab8-9327-5f3291665e1e-wos",
+      "b070486d-e161-459b-aa2b-ef442d973b92-wos"
+    ],
+    "clock": [
+      "02F10F89-7171-4D37-8550-A00BA8930CDF-2-WOS",
+      "91A30BE9-0E11-4374-8D43-41D4D097080A-WOS",
+      "91A30BE9-0E11-4374-8D43-41D4D097080A-WOS-2"
+    ],
+    "file_explorer": [
+      "016c9a9d-f2b9-4428-8fdb-f74f4439ece6-WOS",
+      "2b0c0844-bd4f-42ba-a25e-afb4267d51e2-WOS",
+      "5548314e-d807-4e9e-97e9-b3a4f9fd634f-WOS",
+      "7c70e16b-e14f-4baa-b046-3e022b2d0305-WOS",
+      "b0c9dac6-52ba-4937-aabb-b0abdc2a8138-WOS",
+      "b12921b2-8772-4667-a960-067309906dd4-WOS",
+      "f934d80d-84d2-4b46-953c-89f77b5a709a-WOS"
+    ],
+    "libreoffice_calc": [
+      "035f41ba-6653-43ab-aa63-c86d449d62e5-WOS",
+      "0acbd372-ca7a-4507-b949-70673120190f-WOS",
+      "0cecd4f3-74de-457b-ba94-29ad6b5dafb6-WOS",
+      "1e8df695-bd1b-45b3-b557-e7d599cf7597-WOS",
+      "4f07fbe9-70de-4927-a4d5-bb28bc12c52c-WOS",
+      "5d353deb-c4b0-4126-a99e-5490817b48cb-WOS",
+      "8b1ce5f2-59d2-4dcc-b0b0-666a714b9a14-WOS",
+      "9ed02102-6b28-4946-8339-c028166e9512-WOS"
+    ],
+    "libreoffice_writer": [
+      "0810415c-bde4-4443-9047-d5f70165a697-WOS",
+      "41c621f7-3544-49e1-af8d-dafd0f834f75-WOS",
+      "4bcb1253-a636-4df4-8cb0-a35c04dfef31-WOS",
+      "6a33f9b9-0a56-4844-9c3f-96ec3ffb3ba2-WOS",
+      "936321ce-5236-426a-9a20-e0e3c5dc536f-WOS",
+      "d53ff5ee-3b1a-431e-b2be-30ed2673079b-WOS",
+      "e528b65e-1107-4b8c-8988-490e4fece599-WOS"
+    ],
+    "microsoft_paint": [
+      "3544ac9a-6aee-4a0b-a203-bc7b59b272b6-WOS",
+      "44dbac63-32bf-4cd2-81b4-ad6803ec812d-WOS"
+    ],
+    "msedge": [
+      "1376d5e7-deb7-471a-9ecc-c5d4e155b0c8-wos",
+      "1a1ec621-b675-4099-96a9-f702dc27afb4-wos",
+      "1c9d2c6c-ae4b-4359-9a93-9d3c42f48417-wos",
+      "2acd62b4-a2ab-44a7-a7e3-f5227bbd8324-wos",
+      "98cfcec4-c74e-4faa-b70d-664fb0a1d457-wos"
+    ],
+    "notepad": [
+      "366de66e-cbae-4d72-b042-26390db2b145-WOS",
+      "a7d4b6c5-569b-452e-9e1d-ffdb3d431d15-WOS"
+    ],
+    "settings": [
+      "37e10fc4-b4c5-4b02-a65c-bfae8bc51d3f-wos",
+      "46adf721-2949-4426-b069-010b7c128d8f-wos",
+      "a659b26e-4e31-40c1-adaf-34742b6c44ac-wos"
+    ],
+    "vlc": [
+      "215dfd39-f493-4bc3-a027-8a97d72c61bf-WOS",
+      "INF-0d95d28a-9587-433b-a805-1fbe5467d598-WOS",
+      "INF-d1ba14d0-fef8-4026-8418-5b581dc68ca0-WOS",
+      "aa4b5023-aef6-4ed9-bdc9-705f59ab9ad6-WOS",
+      "d06f0d4d-2cd5-4ede-8de9-598629438c6e-WOS",
+      "f3977615-2b45-4ac5-8bba-80c17dbe2a37-WOS",
+      "fba2c100-79e8-42df-ae74-b592418d54f4-WOS"
+    ],
+    "vs_code": [
+      "0ed39f63-6049-43d4-ba4d-5fa2fe04a951-WOS",
+      "276cc624-87ea-4f08-ab93-f770e3790175-WOS",
+      "57242fad-77ca-454f-b71b-f187181a9f23-WOS",
+      "70745df8-f2f5-42bd-8074-fbc10334fcc5-2-WOS",
+      "982d12a5-beab-424f-8d38-d2a48429e511-2-WOS",
+      "9d425400-e9b2-4424-9a4b-d4c7abac4140-WOS",
+      "INF-7aeae0e2-70ee-4705-821d-1bba5d5b2ddd-WOS",
+      "eabc805a-bfcf-4460-b250-ac92135819f6-WOS"
+    ],
+    "windows_calc": [
+      "28b91a24-5d97-4c2a-891c-dccbd3820c62-WOS",
+      "28b91a24-5d97-4c2a-891c-dccbd3820c62-WOS-2"
+    ]
+  },
+  "salt": "dove-bench-subset-v1:",
+  "count": 60
+}

@@ -1,0 +1,9 @@
+{
+  "id": "B",
+  "label": "dove-driver, previous release (its defaults)",
+  "command": ["${DOVE_BENCH_DRIVER_B}", "mcp"],
+  "env": {"DOVE_USAGE_TOKENS": "1"},
+  "observation": "tree",
+  "requires_env": ["DOVE_BENCH_DRIVER_B"],
+  "notes": "Point DOVE_BENCH_DRIVER_B at the previous dove-driver-v* release binary. There is no release yet; the smoke run uses the dove-driver/main build and says so."
+}

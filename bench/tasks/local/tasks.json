@@ -1,0 +1,42 @@
+{
+  "_comment": "Local smoke suite: tiny GTK3 windows under Xvfb with AT-SPI. Not a benchmark; it proves the harness end to end. `plan` is read only by the scripted stub model; `check` is the checker (keys must equal the app's state.json).",
+  "tasks": [
+    {
+      "id": "local-rename",
+      "domain": "forms",
+      "form": "rename",
+      "instruction": "In the 'Dove Bench – rename' window, set the Name field to \"Ada Lovelace\" and press Save.",
+      "plan": [{"set": "Name", "text": "Ada Lovelace"}, {"press": "Save"}],
+      "check": {"saved_name": "Ada Lovelace"}
+    },
+    {
+      "id": "local-prefs",
+      "domain": "settings",
+      "form": "prefs",
+      "instruction": "In the 'Dove Bench – prefs' window, turn on 'Enable notifications', choose the Dark theme and press Apply.",
+      "plan": [{"press": "Enable notifications"}, {"select": "Theme", "option": "Dark"}, {"press": "Apply"}],
+      "check": {"applied": {"notifications": true, "theme": "Dark"}}
+    },
+    {
+      "id": "local-counter",
+      "domain": "buttons",
+      "form": "counter",
+      "instruction": "In the 'Dove Bench – counter' window, press Increment until the count is exactly 3.",
+      "plan": [{"press": "Increment"}, {"press": "Increment"}, {"press": "Increment"}],
+      "check": {"count": 3}
+    },
+    {
+      "id": "local-signup",
+      "domain": "forms",
+      "form": "signup",
+      "instruction": "In the 'Dove Bench – signup' window, fill First name \"Grace\", Last name \"Hopper\" and Email \"grace@example.com\", then press Submit.",
+      "plan": [
+        {"set": "First name", "text": "Grace"},
+        {"set": "Last name", "text": "Hopper"},
+        {"set": "Email", "text": "grace@example.com"},
+        {"press": "Submit"}
+      ],
+      "check": {"submitted": {"First name": "Grace", "Last name": "Hopper", "Email": "grace@example.com"}}
+    }
+  ]
+}

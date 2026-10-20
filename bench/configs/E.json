@@ -1,0 +1,10 @@
+{
+  "id": "E",
+  "label": "dove-driver, tree + set-of-marks screenshot (vision: true)",
+  "command": ["${DOVE_BENCH_DRIVER_A:-rust/target/release/dove-driver}", "mcp"],
+  "env": {"DOVE_USAGE_TOKENS": "1"},
+  "observation": "tree+marks",
+  "force_args": {"get_window_state": {"include_screenshot": true, "marks": true}},
+  "requires_env": ["DOVE_BENCH_ENABLE_E"],
+  "notes": "Needs W1.4 (`marks: true`). Off until DOVE_BENCH_ENABLE_E=1 is set on a driver that has it."
+}
