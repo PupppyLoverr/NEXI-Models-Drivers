@@ -89,7 +89,18 @@ restores unsaved tabs. The desktop was in active use during the runs.
 | Read a window that is not in front | **No.** It only reads `GetForegroundWindow()`; the read was skipped | **Yes.** 9 elements with tokens, about 300–500 ms per `get_window_state` over MCP |
 | Act on a window that is not in front | **No.** `focus_window` called `SetForegroundWindow`, Windows' foreground lock refused it (twice, with a retry), and nothing was done | **Yes.** `set_value` and `type_text` via UIA ValuePattern, clicks via UIA Invoke. All 4 steps landed (`saved:dove-set-1`, `submitted:dove-typed-2`) with the form behind other windows and the foreground unchanged |
 | Act when the window starts in front | Not completed. In 2 runs the form was in front at launch, but lost the foreground before nexi-cua's first action: once to another app, once to the system tray, during its PyTorch load of a few seconds | not needed |
-| Cursor | its type and drag paths move the real pointer by design (`SetCursorPos`) | unchanged in 2 of 3 runs. In the third, the pointer moved during two Invoke clicks while the user was clicking the system tray. UIA Invoke itself does not move the pointer |
+| Cursor | its type and drag paths move the real pointer by design (`SetCursorPos`) | **does not move it.** Unchanged in 2 of 3 runs. In the third, the pointer moved during two Invoke clicks while the user was clicking the system tray. The code confirms it was not the driver: see below |
+
+The cursor question, settled from dove-driver's source:
+
+- A click with an `element_token` runs UIA Invoke inside `uia::fg_bypass::run_with_uwp_bypass`
+  (`platform-windows/src/tools/impl_.rs`), which only disables an XAML host window during the call. On success it
+  returns with transport `WindowsUiaInvoke` before any synthetic-input path is reached.
+- The `SetCursorPos` calls in `platform-windows/src/input/mouse.rs` and `input/inject.rs` belong to the pixel-click
+  and touch-drag fallbacks, and each restores the cursor afterwards.
+- `pointer_shape::probe_by_warp`, which does move an idle pointer and back, serves multiplayer presence only. It is
+  never called on Windows.
+- So the pointer movement in the third run was the user's own mouse. No driver change is needed.
 
 Bugs found in nexi-cua:
 
