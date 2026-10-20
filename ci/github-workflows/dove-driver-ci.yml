@@ -62,6 +62,10 @@ env:
   CUA_TEST_REQUIRE_FIXTURES: "1"
   CUA_E2E_FORBID_SKIPS: "1"
   CUA_TEST_DRIVER_STDERR: "1"
+  # Upstream's canonical runners also set CUA_E2E_UNRESTRICTED_GUI=1 (testkit
+  # daemons may run protected GUI operations such as kill_app) and
+  # CUA_REQUIRE_GUI=1; this workflow sets them on the e2e steps only, so they
+  # never reach the unit tests, which run without a display.
 
 jobs:
   parity:
@@ -96,6 +100,11 @@ jobs:
           workspaces: "dove-driver/rust -> target"
           key: linux-${{ matrix.display }}
           save-if: ${{ github.ref == 'refs/heads/main' }}
+      # The Electron harness is the foreground sentinel for every background
+      # e2e case.
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22"
       - name: Install GUI, AT-SPI and build dependencies
         run: |
           packages=(
@@ -128,10 +137,17 @@ jobs:
         run: |
           cargo run --locked -p cua-driver-contract --bin cua-contract-gen -- all --check
           cargo test --locked -p cua-driver-e2e --test cross_platform_behavior_test
-      - name: Stage the GTK3 fixture
-        run: bash tests/fixtures/build/linux.sh --only gtk3
+      # The upstream import lost the scripts' executable bits, so the
+      # Electron build script runs through bash rather than from linux.sh.
+      - name: Stage the GTK3 and Electron fixtures
+        run: |
+          bash tests/fixtures/build/linux.sh --only gtk3
+          bash tests/fixtures/apps/cross-platform/electron/build.sh
       - name: GTK3 AT-SPI e2e (Xvfb)
         if: matrix.display == 'x11'
+        env:
+          CUA_E2E_UNRESTRICTED_GUI: "1"
+          CUA_REQUIRE_GUI: "1"
         run: |
           bash ci/dove/linux/x11-session.sh bash -c '
             cd rust &&
@@ -141,6 +157,8 @@ jobs:
         if: matrix.display == 'sway'
         env:
           CUA_AT_SPI_BUS_LAUNCHER: /usr/libexec/at-spi-bus-launcher
+          CUA_E2E_UNRESTRICTED_GUI: "1"
+          CUA_REQUIRE_GUI: "1"
         run: |
           bash ci/dove/linux/sway-session.sh bash -c '
             cd rust &&
@@ -199,6 +217,11 @@ jobs:
           workspaces: "dove-driver/rust -> target"
           key: macos
           save-if: ${{ github.ref == 'refs/heads/main' }}
+      # The Electron harness is the foreground sentinel for every background
+      # e2e case.
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22"
       - name: Build dove-driver
         working-directory: dove-driver/rust
         run: |
@@ -217,8 +240,10 @@ jobs:
         run: |
           cargo run --locked -p cua-driver-contract --bin cua-contract-gen -- all --check
           cargo test --locked -p cua-driver-e2e --test cross_platform_behavior_test
-      - name: Build the SwiftUI fixture
-        run: bash tests/fixtures/build/macos.sh --only swiftui
+      - name: Build the SwiftUI and Electron fixtures
+        run: |
+          bash tests/fixtures/build/macos.sh --only swiftui
+          bash tests/fixtures/apps/cross-platform/electron/build.sh
       # Seeding TCC edits the runner's system database, which upstream allows
       # only for trusted events; pull requests skip the AX e2e.
       - name: Start a TCC-authorized dove-driver daemon
@@ -227,6 +252,9 @@ jobs:
       - name: SwiftUI AX e2e
         if: github.event_name != 'pull_request'
         working-directory: dove-driver/rust
+        env:
+          CUA_E2E_UNRESTRICTED_GUI: "1"
+          CUA_REQUIRE_GUI: "1"
         run: |
           export CUA_E2E_MACOS_DAEMON_SOCKET="$DOVE_CI_MACOS_SOCKET"
           cargo test --locked -p cua-driver-e2e --test harness_swiftui_test -- --ignored --nocapture --test-threads=1
@@ -291,6 +319,11 @@ jobs:
           workspaces: "dove-driver/rust -> target"
           key: windows
           save-if: ${{ github.ref == 'refs/heads/main' }}
+      # The Electron harness is the foreground sentinel for every background
+      # e2e case.
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22"
       - name: Build dove-driver
         working-directory: dove-driver/rust
         run: |
@@ -309,13 +342,16 @@ jobs:
         run: |
           cargo run --locked -p cua-driver-contract --bin cua-contract-gen -- all --check
           cargo test --locked -p cua-driver-e2e --test cross_platform_behavior_test
-      - name: Build the WinUI3 fixture
+      - name: Build the WinUI3 and Electron fixtures
         shell: pwsh
         run: |
           dotnet --list-sdks
-          ./tests/fixtures/build/windows.ps1 -Targets winui3
+          ./tests/fixtures/build/windows.ps1 -Targets winui3,electron
       - name: WinUI3 UIA e2e
         working-directory: dove-driver/rust
+        env:
+          CUA_E2E_UNRESTRICTED_GUI: "1"
+          CUA_REQUIRE_GUI: "1"
         run: cargo test --locked -p cua-driver-e2e --test harness_winui3_test -- --ignored --nocapture --test-threads=1
       - name: "Gate: W4.5 latency"
         run: bash ci/dove/run-gate.sh latency
