@@ -135,7 +135,7 @@ fn is_excluded_platform_doc(basename: &str, all_platforms: bool) -> bool {
 
 /// Legacy subdir name. `sweep_legacy_skill_pack` removes any skill-pack
 /// artifacts that landed here before the rename.
-const LEGACY_HOME_SUBDIRECTORY: &str = ".cua-driver-rs";
+const LEGACY_HOME_SUBDIRECTORY: &str = ".dove-driver-rs";
 
 /// Local install path for the skill pack: `<HomeDir>/skills/cua-driver`.
 fn local_skill_dir() -> Result<PathBuf> {

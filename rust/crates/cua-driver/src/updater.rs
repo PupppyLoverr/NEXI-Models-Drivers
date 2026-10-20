@@ -103,6 +103,12 @@ const RELEASE_VERSION_ENV: &str = "CUA_DRIVER_RELEASE_VERSION";
 /// installer's exit status so the caller can produce the right
 /// "succeeded / failed — re-run manually" message.
 pub fn run_install_script(version: &str) -> std::io::Result<ExitStatus> {
+    if crate::dove_env::UPDATES_MANAGED_BY_DOVE {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::Unsupported,
+            crate::dove_env::UPDATES_MESSAGE,
+        ));
+    }
     run_install_script_with_ownership(version, is_pacman_managed())
 }
 

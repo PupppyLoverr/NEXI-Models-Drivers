@@ -164,7 +164,7 @@ fn wait_for_reply(rx: Receiver<anyhow::Result<()>>) -> anyhow::Result<()> {
 
 fn restore_token_path() -> Option<PathBuf> {
     let base = dirs::config_dir()?;
-    Some(base.join("cua-driver").join("libei-persistent.token"))
+    Some(base.join("dove-driver").join("libei-persistent.token"))
 }
 
 fn read_restore_token() -> Option<String> {
@@ -720,7 +720,7 @@ impl EisState {
             Event::Handshake(handshake, ev) => {
                 if let reis::ei::handshake::Event::HandshakeVersion { .. } = ev {
                     handshake.handshake_version(1);
-                    handshake.name("cua-driver");
+                    handshake.name("dove-driver");
                     handshake.context_type(reis::ei::handshake::ContextType::Sender);
                     // Advertise the interface set + versions that reis 0.7's own
                     // EIS client examples use against real compositors. The

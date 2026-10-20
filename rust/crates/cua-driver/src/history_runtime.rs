@@ -284,7 +284,7 @@ pub fn verify_installed_app_for_history() -> anyhow::Result<()> {
         team_identifier,
         &compact,
         crate::bundle::bundle_id(),
-        crate::bundle::state_namespace() == "cua-driver",
+        crate::bundle::state_namespace() == crate::bundle::RELEASE_CLI_NAME,
     )
 }
 
@@ -369,13 +369,13 @@ fn installed_package_helper_path() -> anyhow::Result<PathBuf> {
         std::env::var_os("CUA_DRIVER_LOCAL_HOME")
             .filter(|value| !value.is_empty())
             .map(PathBuf::from)
-            .unwrap_or_else(|| user_home.join(".cua-driver-local"))
+            .unwrap_or_else(|| user_home.join(crate::bundle::user_home_subdirectory()))
     } else {
         std::env::var_os("CUA_DRIVER_HOME")
             .filter(|value| !value.is_empty())
             .or_else(|| std::env::var_os("CUA_DRIVER_RS_HOME").filter(|value| !value.is_empty()))
             .map(PathBuf::from)
-            .unwrap_or_else(|| user_home.join(".cua-driver"))
+            .unwrap_or_else(|| user_home.join(crate::bundle::user_home_subdirectory()))
     };
     let executable = if cfg!(target_os = "windows") {
         format!("{}.exe", crate::bundle::cli_name())

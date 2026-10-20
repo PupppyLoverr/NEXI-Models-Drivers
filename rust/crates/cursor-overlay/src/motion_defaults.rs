@@ -73,11 +73,11 @@ impl SavedMotionDefaults {
     }
 }
 
-/// `~/.cua-driver/config.json`, the file `set_config` writes everywhere.
+/// `~/.dove-driver/config.json`, the file `set_config` writes everywhere.
 pub fn default_config_path() -> Option<PathBuf> {
     std::env::var_os("HOME")
         .or_else(|| std::env::var_os("USERPROFILE"))
-        .map(|home| PathBuf::from(home).join(".cua-driver").join("config.json"))
+        .map(|home| PathBuf::from(home).join(".dove-driver").join("config.json"))
 }
 
 fn allowed_styles() -> String {

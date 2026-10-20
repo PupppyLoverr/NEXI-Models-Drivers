@@ -45,17 +45,17 @@ pub fn cli_name() -> &'static str {
 
 pub fn state_namespace() -> &'static str {
     if is_local_installation() {
-        "cua-driver-local"
+        "dove-driver-local"
     } else {
-        "cua-driver"
+        "dove-driver"
     }
 }
 
 pub fn user_home_subdirectory() -> &'static str {
     if is_local_installation() {
-        ".cua-driver-local"
+        ".dove-driver-local"
     } else {
-        ".cua-driver"
+        ".dove-driver"
     }
 }
 

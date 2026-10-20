@@ -13,7 +13,7 @@
 //! a clear "not yet implemented" error so the rest of the daemon
 //! continues without a PiP window.
 
-/// Canonical `~/.cua-driver/config.json` path matching what the per-platform
+/// Canonical `~/.dove-driver/config.json` path matching what the per-platform
 /// `set_config` tools write to. Resolves `$HOME` first (Unix/macOS) and falls
 /// back to `%USERPROFILE%` (Windows, where `HOME` is usually unset). Returns
 /// `None` when neither is set (sandboxed CI).
@@ -22,7 +22,7 @@ pub fn default_config_path() -> Option<std::path::PathBuf> {
         .or_else(|| std::env::var_os("USERPROFILE"))
         .map(|h| {
             std::path::PathBuf::from(h)
-                .join(".cua-driver")
+                .join(".dove-driver")
                 .join("config.json")
         })
 }

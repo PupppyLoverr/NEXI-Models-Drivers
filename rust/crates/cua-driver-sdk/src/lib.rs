@@ -981,7 +981,7 @@ impl CuaDriver {
     /// This is the temporary compatibility path for released socket clients.
     #[uniffi::constructor]
     pub fn connect(socket_path: Option<String>) -> Result<Arc<Self>, DriverError> {
-        let socket_path = socket_path.unwrap_or_else(|| socket_path_for_namespace("cua-driver"));
+        let socket_path = socket_path.unwrap_or_else(|| socket_path_for_namespace("dove-driver"));
         if socket_path.trim().is_empty() {
             return Err(DriverError::Configuration {
                 reason: "socket_path must not be empty".into(),

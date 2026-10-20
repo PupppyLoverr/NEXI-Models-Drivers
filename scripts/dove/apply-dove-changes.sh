@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Apply the Dove fork's changes to an upstream tree. Safe to run more than once.
+# Apply the Dove fork's changes to an upstream tree. Steps 1-3 are safe to run
+# more than once; the patches in step 4 apply once, to a fresh upstream tree.
 # Every change `main` makes to upstream files is made here, so that after
 # merging a new upstream release, running this script restores the fork.
 # scripts/dove/parity-check.sh checks that main differs from upstream only in
@@ -56,15 +57,17 @@ sed -i 's/"cua-driver.exe"/"dove-driver.exe"/; s/^        "cua-driver"$/        
 cd ..
 
 # 4. Dove features: one patch per feature in scripts/dove/patches/, applied in
-#    file-name order. A patch already applied is skipped; one that no longer
-#    applies stops the script so an upstream sync cannot drop it silently.
+#    file-name order on top of the edits above. Patches apply to a fresh
+#    upstream tree (sync-upstream.sh and parity-check.sh both start from one);
+#    on main they are already applied, so pass --no-patches there. A patch
+#    that no longer applies stops the script, so a sync cannot drop it silently.
+[ "${1:-}" = "--no-patches" ] && { echo "Dove changes applied (patches skipped)"; exit 0; }
 patch_dir="$(dirname "${BASH_SOURCE[0]}")/patches"
 for patch in "$patch_dir"/*.patch; do
   [ -e "$patch" ] || continue
-  if git apply --reverse --check "$patch" 2>/dev/null; then
-    continue
-  fi
-  if ! git apply --3way "$patch"; then
+  # Plain `git apply` works on the working tree, which the edits above have
+  # already changed without staging.
+  if ! git apply "$patch"; then
     echo "patch no longer applies: $(basename "$patch")" >&2
     exit 1
   fi

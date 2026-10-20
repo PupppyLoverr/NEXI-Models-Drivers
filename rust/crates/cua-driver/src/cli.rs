@@ -539,7 +539,7 @@ pub fn parse_command() -> Command {
     // Handle --version / -V before any other parsing so they are never
     // silently stripped as "bare flags" and swallowed by MCP mode.
     if args.iter().any(|a| a == "--version" || a == "-V") {
-        println!("cua-driver {}", env!("CARGO_PKG_VERSION"));
+        println!("dove-driver {}", env!("CARGO_PKG_VERSION"));
         std::process::exit(0);
     }
     if args.iter().any(|a| a == "--help" || a == "-h") {

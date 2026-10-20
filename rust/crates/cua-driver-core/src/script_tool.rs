@@ -86,7 +86,7 @@ pub fn disabled_by() -> Option<String> {
         .or_else(|| std::env::var_os("USERPROFILE"))
         .map(|home| {
             std::path::PathBuf::from(home)
-                .join(".cua-driver")
+                .join(".dove-driver")
                 .join("config.json")
         });
     disabled_from(

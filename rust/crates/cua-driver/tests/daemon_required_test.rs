@@ -96,7 +96,7 @@ fn default_mcp_owns_a_runtime_without_a_daemon() {
     );
     let response: serde_json::Value =
         serde_json::from_slice(&output.stdout).expect("initialize response JSON");
-    assert_eq!(response["result"]["serverInfo"]["name"], "cua-driver");
+    assert_eq!(response["result"]["serverInfo"]["name"], "dove-driver");
 }
 
 #[cfg(not(target_os = "macos"))]

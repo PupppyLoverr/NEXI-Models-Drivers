@@ -200,7 +200,7 @@ impl CheckEntry {
     pub fn binary_version() -> Self {
         Self::pass(
             NAME_BINARY_VERSION,
-            format!("cua-driver {}", env!("CARGO_PKG_VERSION")),
+            format!("dove-driver {}", env!("CARGO_PKG_VERSION")),
         )
     }
 
@@ -337,7 +337,7 @@ pub fn text_summary(report: &Report) -> String {
         Overall::Failed => "failed",
     };
     let mut lines = vec![format!(
-        "{overall_icon} cua-driver {} on {} — {overall_word}",
+        "{overall_icon} dove-driver {} on {} — {overall_word}",
         report.driver_version, report.platform
     )];
     for entry in &report.checks {
@@ -501,7 +501,7 @@ mod tests {
         assert_eq!(version.status, CheckStatus::Pass);
         assert_eq!(
             version.message,
-            format!("cua-driver {}", env!("CARGO_PKG_VERSION"))
+            format!("dove-driver {}", env!("CARGO_PKG_VERSION"))
         );
 
         let session = CheckEntry::session_active();

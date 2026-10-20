@@ -46,7 +46,7 @@ const CACHE_FILE_NAME: &str = "version_check.json";
 /// there by an older build into the canonical home and drops the directory
 /// once it is empty — same shape as the telemetry and skill-pack
 /// migrations. Nothing in this module writes here.
-const LEGACY_HOME_SUBDIRECTORY: &str = ".cua-driver-rs";
+const LEGACY_HOME_SUBDIRECTORY: &str = ".dove-driver-rs";
 
 /// Single-invocation opt-out env var. Recognised values mirror the
 /// telemetry opt-out: `0|false|no|off` disables the check, everything
@@ -756,6 +756,11 @@ pub fn fetch_latest_version() -> Result<String, crate::release_source::FetchErro
 pub fn fetch_latest_version_for(
     channel: crate::release_channel::ReleaseChannel,
 ) -> Result<String, crate::release_source::FetchError> {
+    if crate::dove_env::UPDATES_MANAGED_BY_DOVE {
+        return Err(crate::release_source::FetchError::Other(
+            crate::dove_env::UPDATES_MESSAGE.to_owned(),
+        ));
+    }
     if crate::updater::is_pacman_managed() {
         return Err(crate::release_source::FetchError::Other(
             crate::updater::PACMAN_UPDATE_GUIDANCE.to_owned(),
@@ -1485,7 +1490,7 @@ mod tests {
 
         with_isolated_home(|home| {
             // Write a config that disables the check.
-            let cfg_dir = home.join(".cua-driver");
+            let cfg_dir = home.join(".dove-driver");
             std::fs::create_dir_all(&cfg_dir).unwrap();
             std::fs::write(
                 cfg_dir.join("config.json"),
@@ -1529,7 +1534,7 @@ mod tests {
             );
 
             // Case B: config file present but flag = true → still enabled.
-            let cfg_dir = home.join(".cua-driver");
+            let cfg_dir = home.join(".dove-driver");
             std::fs::create_dir_all(&cfg_dir).unwrap();
             std::fs::write(
                 cfg_dir.join("config.json"),

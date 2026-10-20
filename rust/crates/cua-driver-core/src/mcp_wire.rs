@@ -129,7 +129,7 @@ pub fn finish_response(era: ProtocolEra, method: &str, mut response: Response) -
                     *meta = json!({});
                 }
                 meta["io.modelcontextprotocol/serverInfo"] =
-                    json!({"name": "cua-driver", "version": env!("CARGO_PKG_VERSION")});
+                    json!({"name": "dove-driver", "version": env!("CARGO_PKG_VERSION")});
                 if method == "server/discover"
                     || method.ends_with("/list")
                     || method.ends_with("/read")
@@ -288,7 +288,7 @@ mod tests {
         assert_eq!(result["cacheScope"], "private");
         assert_eq!(
             result["_meta"]["io.modelcontextprotocol/serverInfo"]["name"],
-            "cua-driver"
+            "dove-driver"
         );
         assert!(result.get("serverInfo").is_none());
         let structured = json!({"resultType": "domain-value", "private": [1, 2]});

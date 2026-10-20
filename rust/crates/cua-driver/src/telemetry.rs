@@ -22,15 +22,17 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Condvar, Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
-const POSTHOG_CAPTURE_URL: &str = "https://eu.i.posthog.com/capture/";
+/// Dove fork: where telemetry is sent when the operator turns it on. There is
+/// no default endpoint, so an unset variable means nothing leaves the machine.
+const ENV_TELEMETRY_URL: &str = "CUA_DRIVER_TELEMETRY_URL";
 const POSTHOG_API_KEY: &str = "phc_eSkLnbLxsnYFaXksif1ksbrNzYlJShr35miFLDppF14";
 const POSTHOG_TIMEOUT_SECS: u64 = 3;
 const LIFECYCLE_RETRY_BACKOFF_SECS: u64 = 15 * 60;
 const TOOL_TELEMETRY_LIMIT_PER_HOUR: usize = 1_000;
 const TOOL_TELEMETRY_WINDOW: Duration = Duration::from_secs(60 * 60);
 
-const HOME_SUBDIRECTORY: &str = ".cua-driver";
-const LEGACY_HOME_SUBDIRECTORY: &str = ".cua-driver-rs";
+const HOME_SUBDIRECTORY: &str = ".dove-driver";
+const LEGACY_HOME_SUBDIRECTORY: &str = ".dove-driver-rs";
 const CONFIG_FILE_NAME: &str = "config.json";
 const CONFIG_ENABLED_KEY: &str = "telemetry_enabled";
 const TELEMETRY_ID_FILE_NAME: &str = ".telemetry_id";
@@ -238,7 +240,8 @@ fn effective_enabled() -> (bool, &'static str) {
     if let Some(value) = persisted_enabled() {
         return (value, "persisted");
     }
-    (true, "default")
+    // Dove fork: off by default.
+    (false, "default")
 }
 
 /// `[telemetry] enabled = "off"` in `$CUA_HOME/config.toml` (outside
@@ -2223,12 +2226,18 @@ fn post_to_posthog(payload: &Value) -> Result<u16, String> {
 }
 
 fn post_to_posthog_with_timeout(payload: &Value, timeout: Duration) -> Result<u16, String> {
+    let Some(capture_url) = std::env::var(ENV_TELEMETRY_URL)
+        .ok()
+        .filter(|url| !url.trim().is_empty())
+    else {
+        return Err(format!("no telemetry endpoint: {ENV_TELEMETRY_URL} is unset"));
+    };
     let agent = ureq::Agent::config_builder()
         .timeout_global(Some(timeout))
         .build()
         .new_agent();
     match agent
-        .post(POSTHOG_CAPTURE_URL)
+        .post(&capture_url)
         .header("Content-Type", "application/json")
         .send_json(payload)
     {
@@ -2685,7 +2694,12 @@ mod tests {
             std::env::remove_var("DO_NOT_TRACK");
             std::env::remove_var("CUA_TELEMETRY");
             std::env::remove_var("CUA_HOME");
+            // No endpoint: any real send fails at once, without the network.
+            std::env::remove_var(ENV_TELEMETRY_URL);
         }
+        // Dove fork: telemetry is off by default. These tests exercise the
+        // send path, so the isolated home starts with the operator's opt-in.
+        set_enabled(true).unwrap();
         let result = test(&root);
         let _ = std::fs::remove_dir_all(&root);
         unsafe {
@@ -2916,10 +2930,32 @@ mod tests {
     }
 
     #[test]
+    fn telemetry_is_off_by_default() {
+        let _guard = ENV_LOCK.lock().unwrap();
+        with_isolated_home(|root| {
+            remove_file_if_exists(&root.join(HOME_SUBDIRECTORY).join(CONFIG_FILE_NAME)).unwrap();
+            assert_eq!(effective_enabled(), (false, "default"));
+        });
+    }
+
+    #[test]
+    fn nothing_is_sent_without_a_configured_endpoint() {
+        let _guard = ENV_LOCK.lock().unwrap();
+        with_isolated_home(|_| {
+            unsafe {
+                std::env::remove_var(ENV_TELEMETRY_URL);
+            }
+            let error = post_to_posthog_with_timeout(&serde_json::json!({}), Duration::from_secs(1))
+                .unwrap_err();
+            assert!(error.contains(ENV_TELEMETRY_URL), "{error}");
+        });
+    }
+
+    #[test]
     fn precedence_is_environment_then_persisted_then_default() {
         let _guard = ENV_LOCK.lock().unwrap();
         with_isolated_home(|_| {
-            assert_eq!(effective_enabled(), (true, "default"));
+            assert_eq!(effective_enabled(), (true, "persisted"));
             set_enabled(false).unwrap();
             assert_eq!(effective_enabled(), (false, "persisted"));
             unsafe {
@@ -2936,7 +2972,7 @@ mod tests {
     fn shared_cua_switches_turn_the_driver_off() {
         let _guard = ENV_LOCK.lock().unwrap();
         with_isolated_home(|home| {
-            assert_eq!(effective_enabled(), (true, "default"));
+            assert_eq!(effective_enabled(), (true, "persisted"));
             unsafe {
                 std::env::set_var("DO_NOT_TRACK", "1");
                 std::env::set_var(ENV_TELEMETRY_ENABLED, "true");

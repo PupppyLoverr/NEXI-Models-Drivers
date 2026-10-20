@@ -349,12 +349,12 @@ fn profile_root() -> Result<PathBuf, BrowserRefusal> {
     #[cfg(target_os = "windows")]
     let root = std::env::var_os("LOCALAPPDATA")
         .map(PathBuf::from)
-        .map(|path| path.join("CuaDriver").join("BrowserProfiles"));
+        .map(|path| path.join("DoveDriver").join("BrowserProfiles"));
     #[cfg(target_os = "macos")]
     let root = std::env::var_os("HOME").map(PathBuf::from).map(|path| {
         path.join("Library")
             .join("Application Support")
-            .join("CuaDriver")
+            .join("DoveDriver")
             .join("BrowserProfiles")
     });
     #[cfg(all(unix, not(target_os = "macos")))]
@@ -365,7 +365,7 @@ fn profile_root() -> Result<PathBuf, BrowserRefusal> {
                 .map(PathBuf::from)
                 .map(|path| path.join(".local").join("state"))
         })
-        .map(|path| path.join("cua-driver").join("browser-profiles"));
+        .map(|path| path.join("dove-driver").join("browser-profiles"));
     root.ok_or_else(|| {
         refusal(
             BrowserRefusalCode::BrowserRouteUnavailable,

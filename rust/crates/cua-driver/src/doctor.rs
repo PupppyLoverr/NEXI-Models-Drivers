@@ -172,7 +172,7 @@ fn probe_version() -> Probe {
     } else {
         build.git_sha.chars().take(12).collect()
     };
-    Probe::ok("binary", format!("cua-driver {version} ({target})")).with_detail(format!(
+    Probe::ok("binary", format!("dove-driver {version} ({target})")).with_detail(format!(
         "git: {git}\nsha256: {}",
         if build.exe_sha256.is_empty() {
             "unreadable"

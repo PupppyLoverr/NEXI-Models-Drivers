@@ -27,11 +27,11 @@ fn history_roots(home: &Path) -> Vec<PathBuf> {
     } else {
         home.join(".local").join("state")
     };
-    let mut roots: Vec<_> = ["cua-driver", "cua-driver-local"]
+    let mut roots: Vec<_> = ["dove-driver", "dove-driver-local"]
         .into_iter()
         .map(|namespace| base.join(namespace).join("computer-history"))
         .collect();
-    roots.push(home.join(".cua-driver").join("computer-history"));
+    roots.push(home.join(".dove-driver").join("computer-history"));
     roots
 }
 
@@ -51,7 +51,7 @@ fn seed_admitted_host_home() -> tempfile::TempDir {
     // Only this single-test binary's process environment changes; it runs
     // before any thread or child exists.
     std::env::set_var("HOME", home.path());
-    std::env::set_var("CUA_DRIVER_RS_HOME", home.path().join(".cua-driver"));
+    std::env::set_var("CUA_DRIVER_RS_HOME", home.path().join(".dove-driver"));
     if cfg!(target_os = "windows") {
         std::env::set_var("USERPROFILE", home.path());
         std::env::set_var("APPDATA", home.path().join("AppData").join("Roaming"));
@@ -101,7 +101,7 @@ fn testkit_daemons_ignore_host_history_admission() {
     assert_admission_hint(Some(Path::new("")), true);
     let empty_home = tempfile::tempdir().expect("empty driver home");
     assert_admission_hint(Some(empty_home.path()), false);
-    assert_admission_hint(Some(&host_home.path().join(".cua-driver")), true);
+    assert_admission_hint(Some(&host_home.path().join(".dove-driver")), true);
 
     // Control: sharing the seeded host state reproduces the original failure,
     // proving the seed is the state that used to leak into test daemons.

@@ -5,7 +5,7 @@
     "capability_keys": [
       "tools"
     ],
-    "server_name": "cua-driver",
+    "server_name": "dove-driver",
     "server_version_format": "semver"
   },
   "tools_list": {

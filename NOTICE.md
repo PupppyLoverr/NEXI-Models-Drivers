@@ -39,6 +39,29 @@ adds on top must be new files or new code paths that leave upstream behaviour un
   and its default features are off, matching how upstream links it into the driver (`default-features = false`).
 - Upstream's README is at `docs/UPSTREAM_README.md`.
 
-Internal crate names (`cua-driver-core`, `cua-driver-contract` and the rest), environment variables (`CUA_DRIVER_*`),
-the state directory (`~/.cua-driver`), named pipes, the `--version` string, the MCP `serverInfo.name` and the macOS
-app identity are still upstream's. Renaming them is work item R0.2 in [ROADMAP.md](ROADMAP.md).
+Feature patches (`scripts/dove/patches/`, applied by the same script):
+
+- `0001-own-state-and-identity.patch`. dove-driver never shares state with a stock cua-driver on the same machine:
+  - state namespace `dove-driver(-local)`, which names the daemon pipe `\\.\pipe\dove-driver`, the Unix socket, the
+    history store and the OS credential-store entries;
+  - home directory `~/.dove-driver(-local)`, including `config.json` and the home-override fallbacks. The legacy
+    `~/.cua-driver-rs` migrations point at `~/.dove-driver-rs`, so a stock install's state is never imported;
+  - uiAccess worker pipe `\\.\pipe\dove-driver(-local)-uia`;
+  - per-user data dirs `DoveDriver\BrowserProfiles`, `Dove Driver\cursor-themes`, `dove-driver/...` on Linux, and
+    the libei token and client name;
+  - the SDK's default daemon namespace;
+  - it reports itself as `dove-driver`: MCP `serverInfo`, `--version`, `health_report`, `doctor`.
+  - `DOVE_DRIVER_<NAME>` variables are aliases for `CUA_DRIVER_<NAME>`, applied at startup when the upstream name is
+    unset (`rust/crates/cua-driver/src/dove_env.rs`). `DOVE_DRIVER_HOME` also sets `CUA_DRIVER_RS_HOME`.
+- `0002-no-upstream-phone-home.patch`. The driver makes no network request Dove did not ask for:
+  - usage telemetry is off by default. If an operator turns it on, events go only to `CUA_DRIVER_TELEMETRY_URL`
+    (or `DOVE_DRIVER_TELEMETRY_URL`), which has no default; Cua's PostHog endpoint is removed;
+  - the update check (startup banner, `check_for_update`, `dove-driver update`) never queries trycua releases, and
+    the updater never runs Cua's install script. Dove's plugin manager owns installs and updates.
+
+Still upstream's: internal crate names (`cua-driver-core` and the rest), `CUA_DRIVER_*` variable names (now with
+`DOVE_DRIVER_*` aliases), protocol identifiers (history schema URNs, the policy `server` name, telemetry event
+names), the bundled skill pack (`cua-driver`), and the macOS app identity (`CuaDriver.app`, `com.trycua.driver`),
+which is work item R0.3 in [ROADMAP.md](ROADMAP.md). Network use that only happens on an explicit request is
+unchanged: `skills install` downloads upstream's skill pack, `install_ffmpeg` downloads ffmpeg, and
+`install_extension` needs a catalog the operator names.

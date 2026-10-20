@@ -23,6 +23,7 @@ mod bundle;
 mod check_update_tool;
 mod cli;
 mod doctor;
+mod dove_env;
 mod driver_service_http;
 #[cfg(any(target_os = "macos", all(test, unix)))]
 mod duplicate_copies;
@@ -491,6 +492,7 @@ mod mcp_runtime_selection_tests {
 
 #[cfg(target_os = "macos")]
 fn main() {
+    dove_env::apply_aliases();
     cua_driver_core::build_info::init(env!("CUA_DRIVER_GIT_SHA"));
     cua_driver_sdk::configure_perception_client_resolver(
         extension_manager::perception_client_resolver(),
@@ -924,6 +926,7 @@ fn main() {
 
 #[cfg(not(target_os = "macos"))]
 fn main() -> anyhow::Result<()> {
+    dove_env::apply_aliases();
     cua_driver_core::build_info::init(env!("CUA_DRIVER_GIT_SHA"));
     // An elevated Driver runs shell launches through this executable with a
     // standard-user token (#3607). Checked first so the helper does no other

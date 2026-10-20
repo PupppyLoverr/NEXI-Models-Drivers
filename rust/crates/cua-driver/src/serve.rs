@@ -348,9 +348,9 @@ pub fn default_socket_path() -> String {
 #[cfg(target_os = "windows")]
 pub fn default_uia_pipe_path() -> String {
     if crate::bundle::is_local_installation() {
-        r"\\.\pipe\cua-driver-local-uia".to_owned()
+        r"\\.\pipe\dove-driver-local-uia".to_owned()
     } else {
-        r"\\.\pipe\cua-driver-uia".to_owned()
+        r"\\.\pipe\dove-driver-uia".to_owned()
     }
 }
 

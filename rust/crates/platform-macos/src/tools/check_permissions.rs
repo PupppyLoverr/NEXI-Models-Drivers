@@ -68,8 +68,8 @@ fn direct_capture_evidence_store_for_identity(
     }
     let bundle_id = driver_bundle_id_for_executable(executable)?;
     let state_directory = match bundle_id {
-        "com.trycua.driver.local" => ".cua-driver-local",
-        "com.trycua.driver" => ".cua-driver",
+        "com.trycua.driver.local" => ".dove-driver-local",
+        "com.trycua.driver" => ".dove-driver",
         _ => return None,
     };
     Some(DirectCaptureEvidenceStore::new(
@@ -633,7 +633,7 @@ mod tests {
             std::env::temp_dir().join(format!("cua-direct-capture-test-{}", uuid::Uuid::new_v4()));
         let store = release_evidence_store(&home);
         store.record_now().expect("record prior evidence");
-        let state_directory = home.join(".cua-driver");
+        let state_directory = home.join(".dove-driver");
         std::fs::set_permissions(&state_directory, std::fs::Permissions::from_mode(0o500))
             .expect("make evidence directory read-only");
 

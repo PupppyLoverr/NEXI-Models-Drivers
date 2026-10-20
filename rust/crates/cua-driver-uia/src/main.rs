@@ -76,9 +76,9 @@ fn pipe_path() -> &'static str {
         .and_then(|name| name.to_str().map(str::to_owned))
         .is_some_and(|name| name.eq_ignore_ascii_case("dove-driver-uia-local.exe"));
     if is_local {
-        r"\\.\pipe\cua-driver-local-uia"
+        r"\\.\pipe\dove-driver-local-uia"
     } else {
-        r"\\.\pipe\cua-driver-uia"
+        r"\\.\pipe\dove-driver-uia"
     }
 }
 

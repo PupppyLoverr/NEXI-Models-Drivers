@@ -364,7 +364,7 @@ pub fn theme_store_root() -> Result<PathBuf> {
         let root = std::env::var_os("LOCALAPPDATA")
             .map(PathBuf::from)
             .ok_or_else(|| anyhow!("LOCALAPPDATA is unavailable"))?;
-        return Ok(root.join("Cua Driver").join("cursor-themes"));
+        return Ok(root.join("Dove Driver").join("cursor-themes"));
     }
     #[cfg(target_os = "macos")]
     {
@@ -374,13 +374,13 @@ pub fn theme_store_root() -> Result<PathBuf> {
         Ok(home
             .join("Library")
             .join("Application Support")
-            .join("Cua Driver")
+            .join("Dove Driver")
             .join("cursor-themes"))
     }
     #[cfg(all(unix, not(target_os = "macos")))]
     {
         if let Some(root) = std::env::var_os("XDG_DATA_HOME") {
-            return Ok(PathBuf::from(root).join("cua-driver").join("cursor-themes"));
+            return Ok(PathBuf::from(root).join("dove-driver").join("cursor-themes"));
         }
         let home = std::env::var_os("HOME")
             .map(PathBuf::from)
@@ -388,7 +388,7 @@ pub fn theme_store_root() -> Result<PathBuf> {
         Ok(home
             .join(".local")
             .join("share")
-            .join("cua-driver")
+            .join("dove-driver")
             .join("cursor-themes"))
     }
 }
