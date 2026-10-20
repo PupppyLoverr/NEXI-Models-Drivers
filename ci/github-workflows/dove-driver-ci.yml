@@ -183,7 +183,14 @@ jobs:
           python3 ci/dove/side_by_side.py \
             --dove "$DOVE_CI_DRIVER_BIN" \
             --stock "$RUNNER_TEMP/stock-target/debug/cua-driver" \
-            --work "$DOVE_CI_ARTIFACTS/side-by-side"
+            --work "$RUNNER_TEMP/sbs"
+      # Unix socket paths must stay short, so the test runs under
+      # $RUNNER_TEMP; keep its daemon logs as evidence.
+      - name: Keep the side-by-side logs
+        if: always() && matrix.display == 'x11'
+        run: |
+          mkdir -p "$DOVE_CI_ARTIFACTS/side-by-side"
+          cp "$RUNNER_TEMP"/sbs/*.log "$DOVE_CI_ARTIFACTS/side-by-side/" 2>/dev/null || true
       - name: "Gate: W4.5 latency"
         run: bash ci/dove/run-gate.sh latency
       - name: "Gate: W9 grounder"
@@ -281,7 +288,14 @@ jobs:
           python3 ci/dove/side_by_side.py \
             --dove "$DOVE_CI_DRIVER_BIN" \
             --stock "$RUNNER_TEMP/stock-target/debug/cua-driver" \
-            --work "$DOVE_CI_ARTIFACTS/side-by-side"
+            --work "$RUNNER_TEMP/sbs"
+      # Unix socket paths must stay short, so the test runs under
+      # $RUNNER_TEMP; keep its daemon logs as evidence.
+      - name: Keep the side-by-side logs
+        if: always()
+        run: |
+          mkdir -p "$DOVE_CI_ARTIFACTS/side-by-side"
+          cp "$RUNNER_TEMP"/sbs/*.log "$DOVE_CI_ARTIFACTS/side-by-side/" 2>/dev/null || true
       - name: "Gate: W4.5 latency"
         run: bash ci/dove/run-gate.sh latency
       - name: "Gate: W9 grounder"

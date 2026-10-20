@@ -325,6 +325,11 @@ def main() -> int:
     work = Path(args.work or tempfile.mkdtemp(prefix="dove-side-by-side-")).resolve()
     work.mkdir(parents=True, exist_ok=True)
     print(f"work directory: {work}")
+    # Unix sockets: sun_path holds 108 bytes on Linux, 104 on macOS.
+    longest = expected_socket("dove-driver", work / "stock-only")
+    if not WINDOWS and len(longest.encode()) >= (104 if MACOS else 108):
+        print(f"--work is too deep for a Unix socket path ({longest}); use a shorter one", file=sys.stderr)
+        return 2
 
     solo_phase("dove-only", "dove-driver", "cua-driver", args.dove, work)
     solo_phase("stock-only", "cua-driver", "dove-driver", args.stock, work)
