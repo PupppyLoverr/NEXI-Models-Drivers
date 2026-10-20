@@ -7,4 +7,6 @@ DOVE_ONLY_FILES=(
   NEXI_CUA_COMPARISON.md
   .gitignore
   scripts/dove
+  RELEASES.md
+  ci
 )
