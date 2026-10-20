@@ -1,5 +1,5 @@
 diff --git a/rust/crates/cua-driver-core/src/batch_tools.rs b/rust/crates/cua-driver-core/src/batch_tools.rs
-index 286d429..cb2a7d5 100644
+index 6266504..25e74f4 100644
 --- a/rust/crates/cua-driver-core/src/batch_tools.rs
 +++ b/rust/crates/cua-driver-core/src/batch_tools.rs
 @@ -21,6 +21,7 @@ use crate::{
@@ -45,7 +45,7 @@ index 286d429..cb2a7d5 100644
                      "observe": {
                          "type": "object",
                          "description": "Optional end-of-batch observation: arguments for ONE get_window_state call. `pid` and `window_id` default to those of the last step that names both. Defaults to since=\"latest\" (only what changed since your last read of that window with the same query/max_elements/max_depth; a full read when there is none), include_screenshot=false and max_elements=250; pass include_screenshot=true to see the window, or since=null for a full read. Omit to read nothing. {} observes the last window."
-@@ -322,6 +329,7 @@ struct Step {
+@@ -336,6 +343,7 @@ struct Step {
      /// A read-only tool placed between actions. It cannot change what later
      /// steps do, so it is skipped (with a note) instead of failing the batch.
      skipped_read: Option<&'static str>,
@@ -53,7 +53,7 @@ index 286d429..cb2a7d5 100644
  }
  
  impl Step {
-@@ -448,6 +456,7 @@ impl Plan {
+@@ -463,6 +471,7 @@ impl Plan {
              .map(str::to_owned);
  
          let default_window = batch_window(object)?;
@@ -61,7 +61,7 @@ index 286d429..cb2a7d5 100644
          let default_delivery = match object.get("delivery_mode") {
              None | Some(Value::Null) => None,
              Some(Value::String(mode)) if matches!(mode.as_str(), "background" | "foreground") => {
-@@ -535,10 +544,12 @@ impl Plan {
+@@ -551,10 +560,12 @@ impl Plan {
                      wait_for: None,
                      expect: Vec::new(),
                      skipped_read: Some(tool),
@@ -74,7 +74,7 @@ index 286d429..cb2a7d5 100644
              if let (Some(mode), Some(action)) = (&default_delivery, step.action.as_mut()) {
                  if accepts(registry, action.tool, "delivery_mode") {
                      if let Some(object) = action.args.as_object_mut() {
-@@ -765,12 +776,21 @@ impl Plan {
+@@ -782,12 +793,21 @@ impl Plan {
              (None, None) => None,
          };
          if let Some(mut args) = observe {
@@ -98,7 +98,7 @@ index 286d429..cb2a7d5 100644
              let ok = result.is_error != Some(true);
              let mut report = json!({ "ok": ok, "tool": OBSERVE_TOOL });
              if ok {
-@@ -917,7 +937,17 @@ async fn run_step(
+@@ -964,7 +984,17 @@ async fn run_step(
                  action: Some(tool),
                  ..element
              };
@@ -117,7 +117,7 @@ index 286d429..cb2a7d5 100644
                  Ok(found) => {
                      let object = args.as_object_mut().expect("object");
                      object.insert("pid".into(), json!(found.window.pid));
-@@ -1106,6 +1136,24 @@ async fn run_step(
+@@ -1153,6 +1183,24 @@ async fn run_step(
          notes.push(format!("{} check(s) held", checked.len()));
          report["expect"] = Value::Array(checked);
      }
@@ -142,7 +142,7 @@ index 286d429..cb2a7d5 100644
      report["ok"] = json!(true);
      if report.get("message").is_none() {
          report["message"] = json!(notes.join("; "));
-@@ -1527,6 +1575,9 @@ fn parse_step(
+@@ -1574,6 +1622,9 @@ fn parse_step(
      session: Option<&str>,
      inherits_window: bool,
  ) -> Result<Step, PlanError> {
@@ -152,16 +152,20 @@ index 286d429..cb2a7d5 100644
      let object = raw.as_object().ok_or_else(|| {
          PlanError::step(index, "must be an object: {tool, args} or {<tool>: args}")
      })?;
-@@ -1631,7 +1682,7 @@ fn parse_step(
- 
+@@ -1703,7 +1754,11 @@ fn parse_step(
+     };
      let action = match name {
          None => {
--            if wait_for.is_none() && expect.is_empty() {
-+            if wait_for.is_none() && expect.is_empty() && waits.verify.is_none() {
+-            if wait_for.is_none() && expect.is_empty() && intent.is_none() {
++            if wait_for.is_none()
++                && expect.is_empty()
++                && waits.verify.is_none()
++                && intent.is_none()
++            {
                  return Err(PlanError::step(
                      index,
                      "empty step: give an action ({tool, args} or {<tool>: args}) or a wait_for/expect check",
-@@ -1654,6 +1705,7 @@ fn parse_step(
+@@ -1727,6 +1782,7 @@ fn parse_step(
          wait_for,
          expect,
          skipped_read: None,
