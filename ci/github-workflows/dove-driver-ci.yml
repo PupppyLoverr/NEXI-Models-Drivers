@@ -54,6 +54,9 @@ env:
   # Neither driver may send usage telemetry from CI.
   CUA_DRIVER_RS_TELEMETRY_ENABLED: "false"
   CUA_TELEMETRY: "0"
+  # Upstream sets this for every cargo process in libs/cua/.cargo/config.toml,
+  # outside the vendored tree; cua-telemetry's privacy tests require it.
+  CUA_TELEMETRY_FORBID_NETWORK: "1"
   DO_NOT_TRACK: "1"
   # E2E: a missing fixture or driver fails instead of skipping.
   CUA_TEST_REQUIRE_FIXTURES: "1"
@@ -113,7 +116,12 @@ jobs:
       - name: Unit tests
         if: matrix.display == 'x11'
         working-directory: dove-driver/rust
-        run: cargo test --locked --workspace --exclude cua-driver-e2e --no-fail-fast
+        run: |
+          cargo test --locked --workspace --exclude cua-driver-e2e --exclude cua-telemetry --no-fail-fast
+          # Dove vendors cua-telemetry with its sender off, so upstream's
+          # loopback-sender test would wait forever; test the crate as upstream
+          # does (network forbidden except loopback).
+          cargo test --locked -p cua-telemetry --features http --no-fail-fast
       - name: Contract tests
         if: matrix.display == 'x11'
         working-directory: dove-driver/rust
@@ -198,7 +206,12 @@ jobs:
           "$DOVE_CI_DRIVER_BIN" --version
       - name: Unit tests
         working-directory: dove-driver/rust
-        run: cargo test --locked --workspace --exclude cua-driver-e2e --no-fail-fast
+        run: |
+          cargo test --locked --workspace --exclude cua-driver-e2e --exclude cua-telemetry --no-fail-fast
+          # Dove vendors cua-telemetry with its sender off, so upstream's
+          # loopback-sender test would wait forever; test the crate as upstream
+          # does (network forbidden except loopback).
+          cargo test --locked -p cua-telemetry --features http --no-fail-fast
       - name: Contract tests
         working-directory: dove-driver/rust
         run: |
@@ -285,7 +298,12 @@ jobs:
           "$DOVE_CI_DRIVER_BIN" --version
       - name: Unit tests
         working-directory: dove-driver/rust
-        run: cargo test --locked --workspace --exclude cua-driver-e2e --no-fail-fast
+        run: |
+          cargo test --locked --workspace --exclude cua-driver-e2e --exclude cua-telemetry --no-fail-fast
+          # Dove vendors cua-telemetry with its sender off, so upstream's
+          # loopback-sender test would wait forever; test the crate as upstream
+          # does (network forbidden except loopback).
+          cargo test --locked -p cua-telemetry --features http --no-fail-fast
       - name: Contract tests
         working-directory: dove-driver/rust
         run: |
