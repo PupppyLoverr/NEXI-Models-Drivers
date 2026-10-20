@@ -203,7 +203,11 @@ impl Verb {
     fn visual(self) -> bool {
         matches!(
             self,
-            Verb::ClickXy | Verb::DoubleClickXy | Verb::RightClickXy | Verb::DragXy | Verb::ScrollXy
+            Verb::ClickXy
+                | Verb::DoubleClickXy
+                | Verb::RightClickXy
+                | Verb::DragXy
+                | Verb::ScrollXy
         )
     }
 }

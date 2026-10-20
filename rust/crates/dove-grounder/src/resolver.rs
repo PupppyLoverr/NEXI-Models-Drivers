@@ -3,8 +3,10 @@
 //! unambiguously (the full accessible name, an ordinal, a key chord or a
 //! session command) and otherwise defers to the ranker.
 
-use crate::actions::{self, any_actionable, has, CHECKABLE_ROLES, CLICKABLE_ROLES, DCLICK_ROLES,
-    SCROLLABLE_ROLES, SELECT_ROLES, TEXT_ROLES};
+use crate::actions::{
+    self, any_actionable, has, CHECKABLE_ROLES, CLICKABLE_ROLES, DCLICK_ROLES, SCROLLABLE_ROLES,
+    SELECT_ROLES, TEXT_ROLES,
+};
 use crate::features::{ascii_words, cmp_key, sort_by_reading};
 use crate::infer;
 use crate::pystr::{self, py_regex, py_regex_full, py_regex_match};
@@ -84,7 +86,10 @@ const ROLE_ALIAS: &[(&str, &[&str])] = &[
 ];
 
 fn alias(word: &str) -> Option<&'static [&'static str]> {
-    ROLE_ALIAS.iter().find(|(w, _)| *w == word).map(|(_, set)| *set)
+    ROLE_ALIAS
+        .iter()
+        .find(|(w, _)| *w == word)
+        .map(|(_, set)| *set)
 }
 
 /// `_words`: lowercased `[a-z0-9]+` words minus the stop list.
@@ -114,12 +119,18 @@ struct VerbRe(Regex, Verb);
 static ELEMENT_VERB_RES: LazyLock<Vec<VerbRe>> = LazyLock::new(|| {
     let r = |p: &str, v| VerbRe(py_regex(p, false), v);
     vec![
-        r(r"\b(?:double[ -]?click|two[ -]?click)\w*", Verb::DoubleClick),
+        r(
+            r"\b(?:double[ -]?click|two[ -]?click)\w*",
+            Verb::DoubleClick,
+        ),
         r(
             r"\b(?:right[ -]?click|secondary[ -]?click|context[ -]?click)\b",
             Verb::RightClick,
         ),
-        r(r"\b(?:type|enter|write|fill|search\s+for|look\s+for)\b", Verb::Type),
+        r(
+            r"\b(?:type|enter|write|fill|search\s+for|look\s+for)\b",
+            Verb::Type,
+        ),
         r(r"\b(?:drag|move)\b.*\b(?:onto|to|into|over)\b", Verb::Drag),
         r(
             r"\bfocus(?:\s+(?:on|onto|the))?\b|\bput\s+(?:the\s+)?cursor\s+(?:in|into|on)\b",
@@ -165,11 +176,7 @@ fn role_restriction(goal: &str) -> Option<&'static [&'static str]> {
     // A set no tied set strictly contains, first in goal order.
     tied.iter()
         .copied()
-        .find(|a| {
-            !tied
-                .iter()
-                .any(|b| is_subset(a, b) && !is_subset(b, a))
-        })
+        .find(|a| !tied.iter().any(|b| is_subset(a, b) && !is_subset(b, a)))
         .or_else(|| tied.first().copied())
 }
 
@@ -179,7 +186,10 @@ static ORDINAL_RE: LazyLock<Regex> = LazyLock::new(|| {
     let mut names: Vec<&str> = ROLE_ALIAS.iter().map(|(w, _)| *w).collect();
     names.sort_by_key(|w| std::cmp::Reverse(w.len()));
     py_regex(
-        &format!(r"\b({ord})\s+(?:[a-z0-9]+\s+){{0,2}}({})\b", names.join("|")),
+        &format!(
+            r"\b({ord})\s+(?:[a-z0-9]+\s+){{0,2}}({})\b",
+            names.join("|")
+        ),
         false,
     )
 });
@@ -240,12 +250,20 @@ fn best_named<'a>(pool: &[&'a Element], goal_words: &HashSet<String>) -> Option<
 }
 
 fn ordinal_target<'a>(pool: &[&'a Element], idx: i64) -> Option<&'a Element> {
-    let mut ordered: Vec<&Element> = pool.iter().copied().filter(|e| !e.name.is_empty()).collect();
+    let mut ordered: Vec<&Element> = pool
+        .iter()
+        .copied()
+        .filter(|e| !e.name.is_empty())
+        .collect();
     if ordered.is_empty() {
         return None;
     }
     sort_by_reading(&mut ordered);
-    let i = if idx >= 0 { idx } else { ordered.len() as i64 - 1 };
+    let i = if idx >= 0 {
+        idx
+    } else {
+        ordered.len() as i64 - 1
+    };
     if 0 <= i && (i as usize) < ordered.len() {
         Some(ordered[i as usize])
     } else {
@@ -254,11 +272,40 @@ fn ordinal_target<'a>(pool: &[&'a Element], idx: i64) -> Option<&'a Element> {
 }
 
 const PURE_DONE: &[&str] = &[
-    "done", "finish", "finished", "complete", "completed", "task", "up", "all", "set", "nothing",
-    "else", "wrap", "are", "now", "im", "the", "is", "it", "this", "that", "you", "your", "we", "i",
+    "done",
+    "finish",
+    "finished",
+    "complete",
+    "completed",
+    "task",
+    "up",
+    "all",
+    "set",
+    "nothing",
+    "else",
+    "wrap",
+    "are",
+    "now",
+    "im",
+    "the",
+    "is",
+    "it",
+    "this",
+    "that",
+    "you",
+    "your",
+    "we",
+    "i",
     "am",
 ];
-const DONE_MARKERS: &[&str] = &["done", "finish", "finished", "complete", "completed", "wrap"];
+const DONE_MARKERS: &[&str] = &[
+    "done",
+    "finish",
+    "finished",
+    "complete",
+    "completed",
+    "wrap",
+];
 const PURE_WAIT: &[&str] = &[
     "wait", "pause", "hold", "on", "briefly", "moment", "second", "bit", "a", "the", "for",
     "please",
@@ -314,15 +361,11 @@ fn drag_pair(els: &[&Element], goal_l: &str) -> Option<Action> {
     let mut dst: Option<&Element> = None;
     for el in els {
         let nw = words(&el.name);
-        if !nw.is_empty()
-            && subset(&nw, &sw)
-            && src.is_none_or(|s| nw.len() > words(&s.name).len())
+        if !nw.is_empty() && subset(&nw, &sw) && src.is_none_or(|s| nw.len() > words(&s.name).len())
         {
             src = Some(el);
         }
-        if !nw.is_empty()
-            && subset(&nw, &dw)
-            && dst.is_none_or(|d| nw.len() > words(&d.name).len())
+        if !nw.is_empty() && subset(&nw, &dw) && dst.is_none_or(|d| nw.len() > words(&d.name).len())
         {
             dst = Some(el);
         }
@@ -341,14 +384,38 @@ fn keys(list: &[&str]) -> Vec<String> {
 static SHORTCUT_RES: LazyLock<Vec<(Regex, Vec<String>)>> = LazyLock::new(|| {
     let r = |p: &str, k: &[&str]| (py_regex(p, false), keys(k));
     vec![
-        r(r"^(?:please\s+)?undo\s+(?:the\s+)?last\s+action(?:\s+now)?$", &["cmd", "z"]),
-        r(r"^(?:please\s+)?copy\s+(?:the\s+)?selection(?:\s+now)?$", &["cmd", "c"]),
-        r(r"^(?:please\s+)?paste\s+(?:the\s+)?clipboard(?:\s+now)?$", &["cmd", "v"]),
-        r(r"^(?:please\s+)?select\s+all(?:\s+text)?(?:\s+now)?$", &["cmd", "a"]),
-        r(r"^(?:please\s+)?open\s+spotlight(?:\s+search)?(?:\s+now)?$", &["cmd", "space"]),
-        r(r"^(?:please\s+)?quit\s+(?:the\s+)?app(?:\s+now)?$", &["cmd", "q"]),
-        r(r"^(?:please\s+)?find\s+on\s+page(?:\s+now)?$", &["cmd", "f"]),
-        r(r"^(?:please\s+)?save\s+with\s+keyboard(?:\s+now)?$", &["cmd", "s"]),
+        r(
+            r"^(?:please\s+)?undo\s+(?:the\s+)?last\s+action(?:\s+now)?$",
+            &["cmd", "z"],
+        ),
+        r(
+            r"^(?:please\s+)?copy\s+(?:the\s+)?selection(?:\s+now)?$",
+            &["cmd", "c"],
+        ),
+        r(
+            r"^(?:please\s+)?paste\s+(?:the\s+)?clipboard(?:\s+now)?$",
+            &["cmd", "v"],
+        ),
+        r(
+            r"^(?:please\s+)?select\s+all(?:\s+text)?(?:\s+now)?$",
+            &["cmd", "a"],
+        ),
+        r(
+            r"^(?:please\s+)?open\s+spotlight(?:\s+search)?(?:\s+now)?$",
+            &["cmd", "space"],
+        ),
+        r(
+            r"^(?:please\s+)?quit\s+(?:the\s+)?app(?:\s+now)?$",
+            &["cmd", "q"],
+        ),
+        r(
+            r"^(?:please\s+)?find\s+on\s+page(?:\s+now)?$",
+            &["cmd", "f"],
+        ),
+        r(
+            r"^(?:please\s+)?save\s+with\s+keyboard(?:\s+now)?$",
+            &["cmd", "s"],
+        ),
         r(r"^(?:please\s+)?print(?:\s+now)?$", &["cmd", "p"]),
         r(r"^(?:please\s+)?page\s+down(?:\s+now)?$", &["pagedown"]),
         r(r"^(?:please\s+)?page\s+up(?:\s+now)?$", &["pageup"]),
@@ -360,12 +427,22 @@ static SESSION_SHORTCUT_RES: LazyLock<Vec<(Regex, Vec<String>)>> = LazyLock::new
     let r = |p: &str, k: &[&str]| (py_regex(p, false), keys(k));
     vec![
         r(r"^(?:please\s+)?new\s+tab(?:\s+now)?$", &["cmd", "t"]),
-        r(r"^(?:please\s+)?close\s+(?:(?:the|this|current)\s+)?tab(?:\s+now)?$", &["cmd", "w"]),
-        r(r"^(?:please\s+)?(?:go\s+)?back(?:\s+now)?$", &["alt", "left"]),
+        r(
+            r"^(?:please\s+)?close\s+(?:(?:the|this|current)\s+)?tab(?:\s+now)?$",
+            &["cmd", "w"],
+        ),
+        r(
+            r"^(?:please\s+)?(?:go\s+)?back(?:\s+now)?$",
+            &["alt", "left"],
+        ),
     ]
 });
-static SCROLLING_PAGE_RE: LazyLock<Regex> =
-    LazyLock::new(|| py_regex(r"\bscroll\s+(?:(?:the\s+)?(?:page|list)\s+)?(?:up|down)\b", false));
+static SCROLLING_PAGE_RE: LazyLock<Regex> = LazyLock::new(|| {
+    py_regex(
+        r"\bscroll\s+(?:(?:the\s+)?(?:page|list)\s+)?(?:up|down)\b",
+        false,
+    )
+});
 
 /// `shortcut_keys(goal_l, obs)`; `in_browser` is `obs.browser is not None`.
 pub fn shortcut_keys(goal_l: &str, in_browser: bool) -> Option<Vec<String>> {
@@ -389,14 +466,20 @@ pub fn shortcut_keys(goal_l: &str, in_browser: bool) -> Option<Vec<String>> {
 }
 
 static CHORD_RE: LazyLock<Regex> = LazyLock::new(|| {
-    py_regex(r"\b(?:press|hit)\s+(?:the\s+)?([\w +]+?)\s*(?:keys?|arrow keys?)?$", false)
+    py_regex(
+        r"\b(?:press|hit)\s+(?:the\s+)?([\w +]+?)\s*(?:keys?|arrow keys?)?$",
+        false,
+    )
 });
 static PLUS_RE: LazyLock<Regex> = LazyLock::new(|| py_regex(r"\s*\+\s*", false));
 static FKEY_RE: LazyLock<Regex> = LazyLock::new(|| py_regex_full(r"f\d{1,2}", false));
 static NEW_TAB_FULL: LazyLock<Regex> =
     LazyLock::new(|| py_regex_full(r"(?:please\s+)?(?:open\s+)?(?:a\s+)?new\s+tab", false));
 static CLOSE_TAB_FULL: LazyLock<Regex> = LazyLock::new(|| {
-    py_regex_full(r"(?:please\s+)?close\s+(?:(?:the|this|current)\s+)?tab", false)
+    py_regex_full(
+        r"(?:please\s+)?close\s+(?:(?:the|this|current)\s+)?tab",
+        false,
+    )
 });
 static BACK_FULL: LazyLock<Regex> = LazyLock::new(|| {
     py_regex_full(
@@ -404,17 +487,25 @@ static BACK_FULL: LazyLock<Regex> = LazyLock::new(|| {
         false,
     )
 });
-static QUOTES_RE: LazyLock<Regex> =
-    LazyLock::new(|| py_regex("\"[^\"]*\"|“[^”]*”|'[^']*'", false));
+static QUOTES_RE: LazyLock<Regex> = LazyLock::new(|| py_regex("\"[^\"]*\"|“[^”]*”|'[^']*'", false));
 static CLICK_INTO_RE: LazyLock<Regex> = LazyLock::new(|| py_regex(r"\bclick (?:in)?to\b", false));
 static SEMANTIC_RE: LazyLock<Regex> = LazyLock::new(|| {
-    py_regex_match(r"^(?:please\s+)?(save|confirm|cancel|send|open|delete|undo)\b", false)
+    py_regex_match(
+        r"^(?:please\s+)?(save|confirm|cancel|send|open|delete|undo)\b",
+        false,
+    )
 });
 static SCROLL_RE: LazyLock<Regex> = LazyLock::new(|| {
-    py_regex(r"\bscroll\s+(?:(?:the\s+)?(?:page|list)\s+)?(up|down|left|right)\b", false)
+    py_regex(
+        r"\bscroll\s+(?:(?:the\s+)?(?:page|list)\s+)?(up|down|left|right)\b",
+        false,
+    )
 });
 static PAGE_RE: LazyLock<Regex> = LazyLock::new(|| {
-    py_regex(r"\b(?:scroll(?:\s+(?:the\s+)?(?:page|list))?|page|go)\s+(up|down)\b", false)
+    py_regex(
+        r"\b(?:scroll(?:\s+(?:the\s+)?(?:page|list))?|page|go)\s+(up|down)\b",
+        false,
+    )
 });
 static NEW_TAB_RE: LazyLock<Regex> = LazyLock::new(|| py_regex(r"\bnew tab\b", false));
 static CLOSE_TAB_RE: LazyLock<Regex> =
@@ -425,25 +516,71 @@ static FORWARD_RE: LazyLock<Regex> =
 static REFRESH_RE: LazyLock<Regex> = LazyLock::new(|| py_regex(r"\b(?:refresh|reload)\b", false));
 
 const SAVE_NAMES: &[&str] = &[
-    "Save", "Save…", "Save Document", "Save File", "Done", "Apply", "Keep", "Save As…",
-    "Save Changes", "✓ Save",
+    "Save",
+    "Save…",
+    "Save Document",
+    "Save File",
+    "Done",
+    "Apply",
+    "Keep",
+    "Save As…",
+    "Save Changes",
+    "✓ Save",
 ];
 const CANCEL_NAMES: &[&str] = &[
-    "Cancel", "Close", "Dismiss", "No", "Don't Save", "Discard", "Not Now", "Later", "Skip", "Back",
+    "Cancel",
+    "Close",
+    "Dismiss",
+    "No",
+    "Don't Save",
+    "Discard",
+    "Not Now",
+    "Later",
+    "Skip",
+    "Back",
 ];
 const OK_NAMES: &[&str] = &[
-    "OK", "Confirm", "Yes", "Continue", "Accept", "Allow", "Agree", "Next", "Proceed", "Got It",
+    "OK",
+    "Confirm",
+    "Yes",
+    "Continue",
+    "Accept",
+    "Allow",
+    "Agree",
+    "Next",
+    "Proceed",
+    "Got It",
     "I Understand",
 ];
 const OPEN_NAMES: &[&str] = &[
-    "Open…", "Open File", "Browse…", "Choose File", "Import…", "Upload", "Attach", "Select File",
+    "Open…",
+    "Open File",
+    "Browse…",
+    "Choose File",
+    "Import…",
+    "Upload",
+    "Attach",
+    "Select File",
     "Add Files",
 ];
 const SEND_NAMES: &[&str] = &[
-    "Send", "Submit", "Post", "Share", "Publish", "Reply", "Send Message", "Submit Form",
+    "Send",
+    "Submit",
+    "Post",
+    "Share",
+    "Publish",
+    "Reply",
+    "Send Message",
+    "Submit Form",
 ];
 const DELETE_NAMES: &[&str] = &[
-    "Delete", "Remove", "Trash", "Move to Trash", "Erase", "Delete Permanently", "Remove Item",
+    "Delete",
+    "Remove",
+    "Trash",
+    "Move to Trash",
+    "Erase",
+    "Delete Permanently",
+    "Remove Item",
 ];
 const UNDO_NAMES: &[&str] = &["Undo", "Revert", "Restore", "Back", "Go Back"];
 
@@ -457,8 +594,22 @@ fn is_mod(k: &str) -> bool {
 fn is_named_key(k: &str) -> bool {
     matches!(
         k,
-        "enter" | "return" | "tab" | "space" | "escape" | "esc" | "backspace" | "delete" | "up"
-            | "down" | "left" | "right" | "home" | "end" | "pageup" | "pagedown"
+        "enter"
+            | "return"
+            | "tab"
+            | "space"
+            | "escape"
+            | "esc"
+            | "backspace"
+            | "delete"
+            | "up"
+            | "down"
+            | "left"
+            | "right"
+            | "home"
+            | "end"
+            | "pageup"
+            | "pagedown"
     )
 }
 
@@ -478,12 +629,19 @@ fn emit(el: &Element, verb: Verb, goal: &str, goal_l: &str) -> Action {
     let role = role.as_str();
     let mut v = verb;
     if v == Verb::Check {
-        v = if has(CHECKABLE_ROLES, role) { Verb::Check } else { Verb::Click };
+        v = if has(CHECKABLE_ROLES, role) {
+            Verb::Check
+        } else {
+            Verb::Click
+        };
     }
     if v == Verb::Select && !has(SELECT_ROLES, role) {
         v = Verb::Click;
     }
-    if v == Verb::Click && CLICK_INTO_RE.is_match(goal_l) && (has(TEXT_ROLES, role) || el.editable()) {
+    if v == Verb::Click
+        && CLICK_INTO_RE.is_match(goal_l)
+        && (has(TEXT_ROLES, role) || el.editable())
+    {
         v = Verb::Focus;
     }
     if matches!(v, Verb::DoubleClick | Verb::RightClick)
@@ -493,7 +651,9 @@ fn emit(el: &Element, verb: Verb, goal: &str, goal_l: &str) -> Action {
     }
     match v {
         Verb::Focus => Action::on(Verb::Focus, el),
-        Verb::Select => Action::on(Verb::Select, el).with_text(infer::goal_select_arg(goal, &el.name)),
+        Verb::Select => {
+            Action::on(Verb::Select, el).with_text(infer::goal_select_arg(goal, &el.name))
+        }
         Verb::Type => Action::on(Verb::Type, el).with_text(infer::goal_text_arg(goal)),
         Verb::Drag => Action::on(Verb::Drag, el).with_text(actions::DST),
         v => Action::on(v, el),
@@ -542,12 +702,13 @@ pub fn resolve(obs: &Observation, goal: &str) -> Option<Action> {
             .map(str::to_owned)
             .collect();
         if !raw.is_empty()
-            && raw.iter().all(|k| {
-                is_mod(k) || is_named_key(k) || pystr::len(k) == 1 || FKEY_RE.is_match(k)
-            })
+            && raw
+                .iter()
+                .all(|k| is_mod(k) || is_named_key(k) || pystr::len(k) == 1 || FKEY_RE.is_match(k))
         {
             return Some(
-                Action::new(Verb::Keypress).with_keys(raw.iter().map(|k| canonical_key(k)).collect()),
+                Action::new(Verb::Keypress)
+                    .with_keys(raw.iter().map(|k| canonical_key(k)).collect()),
             );
         }
     }

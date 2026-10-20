@@ -17,6 +17,8 @@ script = ["dep:rquickjs"]
 
 [dependencies]
 cua-driver-contract = { path = "../cua-driver-contract" }
+# Dove: the Local Grounder (ROADMAP W9), off unless its weights are installed.
+dove-grounder = { path = "../dove-grounder" }
 tokio = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

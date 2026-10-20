@@ -1,0 +1,909 @@
+diff --git a/rust/Cargo.toml b/rust/Cargo.toml
+index 02022cd..a0a823f 100644
+--- a/rust/Cargo.toml
++++ b/rust/Cargo.toml
+@@ -17,6 +17,7 @@ members = [
+     "crates/cursor-theme-cli",
+     "crates/pip-preview",
+     "crates/cua-telemetry",
++    "crates/dove-grounder",
+ ]
+ 
+ [workspace.package]
+diff --git a/rust/crates/cua-driver-core/Cargo.toml b/rust/crates/cua-driver-core/Cargo.toml
+index de9e618..b8b0e57 100644
+--- a/rust/crates/cua-driver-core/Cargo.toml
++++ b/rust/crates/cua-driver-core/Cargo.toml
+@@ -17,6 +17,8 @@ script = ["dep:rquickjs"]
+ 
+ [dependencies]
+ cua-driver-contract = { path = "../cua-driver-contract" }
++# Dove: the Local Grounder (ROADMAP W9), off unless its weights are installed.
++dove-grounder = { path = "../dove-grounder" }
+ tokio = { workspace = true }
+ serde = { workspace = true }
+ serde_json = { workspace = true }
+diff --git a/rust/crates/cua-driver-core/src/authorization.rs b/rust/crates/cua-driver-core/src/authorization.rs
+index 8e4ed0d..278c5e0 100644
+--- a/rust/crates/cua-driver-core/src/authorization.rs
++++ b/rust/crates/cua-driver-core/src/authorization.rs
+@@ -895,6 +895,7 @@ pub fn advertised_risk_for(tool: &str) -> RiskAssessment {
+         | "hotkey"
+         | "set_value"
+         | "run_steps"
++        | "act"
+         | "run_script"
+         | "invoke_menu"
+         | "launch_app"
+diff --git a/rust/crates/cua-driver-core/src/batch_tools.rs b/rust/crates/cua-driver-core/src/batch_tools.rs
+index 286d429..6266504 100644
+--- a/rust/crates/cua-driver-core/src/batch_tools.rs
++++ b/rust/crates/cua-driver-core/src/batch_tools.rs
+@@ -134,7 +134,7 @@ pub const MAX_EXPECTS: usize = 4;
+ /// client call timeouts.
+ pub const MAX_BATCH_MS: u64 = 60_000;
+ /// Fields a step object may carry besides one action.
+-const STEP_KEYS: &[&str] = &["tool", "args", "wait_for", "expect", "timeout_ms"];
++const STEP_KEYS: &[&str] = &["tool", "args", "wait_for", "expect", "timeout_ms", "intent"];
+ const OBSERVE_TOOL: &str = "get_window_state";
+ /// Batch-level fields that name the window every step inherits.
+ const BATCH_WINDOW_KEYS: &[&str] = &["pid", "window_id", "app", "window"];
+@@ -156,7 +156,7 @@ static DEF: OnceLock<ToolDef> = OnceLock::new();
+ #[async_trait]
+ impl Tool for RunStepsTool {
+     fn def(&self) -> &ToolDef {
+-        DEF.get_or_init(|| ToolDef {
++        DEF.get_or_init(|| with_intent_note(ToolDef {
+             name: RUN_STEPS_TOOL.into(),
+             description: "The default way to act: run one or more action tools in ONE call, in \
+                 order, stop at the first failure, and (with `observe`) get what changed in the \
+@@ -282,7 +282,7 @@ impl Tool for RunStepsTool {
+             destructive: true,
+             idempotent: false,
+             open_world: true,
+-        })
++        }))
+     }
+ 
+     async fn invoke(&self, args: Value) -> ToolResult {
+@@ -302,6 +302,18 @@ impl Tool for RunStepsTool {
+     }
+ }
+ 
++/// Dove: with the local grounder installed, describe the `intent` step.
++fn with_intent_note(mut def: ToolDef) -> ToolDef {
++    if crate::grounder_tools::enabled() {
++        def.description.push_str(
++            "\n\nINTENT STEPS: `{\"intent\": \"click Save\"}` lets a local model pick the \
++             element and action in the step's window (0 LLM tokens) and act through its token; \
++             the step fails with the model's best candidate rows when it is not confident.",
++        );
++    }
++    def
++}
++
+ /// One action of a step.
+ struct Action {
+     tool: &'static str,
+@@ -317,6 +329,8 @@ struct Action {
+ 
+ struct Step {
+     action: Option<Action>,
++    /// Dove: an `{"intent": ...}` step, grounded by `grounder_tools`.
++    intent: Option<String>,
+     wait_for: Option<Check>,
+     expect: Vec<Check>,
+     /// A read-only tool placed between actions. It cannot change what later
+@@ -328,6 +342,7 @@ impl Step {
+     fn label(&self) -> &'static str {
+         match (&self.action, self.skipped_read) {
+             (Some(action), _) => action.tool,
++            (None, _) if self.intent.is_some() => "intent",
+             (None, Some(read)) => read,
+             (None, None) if self.wait_for.is_some() => "wait_for",
+             (None, None) => "expect",
+@@ -532,6 +547,7 @@ impl Plan {
+                 }
+                 steps.push(Step {
+                     action: None,
++                    intent: None,
+                     wait_for: None,
+                     expect: Vec::new(),
+                     skipped_read: Some(tool),
+@@ -559,6 +575,7 @@ impl Plan {
+                 .action
+                 .as_ref()
+                 .is_some_and(|action| !action.element.is_empty() && action.window.is_empty())
++                || step.intent.is_some()
+                 || step
+                     .wait_for
+                     .iter()
+@@ -896,6 +913,36 @@ async fn run_step(
+         }
+     }
+ 
++    if let Some(intent) = &step.intent {
++        let window = match locator.window(context).await {
++            Ok(window) => window,
++            Err(miss) => {
++                return failure(index, label, Phase::Find, miss.code, miss.message, report)
++            }
++        };
++        let grounded = crate::grounder_tools::ground_and_act(
++            registry,
++            window.pid,
++            window.window_id,
++            intent,
++            locator.session(),
++        )
++        .await;
++        *last_window = Some(window);
++        report["grounding"] = grounded.report;
++        if !grounded.ok {
++            return failure(
++                index,
++                label,
++                Phase::Action,
++                grounded.code,
++                grounded.line,
++                report,
++            );
++        }
++        notes.push(grounded.line);
++    }
++
+     if let Some(action) = step.action {
+         let Action {
+             tool,
+@@ -1629,9 +1676,34 @@ fn parse_step(
+             .map_err(|message| PlanError::step(index, format!("expect: {message}")))?],
+     };
+ 
++    let intent = match object.get("intent") {
++        None | Some(Value::Null) => None,
++        Some(Value::String(text)) if !text.trim().is_empty() => {
++            if name.is_some() {
++                return Err(PlanError::step(
++                    index,
++                    "an `intent` step names no tool: the local grounder picks the action",
++                ));
++            }
++            if !crate::grounder_tools::enabled() {
++                return Err(PlanError::step(
++                    index,
++                    "`intent` steps need the local grounder, which is off: its weights are not \
++                     installed (DOVE_DRIVER_GROUNDER_MODEL)",
++                ));
++            }
++            Some(text.trim().to_owned())
++        }
++        Some(_) => {
++            return Err(PlanError::step(
++                index,
++                "`intent` must be a non-empty string",
++            ))
++        }
++    };
+     let action = match name {
+         None => {
+-            if wait_for.is_none() && expect.is_empty() {
++            if wait_for.is_none() && expect.is_empty() && intent.is_none() {
+                 return Err(PlanError::step(
+                     index,
+                     "empty step: give an action ({tool, args} or {<tool>: args}) or a wait_for/expect check",
+@@ -1651,6 +1723,7 @@ fn parse_step(
+     };
+     Ok(Step {
+         action,
++        intent,
+         wait_for,
+         expect,
+         skipped_read: None,
+diff --git a/rust/crates/cua-driver-core/src/batch_tools/locate.rs b/rust/crates/cua-driver-core/src/batch_tools/locate.rs
+index 361cbf5..e2d902d 100644
+--- a/rust/crates/cua-driver-core/src/batch_tools/locate.rs
++++ b/rust/crates/cua-driver-core/src/batch_tools/locate.rs
+@@ -472,6 +472,11 @@ impl<'a> Locator<'a> {
+         self
+     }
+ 
++    /// The batch's session, for calls made outside this locator.
++    pub fn session(&self) -> Option<&str> {
++        self.session.as_deref()
++    }
++
+     fn with_session(&self, mut args: Value) -> Value {
+         if let (Some(session), Some(object)) = (&self.session, args.as_object_mut()) {
+             object.insert("session".to_owned(), Value::String(session.clone()));
+diff --git a/rust/crates/cua-driver-core/src/grounder_tools.rs b/rust/crates/cua-driver-core/src/grounder_tools.rs
+new file mode 100644
+index 0000000..2ad1d8c
+--- /dev/null
++++ b/rust/crates/cua-driver-core/src/grounder_tools.rs
+@@ -0,0 +1,358 @@
++//! Dove: the Local Grounder (`dove-grounder`, ROADMAP W9) as driver tools.
++//!
++//! `act {pid, window_id, intent}` and the `{"intent": ...}` step of
++//! `run_steps` both read the window's snapshot rows, let the grounder pick
++//! one action locally (nexi-cua's resolver, then the NEXI-CUA-1 ranker),
++//! carry it out through the chosen row's element token, and read what
++//! changed. When the grounder abstains they act on nothing and return its
++//! best candidate rows instead.
++//!
++//! Like `run_steps`, every read and action goes through [`ToolRegistry`]
++//! with the caller's session, so it passes the same policy, permission and
++//! recording checks as a direct call. The grounder only exists when its
++//! weights are installed (`DOVE_DRIVER_GROUNDER_MODEL`); `act` is not
++//! registered otherwise.
++
++use std::sync::OnceLock;
++use std::time::Duration;
++
++use async_trait::async_trait;
++use dove_grounder::act::{self, Plan};
++use dove_grounder::service::Grounder;
++use serde_json::{json, Map, Value};
++
++use crate::{
++    protocol::{Content, ToolResult},
++    recording_tools::ReplayRegistrySlot,
++    tool::{Tool, ToolDef, ToolRegistry},
++};
++
++pub const ACT_TOOL: &str = "act";
++/// Rows the grounder reads: the same budget as a plain get_window_state, so
++/// its read is also the baseline the caller's next `since:"latest"` diffs.
++const READ_MAX_ELEMENTS: usize = crate::window_state_view::DEFAULT_MAX_ELEMENTS;
++/// Longest tree_diff text a result carries.
++const DIFF_TEXT_LIMIT: usize = 2_000;
++
++/// Whether the grounder's weights are installed.
++pub fn enabled() -> bool {
++    Grounder::from_env().is_some()
++}
++
++/// What a grounded intent did.
++pub(crate) struct Grounded {
++    pub ok: bool,
++    /// Stable reason when not ok: grounder_off, read_failed, abstained,
++    /// action_failed.
++    pub code: &'static str,
++    /// One line for the text result.
++    pub line: String,
++    pub report: Value,
++}
++
++impl Grounded {
++    fn failed(code: &'static str, message: String, mut report: Value) -> Self {
++        report["ok"] = json!(false);
++        report["code"] = json!(code);
++        report["message"] = json!(message);
++        Self {
++            ok: false,
++            code,
++            line: message,
++            report,
++        }
++    }
++}
++
++fn with_session(mut args: Value, session: Option<&str>) -> Value {
++    if let Some(session) = session {
++        args["session"] = json!(session);
++    }
++    args
++}
++
++fn first_text(result: &ToolResult) -> String {
++    let text = result
++        .content
++        .iter()
++        .find_map(|content| match content {
++            Content::Text { text, .. } => Some(text.trim()),
++            _ => None,
++        })
++        .unwrap_or("failed");
++    text.lines()
++        .next()
++        .unwrap_or(text)
++        .chars()
++        .take(300)
++        .collect()
++}
++
++/// Ground `intent` in window `pid`/`window_id` and act on it.
++pub(crate) async fn ground_and_act(
++    registry: &ToolRegistry,
++    pid: i64,
++    window_id: u64,
++    intent: &str,
++    session: Option<&str>,
++) -> Grounded {
++    let mut report = json!({ "intent": intent, "pid": pid, "window_id": window_id });
++    let Some(grounder) = Grounder::from_env() else {
++        return Grounded::failed(
++            "grounder_off",
++            "the local grounder is off: its weights are not installed (DOVE_DRIVER_GROUNDER_MODEL)"
++                .into(),
++            report,
++        );
++    };
++
++    let read = registry
++        .invoke(
++            "get_window_state",
++            with_session(
++                json!({
++                    "pid": pid,
++                    "window_id": window_id,
++                    "tree_format": "elements",
++                    "max_elements": READ_MAX_ELEMENTS,
++                    "include_screenshot": false,
++                }),
++                session,
++            ),
++        )
++        .await;
++    if read.is_error == Some(true) {
++        return Grounded::failed(
++            "read_failed",
++            format!("get_window_state: {}", first_text(&read)),
++            report,
++        );
++    }
++    let rows: Vec<Value> = read
++        .structured_content
++        .as_ref()
++        .and_then(|state| state.get("elements"))
++        .and_then(Value::as_array)
++        .cloned()
++        .unwrap_or_default();
++    let owned_intent = intent.to_owned();
++    let grounding =
++        match tokio::task::spawn_blocking(move || act::ground(&grounder, &rows, &owned_intent))
++            .await
++        {
++            Ok(grounding) => grounding,
++            Err(error) => {
++                return Grounded::failed(
++                    "grounder_failed",
++                    format!("the grounder stopped: {error}"),
++                    report,
++                )
++            }
++        };
++    let decision = &grounding.decision;
++    report["decision"] = json!({
++        "action": decision.summary(),
++        "decided_by": format!("{:?}", decision.decided_by).to_lowercase(),
++        "probability": (decision.probability * 1000.0).round() / 1000.0,
++        "confidence": (decision.confidence * 1000.0).round() / 1000.0,
++        "latency_ms": (decision.latency_ms * 10.0).round() / 10.0,
++    });
++    if let Some(target) = &grounding.target {
++        report["target"] = target.clone();
++    }
++    let summary = grounding.summary();
++
++    let acted = match grounding.plan {
++        Plan::Abstain { reason } => {
++            report["candidates"] = Value::Array(grounding.candidates);
++            report["abstained"] = json!(true);
++            return Grounded::failed(
++                "abstained",
++                format!(
++                    "the grounder abstained on \"{intent}\": {reason}; nothing was done. \
++                     Its best candidates are in `candidates` (act on one by element_token)"
++                ),
++                report,
++            );
++        }
++        Plan::Done => format!("{summary}: nothing to do"),
++        Plan::Wait { ms } => {
++            tokio::time::sleep(Duration::from_millis(ms)).await;
++            format!("{summary}: waited {ms} ms")
++        }
++        Plan::Tool { tool, args } => {
++            let mut args = Value::Object(args);
++            args["pid"] = json!(pid);
++            args["window_id"] = json!(window_id);
++            report["tool"] = json!(tool);
++            report["args"] = args.clone();
++            let result = registry.invoke(tool, with_session(args, session)).await;
++            let message = first_text(&result);
++            if result.is_error == Some(true) {
++                return Grounded::failed(
++                    "action_failed",
++                    format!("{summary}, but {tool} failed: {message}"),
++                    report,
++                );
++            }
++            format!("{summary} via {tool}: {message}")
++        }
++    };
++
++    // What changed: a diff against the read the grounder made.
++    let after = registry
++        .invoke(
++            "get_window_state",
++            with_session(
++                json!({
++                    "pid": pid,
++                    "window_id": window_id,
++                    "since": crate::window_state_view::SINCE_LATEST,
++                    "max_elements": READ_MAX_ELEMENTS,
++                    "include_screenshot": false,
++                }),
++                session,
++            ),
++        )
++        .await;
++    let mut line = acted;
++    if after.is_error == Some(true) {
++        report["diff"] = json!({ "error": first_text(&after) });
++    } else if let Some(state) = after.structured_content.as_ref() {
++        let status = state
++            .get("since_status")
++            .and_then(Value::as_str)
++            .unwrap_or("full_read");
++        let mut diff = Map::new();
++        diff.insert("status".into(), json!(status));
++        if let Some(counts) = state.get("diff_counts") {
++            diff.insert("counts".into(), counts.clone());
++            line.push_str(&format!(
++                "; changed: {} added, {} changed, {} removed",
++                counts["added"].as_u64().unwrap_or(0),
++                counts["changed"].as_u64().unwrap_or(0),
++                counts["removed"].as_u64().unwrap_or(0)
++            ));
++        } else if status == "no_change" {
++            line.push_str("; no change in the window");
++        }
++        if let Some(text) = state.get("tree_diff").and_then(Value::as_str) {
++            let clipped: String = text.chars().take(DIFF_TEXT_LIMIT).collect();
++            diff.insert("tree_diff".into(), json!(clipped));
++        }
++        if let Some(focus) = state.get("focused_element") {
++            diff.insert("focused_element".into(), focus.clone());
++        }
++        report["diff"] = Value::Object(diff);
++    }
++    report["ok"] = json!(true);
++    report["message"] = json!(line);
++    Grounded {
++        ok: true,
++        code: "ok",
++        line,
++        report,
++    }
++}
++
++/// `act {pid, window_id, intent}`.
++pub struct ActTool {
++    registry: ReplayRegistrySlot,
++}
++
++impl ActTool {
++    pub fn new(registry: ReplayRegistrySlot) -> Self {
++        Self { registry }
++    }
++}
++
++static DEF: OnceLock<ToolDef> = OnceLock::new();
++
++#[async_trait]
++impl Tool for ActTool {
++    fn def(&self) -> &ToolDef {
++        DEF.get_or_init(|| ToolDef {
++            name: ACT_TOOL.into(),
++            description: "Do one explicit sub-goal in a window without choosing the element \
++                yourself: `intent` is a short instruction such as \"click Save\", \"type \
++                'hello' into the search field\", \"check Wrap lines\", \"press ctrl+s\". A \
++                local model (0 LLM tokens) reads the window's elements, picks one action, \
++                does it through that element's token, and returns what it did plus what \
++                changed (`diff`). When it is not confident it abstains, does nothing, and \
++                returns its best candidate rows (element_token, role, label) for you to act \
++                on. Use it for one obvious step; read the window yourself for anything \
++                ambiguous."
++                .into(),
++            input_schema: json!({
++                "type": "object",
++                "required": ["pid", "window_id", "intent"],
++                "properties": {
++                    "pid": {"type": "integer", "description": "Process id of the window's app."},
++                    "window_id": {"type": "integer", "description": "Window to act in (from list_windows or get_window_state)."},
++                    "intent": {"type": "string", "minLength": 1, "description": "One explicit action in plain words, naming its target as the window labels it. Quote text to type."}
++                },
++                "additionalProperties": false
++            }),
++            read_only: false,
++            destructive: true,
++            idempotent: false,
++            open_world: true,
++        })
++    }
++
++    async fn invoke(&self, args: Value) -> ToolResult {
++        let Some(registry) = self.registry.lock().unwrap().upgrade() else {
++            return ToolResult::error("act is not available: registry not initialised yet.");
++        };
++        let pid = args.get("pid").and_then(Value::as_i64);
++        let window_id = args.get("window_id").and_then(Value::as_u64);
++        let intent = args
++            .get("intent")
++            .and_then(Value::as_str)
++            .map(str::trim)
++            .filter(|s| !s.is_empty());
++        let (Some(pid), Some(window_id), Some(intent)) = (pid, window_id, intent) else {
++            return ToolResult::error("act needs `pid`, `window_id` and a non-empty `intent`");
++        };
++        let session = args.get("_public_session_label").and_then(Value::as_str);
++        let grounded = ground_and_act(&registry, pid, window_id, intent, session).await;
++        let text = if grounded.ok {
++            format!("act: {}", grounded.line)
++        } else {
++            let mut text = format!("act ({}): {}", grounded.code, grounded.line);
++            if let Some(candidates) = grounded.report.get("candidates").and_then(Value::as_array) {
++                for c in candidates {
++                    text.push_str(&format!("\n- {}", candidate_line(c)));
++                }
++            }
++            text
++        };
++        // An abstention is an answer, not a failure of the call.
++        let is_error = (!grounded.ok && grounded.code != "abstained").then_some(true);
++        ToolResult {
++            content: vec![Content::text(text)],
++            is_error,
++            structured_content: Some(grounded.report),
++            ..Default::default()
++        }
++    }
++}
++
++/// `p=0.42 click on [12] Button "Save" (s0000002a:12)`.
++pub(crate) fn candidate_line(candidate: &Value) -> String {
++    let p = candidate["p"].as_f64().unwrap_or(0.0);
++    let verb = candidate["verb"].as_str().unwrap_or("?");
++    match candidate.get("row") {
++        Some(row) => format!(
++            "p={p:.2} {verb} on [{}] {} \"{}\" ({})",
++            row["element_index"],
++            row["role"].as_str().unwrap_or(""),
++            row["label"].as_str().unwrap_or(""),
++            row["element_token"].as_str().unwrap_or("no token"),
++        ),
++        None => format!("p={p:.2} {}", candidate["action"].as_str().unwrap_or(verb)),
++    }
++}
++
++#[cfg(test)]
++mod tests;
+diff --git a/rust/crates/cua-driver-core/src/grounder_tools/tests.rs b/rust/crates/cua-driver-core/src/grounder_tools/tests.rs
+new file mode 100644
+index 0000000..89c14fd
+--- /dev/null
++++ b/rust/crates/cua-driver-core/src/grounder_tools/tests.rs
+@@ -0,0 +1,273 @@
++//! `act` and the `run_steps` intent step against a fake form. The grounder
++//! is process-wide and needs its weights, so each test checks whichever
++//! state this process is in: with `DOVE_DRIVER_GROUNDER_MODEL` set, the
++//! intents run end to end; without it, the feature must be off.
++
++use std::sync::{Arc, Mutex};
++
++use async_trait::async_trait;
++use serde_json::{json, Value};
++
++use crate::{
++    batch_tools::{BATCHABLE_TOOLS, RUN_STEPS_TOOL},
++    protocol::{Content, ToolResult},
++    tool::{Tool, ToolDef, ToolRegistry},
++};
++
++#[derive(Default)]
++struct Form {
++    email: String,
++    saved: bool,
++    snapshot: u32,
++    calls: Vec<(String, Value)>,
++}
++
++const ROWS: [(&str, &str); 4] = [
++    ("AXTextField", "Email"),
++    ("AXButton", "Save"),
++    ("AXButton", "Cancel"),
++    ("AXCheckBox", "Remember me"),
++];
++
++struct Fake {
++    def: ToolDef,
++    form: Arc<Mutex<Form>>,
++}
++
++#[async_trait]
++impl Tool for Fake {
++    fn def(&self) -> &ToolDef {
++        &self.def
++    }
++
++    async fn invoke(&self, args: Value) -> ToolResult {
++        let mut form = self.form.lock().unwrap();
++        let name = self.def.name.clone();
++        form.calls.push((name.clone(), args.clone()));
++        match name.as_str() {
++            "get_window_state" => {
++                form.snapshot += 1;
++                let snapshot = form.snapshot;
++                let mut elements = Vec::new();
++                for (offset, (role, label)) in ROWS.iter().enumerate() {
++                    let index = offset + 1;
++                    let mut row = json!({
++                        "element_index": index,
++                        "element_token": format!("s{snapshot:08x}:{index}"),
++                        "role": role,
++                        "depth": 1,
++                        "label": label,
++                        "frame": {"x": 10, "y": 40 * index, "w": 120, "h": 24},
++                    });
++                    if *label == "Email" && !form.email.is_empty() {
++                        row["value"] = json!(form.email);
++                    }
++                    elements.push(row);
++                }
++                let mut state = json!({
++                    "pid": 42,
++                    "window_id": 7,
++                    "snapshot_id": format!("s{snapshot:08x}"),
++                    "elements": elements,
++                    "tree_markdown": "- [1] AXTextField \"Email\"",
++                });
++                if args.get("since").is_some() {
++                    state["since_status"] = json!("diff");
++                    state["diff_counts"] = json!({"added": 0, "changed": 1, "removed": 0});
++                    state["tree_diff"] = json!("~ [1] AXTextField \"Email\"");
++                }
++                ToolResult::text("state").with_structured(state)
++            }
++            "click" | "set_value" => {
++                let token = args["element_token"].as_str().unwrap_or_default();
++                let index: usize = token
++                    .rsplit(':')
++                    .next()
++                    .and_then(|i| i.parse().ok())
++                    .unwrap_or(0);
++                let Some((_, label)) = index.checked_sub(1).and_then(|i| ROWS.get(i)) else {
++                    return ToolResult::error(format!("{name}: unknown element_token {token}"));
++                };
++                match (name.as_str(), *label) {
++                    ("set_value", "Email") => {
++                        form.email = args["value"].as_str().unwrap_or_default().to_owned()
++                    }
++                    ("click", "Save") => form.saved = true,
++                    _ => {}
++                }
++                ToolResult::text(format!("{name} {label} done"))
++            }
++            other => ToolResult::text(format!("{other} done")),
++        }
++    }
++}
++
++struct Harness {
++    registry: Arc<ToolRegistry>,
++    form: Arc<Mutex<Form>>,
++}
++
++impl Harness {
++    fn new() -> Self {
++        let form = Arc::new(Mutex::new(Form::default()));
++        let mut registry = ToolRegistry::new();
++        for name in
++            BATCHABLE_TOOLS
++                .iter()
++                .copied()
++                .chain(["get_window_state", "list_windows", "list_apps"])
++        {
++            registry.register(Box::new(Fake {
++                def: ToolDef {
++                    name: name.into(),
++                    description: "fake".into(),
++                    input_schema: json!({"type": "object"}),
++                    read_only: matches!(name, "get_window_state" | "list_windows" | "list_apps"),
++                    destructive: false,
++                    idempotent: false,
++                    open_world: false,
++                },
++                form: form.clone(),
++            }));
++        }
++        registry.register_session_tools();
++        let registry = Arc::new(registry);
++        registry.init_self_weak();
++        Self { registry, form }
++    }
++
++    fn calls(&self, tool: &str) -> Vec<Value> {
++        self.form
++            .lock()
++            .unwrap()
++            .calls
++            .iter()
++            .filter(|(name, _)| name == tool)
++            .map(|(_, args)| args.clone())
++            .collect()
++    }
++}
++
++fn text(result: &ToolResult) -> String {
++    result
++        .content
++        .iter()
++        .filter_map(|content| match content {
++            Content::Text { text, .. } => Some(text.as_str()),
++            _ => None,
++        })
++        .collect::<Vec<_>>()
++        .join("\n")
++}
++
++#[tokio::test]
++async fn act_is_offered_only_with_weights() {
++    let harness = Harness::new();
++    let offered = harness.registry.get_def(super::ACT_TOOL).is_some();
++    assert_eq!(offered, super::enabled());
++    let run_steps = harness.registry.get_def(RUN_STEPS_TOOL).unwrap();
++    assert_eq!(
++        run_steps.description.contains("INTENT STEPS"),
++        super::enabled()
++    );
++}
++
++#[tokio::test]
++async fn an_intent_step_needs_the_grounder() {
++    if super::enabled() {
++        return;
++    }
++    let harness = Harness::new();
++    let result = harness
++        .registry
++        .invoke(
++            RUN_STEPS_TOOL,
++            json!({"pid": 42, "window_id": 7, "steps": [{"intent": "click Save"}]}),
++        )
++        .await;
++    assert_eq!(result.is_error, Some(true));
++    assert!(
++        text(&result).contains("local grounder, which is off"),
++        "{}",
++        text(&result)
++    );
++    assert!(harness.calls("click").is_empty());
++}
++
++#[tokio::test]
++async fn intent_steps_act_through_element_tokens_and_report_the_diff() {
++    if !super::enabled() {
++        eprintln!("DOVE_DRIVER_GROUNDER_MODEL is not set: skipping");
++        return;
++    }
++    let harness = Harness::new();
++    let result = harness
++        .registry
++        .invoke(
++            RUN_STEPS_TOOL,
++            json!({
++                "pid": 42,
++                "window_id": 7,
++                "steps": [
++                    {"intent": "type \"a@example.com\" into the Email field"},
++                    {"intent": "click Save"}
++                ]
++            }),
++        )
++        .await;
++    assert_ne!(result.is_error, Some(true), "{}", text(&result));
++    let set = harness.calls("set_value");
++    assert_eq!(set.len(), 1);
++    assert_eq!(set[0]["value"], json!("a@example.com"));
++    assert!(set[0]["element_token"].as_str().unwrap().ends_with(":1"));
++    let clicks = harness.calls("click");
++    assert_eq!(clicks.len(), 1);
++    assert!(clicks[0]["element_token"].as_str().unwrap().ends_with(":2"));
++    assert!(harness.form.lock().unwrap().saved);
++    let steps = &result.structured_content.as_ref().unwrap()["steps"];
++    assert_eq!(steps[1]["tool"], json!("intent"));
++    assert_eq!(
++        steps[1]["grounding"]["decision"]["decided_by"],
++        json!("resolver")
++    );
++    assert_eq!(steps[1]["grounding"]["diff"]["counts"]["changed"], json!(1));
++}
++
++#[tokio::test]
++async fn act_abstains_with_candidate_rows_and_does_nothing() {
++    if !super::enabled() {
++        eprintln!("DOVE_DRIVER_GROUNDER_MODEL is not set: skipping");
++        return;
++    }
++    let harness = Harness::new();
++    let result = harness
++        .registry
++        .invoke(
++            super::ACT_TOOL,
++            json!({"pid": 42, "window_id": 7, "intent": "click the glowing purple button"}),
++        )
++        .await;
++    assert_eq!(result.is_error, None, "{}", text(&result));
++    let report = result.structured_content.unwrap();
++    assert_eq!(report["code"], json!("abstained"));
++    let candidates = report["candidates"].as_array().unwrap();
++    assert!((1..=5).contains(&candidates.len()), "{candidates:?}");
++    assert!(harness.calls("click").is_empty() && harness.calls("set_value").is_empty());
++
++    let result = harness
++        .registry
++        .invoke(
++            super::ACT_TOOL,
++            json!({"pid": 42, "window_id": 7, "intent": "check Remember me"}),
++        )
++        .await;
++    assert_ne!(result.is_error, Some(true), "{}", text(&result));
++    let clicks = harness.calls("click");
++    assert_eq!(clicks.len(), 1);
++    assert!(clicks[0]["element_token"].as_str().unwrap().ends_with(":4"));
++    assert!(
++        text(&result).contains("changed: 0 added, 1 changed"),
++        "{}",
++        text(&result)
++    );
++}
+diff --git a/rust/crates/cua-driver-core/src/lib.rs b/rust/crates/cua-driver-core/src/lib.rs
+index f341320..0fe0fa5 100644
+--- a/rust/crates/cua-driver-core/src/lib.rs
++++ b/rust/crates/cua-driver-core/src/lib.rs
+@@ -10,6 +10,7 @@
+ // here would churn every adapter's call sites for no runtime gain.
+ #![allow(clippy::result_large_err)]
+ 
++pub mod grounder_tools;
+ pub mod guide;
+ pub mod mcp_skills;
+ pub mod mcp_wire;
+diff --git a/rust/crates/cua-driver-core/src/session_manifest.rs b/rust/crates/cua-driver-core/src/session_manifest.rs
+index 3854661..7e2ea53 100644
+--- a/rust/crates/cua-driver-core/src/session_manifest.rs
++++ b/rust/crates/cua-driver-core/src/session_manifest.rs
+@@ -990,6 +990,7 @@ pub fn load_manifest(path: &Path) -> Result<SessionManifest, String> {
+                 "hotkey",
+                 "set_value",
+                 "run_steps",
++                "act",
+                 "run_script",
+                 "mouse_button_down",
+                 "mouse_button_up",
+diff --git a/rust/crates/cua-driver-core/src/tool.rs b/rust/crates/cua-driver-core/src/tool.rs
+index 5493c6c..1216f25 100644
+--- a/rust/crates/cua-driver-core/src/tool.rs
++++ b/rust/crates/cua-driver-core/src/tool.rs
+@@ -1380,6 +1380,12 @@ impl ToolRegistry {
+         self.register(Box::new(crate::batch_tools::RunStepsTool::new(
+             self.replay_registry.clone(),
+         )));
++        // Dove: the Local Grounder's `act`, offered only when its weights are installed.
++        if crate::grounder_tools::enabled() {
++            self.register(Box::new(crate::grounder_tools::ActTool::new(
++                self.replay_registry.clone(),
++            )));
++        }
+         // On by default; the operator can turn it off (see script_tool).
+         #[cfg(feature = "script")]
+         match crate::script_tool::disabled_by() {
+@@ -2249,6 +2255,7 @@ impl ToolRegistry {
+                     | "get_recording_state"
+                     | "replay_trajectory"
+                     | "run_steps"
++                    | "act"
+                     | "run_script"
+                     | "start_session"
+                     | "end_session"

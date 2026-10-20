@@ -7,18 +7,50 @@ use std::cmp::Ordering;
 use std::collections::HashSet;
 
 pub const CLICKABLE_ROLES: &[&str] = &[
-    "button", "link", "menuitem", "tab", "checkbox", "radio", "toggle", "listitem", "row",
-    "option", "segmented", "tabitem", "imagebutton", "menubutton", "popupbutton", "cell",
-    "treeitem", "heading", "image", "disclosure",
+    "button",
+    "link",
+    "menuitem",
+    "tab",
+    "checkbox",
+    "radio",
+    "toggle",
+    "listitem",
+    "row",
+    "option",
+    "segmented",
+    "tabitem",
+    "imagebutton",
+    "menubutton",
+    "popupbutton",
+    "cell",
+    "treeitem",
+    "heading",
+    "image",
+    "disclosure",
 ];
-pub const DCLICK_ROLES: &[&str] = &["listitem", "treeitem", "row", "cell", "image", "heading", "option"];
+pub const DCLICK_ROLES: &[&str] = &[
+    "listitem", "treeitem", "row", "cell", "image", "heading", "option",
+];
 pub const DRAGGABLE_ROLES: &[&str] = &[
     "listitem", "treeitem", "row", "cell", "image", "tab", "slider", "handle",
 ];
 pub const TEXT_ROLES: &[&str] = &[
-    "textfield", "textarea", "searchfield", "textbox", "combobox", "securetextfield", "webarea",
+    "textfield",
+    "textarea",
+    "searchfield",
+    "textbox",
+    "combobox",
+    "securetextfield",
+    "webarea",
 ];
-pub const SELECT_ROLES: &[&str] = &["combobox", "list", "popupbutton", "select", "dropdown", "radiogroup"];
+pub const SELECT_ROLES: &[&str] = &[
+    "combobox",
+    "list",
+    "popupbutton",
+    "select",
+    "dropdown",
+    "radiogroup",
+];
 pub const CHECKABLE_ROLES: &[&str] = &["checkbox", "radio", "toggle", "switch"];
 pub const SCROLLABLE_ROLES: &[&str] = &["scrollarea", "webarea", "table", "list", "document"];
 
@@ -120,7 +152,8 @@ fn priority_elements(obs: &Observation) -> Vec<&Element> {
             -x,
         )
     };
-    let mut scored: Vec<(Priority, &Element)> = elements.into_iter().map(|el| (score(el), el)).collect();
+    let mut scored: Vec<(Priority, &Element)> =
+        elements.into_iter().map(|el| (score(el), el)).collect();
     // sorted(..., reverse=True) keeps equal keys in their original order.
     scored.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(Ordering::Equal));
     scored.into_iter().map(|(_, el)| el).collect()
@@ -173,7 +206,13 @@ pub fn candidate_actions(obs: &Observation) -> Vec<Action> {
     });
     if let Some(browser) = &obs.browser {
         cands.push(Action::new(Verb::Navigate).with_text(ARG));
-        for verb in [Verb::Back, Verb::Forward, Verb::Refresh, Verb::NewTab, Verb::CloseTab] {
+        for verb in [
+            Verb::Back,
+            Verb::Forward,
+            Verb::Refresh,
+            Verb::NewTab,
+            Verb::CloseTab,
+        ] {
             cands.push(Action::new(verb));
         }
         for tab in browser.tabs.iter().take(8) {

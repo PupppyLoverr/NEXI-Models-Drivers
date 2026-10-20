@@ -472,6 +472,11 @@ impl<'a> Locator<'a> {
         self
     }
 
+    /// The batch's session, for calls made outside this locator.
+    pub fn session(&self) -> Option<&str> {
+        self.session.as_deref()
+    }
+
     fn with_session(&self, mut args: Value) -> Value {
         if let (Some(session), Some(object)) = (&self.session, args.as_object_mut()) {
             object.insert("session".to_owned(), Value::String(session.clone()));

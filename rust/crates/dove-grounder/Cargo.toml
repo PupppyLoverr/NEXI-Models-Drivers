@@ -11,10 +11,14 @@ publish = false
 [dependencies]
 serde = { workspace = true }
 serde_json = { workspace = true }
+anyhow = { workspace = true }
 regex = "1"
 blake2 = "0.10"
 unicase = "2"
 tract-onnx = { version = "0.23.9", default-features = false }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+libc = "0.2"
 
 [dev-dependencies]
 # Golden inputs carry Python floats; parse them bit-exactly.

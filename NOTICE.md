@@ -58,6 +58,31 @@ Feature patches (`scripts/dove/patches/`, applied by the same script):
     (or `DOVE_DRIVER_TELEMETRY_URL`), which has no default; Cua's PostHog endpoint is removed;
   - the update check (startup banner, `check_for_update`, `dove-driver update`) never queries trycua releases, and
     the updater never runs Cua's install script. Dove's plugin manager owns installs and updates.
+- `0003-local-grounder.patch`. The Local Grounder (ROADMAP W9), which is off unless its weights are installed
+  (`DOVE_DRIVER_GROUNDER_MODEL`):
+  - `cua-driver-core` depends on the Dove-only crate `rust/crates/dove-grounder`, which joins the workspace;
+  - new `cua-driver-core/src/grounder_tools.rs`: the `act {pid, window_id, intent}` tool, registered only when the
+    weights exist, with the reviewed risk class, recording exclusion and origin-bypass entry `run_steps` has;
+  - `run_steps` accepts a `{"intent": ...}` step (refused before anything runs when the grounder is off), and its
+    description mentions it only when the grounder is on. Batches without intent steps behave as upstream.
+
+## nexi-cua (Apache-2.0)
+
+`rust/crates/dove-grounder` (the Local Grounder, ROADMAP W9) is a Rust port of the decision policy of **nexi-cua
+v0.4.0**, `nexi-cua/` in this repository's `main` branch (commit `fa3c797`), licensed under the Apache License,
+Version 2.0. The full license text is in [LICENSES/nexi-cua-Apache-2.0.txt](LICENSES/nexi-cua-Apache-2.0.txt).
+nexi-cua ships no NOTICE file of its own.
+
+- Ported, with changes for Rust: `nexi_cua/policy/resolver.py`, `features.py`, `infer.py` (decision, calibrated
+  abstention, margin rescue, argument resolution), `intents.py`, the network of `model.py`, and the types and
+  candidate enumeration of `types.py` and `actions.py`. Each source file names the Python file it ports.
+- `dove-grounder/tests/goldens/` holds observations and labels from nexi-cua's eval fixtures and synthetic
+  generator, with the decisions nexi-cua itself made on them.
+- The NEXI-CUA-1 weights are not in this repository. `dove-grounder/scripts/export_onnx.py` converts nexi-cua's
+  `weights/nexi-cua-1.pt` into the optional asset the driver loads (`DOVE_DRIVER_GROUNDER_MODEL`); that asset is
+  a derivative of the nexi-cua weights and is distributed under Apache-2.0 with this notice.
+
+The rest of dove-driver stays under upstream's MIT license.
 
 Still upstream's: internal crate names (`cua-driver-core` and the rest), `CUA_DRIVER_*` variable names (now with
 `DOVE_DRIVER_*` aliases), protocol identifiers (history schema URNs, the policy `server` name, telemetry event

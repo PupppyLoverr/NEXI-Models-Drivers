@@ -16,13 +16,62 @@ const WORD_BUCKETS: usize = 1024;
 pub const NUMERIC_DIM: usize = 14;
 
 pub const ROLE_VOCAB: [&str; 56] = [
-    "button", "link", "textfield", "securetextfield", "searchfield", "textarea", "combobox",
-    "popupbutton", "select", "checkbox", "radio", "switch", "toggle", "menuitem", "menu",
-    "menubar", "tab", "tabgroup", "list", "listitem", "option", "table", "tree", "row", "cell",
-    "treeitem", "slider", "stepper", "scrollarea", "webarea", "statictext", "heading", "image",
-    "group", "toolbar", "dialog", "sheet", "progress", "scrollbar", "disclosure", "segmented",
-    "radiogroup", "grid", "colorwell", "level", "value", "handle", "popover", "column",
-    "menubutton", "window", "application", "busy", "splitter", "separator", "unknown",
+    "button",
+    "link",
+    "textfield",
+    "securetextfield",
+    "searchfield",
+    "textarea",
+    "combobox",
+    "popupbutton",
+    "select",
+    "checkbox",
+    "radio",
+    "switch",
+    "toggle",
+    "menuitem",
+    "menu",
+    "menubar",
+    "tab",
+    "tabgroup",
+    "list",
+    "listitem",
+    "option",
+    "table",
+    "tree",
+    "row",
+    "cell",
+    "treeitem",
+    "slider",
+    "stepper",
+    "scrollarea",
+    "webarea",
+    "statictext",
+    "heading",
+    "image",
+    "group",
+    "toolbar",
+    "dialog",
+    "sheet",
+    "progress",
+    "scrollbar",
+    "disclosure",
+    "segmented",
+    "radiogroup",
+    "grid",
+    "colorwell",
+    "level",
+    "value",
+    "handle",
+    "popover",
+    "column",
+    "menubutton",
+    "window",
+    "application",
+    "busy",
+    "splitter",
+    "separator",
+    "unknown",
 ];
 
 /// `role_index`: position in ROLE_VOCAB, "unknown" otherwise.
@@ -81,8 +130,8 @@ pub fn text_features(text: &str) -> SparseText {
 }
 
 const FEATURE_STOP: [&str; 16] = [
-    "the", "a", "an", "of", "to", "in", "on", "for", "and", "or", "it", "is", "my", "your",
-    "this", "that",
+    "the", "a", "an", "of", "to", "in", "on", "for", "and", "or", "it", "is", "my", "your", "this",
+    "that",
 ];
 
 static ALNUM: LazyLock<Regex> = LazyLock::new(|| Regex::new("[a-z0-9]+").unwrap());
@@ -141,8 +190,16 @@ pub fn element_numeric(
     goal: &str,
     elements: &[Element],
 ) -> [f32; NUMERIC_DIM] {
-    let sw = if screen_w != 0 { screen_w as f64 } else { 1600.0 };
-    let sh = if screen_h != 0 { screen_h as f64 } else { 1200.0 };
+    let sw = if screen_w != 0 {
+        screen_w as f64
+    } else {
+        1600.0
+    };
+    let sh = if screen_h != 0 {
+        screen_h as f64
+    } else {
+        1200.0
+    };
     let (nx, ny, nw, nh) = match &el.bounds {
         Some(b) => (b.x / sw, b.y / sh, b.w / sw, b.h / sh),
         None => (0.0, 0.0, 0.0, 0.0),

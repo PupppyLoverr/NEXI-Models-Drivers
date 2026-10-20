@@ -81,16 +81,21 @@ fn goal_keys_arg(goal: &str) -> Vec<String> {
 }
 
 static SELECT_SET_TO_RE: LazyLock<Regex> = LazyLock::new(|| {
-    py_regex(r"(?:set|change|switch)\s+(?:the\s+)?(.+?)\s+to\s+(.+)$", true)
+    py_regex(
+        r"(?:set|change|switch)\s+(?:the\s+)?(.+?)\s+to\s+(.+)$",
+        true,
+    )
 });
 static SELECT_CHOOSE_RE: LazyLock<Regex> = LazyLock::new(|| {
-    py_regex(r"(?:choose|pick|select)\s+(.+?)\s+(?:for|in|from|on)\b", true)
+    py_regex(
+        r"(?:choose|pick|select)\s+(.+?)\s+(?:for|in|from|on)\b",
+        true,
+    )
 });
 static SELECT_FALLBACK_RE: LazyLock<Regex> =
     LazyLock::new(|| py_regex("(?:to|as|for)\\s+([\"']?[\\w .-]+[\"']?)\\s*$", true));
-static SELECT_ROLE_SUFFIX_RE: LazyLock<Regex> = LazyLock::new(|| {
-    py_regex(r"(?:\s+(?:dropdown|menu|field|list|option))+\s*$", true)
-});
+static SELECT_ROLE_SUFFIX_RE: LazyLock<Regex> =
+    LazyLock::new(|| py_regex(r"(?:\s+(?:dropdown|menu|field|list|option))+\s*$", true));
 static ARTICLE_RE: LazyLock<Regex> = LazyLock::new(|| py_regex(r"^(?:the|a|an)\s+", true));
 static ROLE_WORD_RE: LazyLock<Regex> =
     LazyLock::new(|| py_regex(r"\b(?:dropdown|menu|field|list|option)\b", true));
@@ -120,11 +125,9 @@ fn extract_goal_select_arg(goal: &str) -> String {
 /// `_goal_select_arg(goal, target_name)`.
 pub fn goal_select_arg(goal: &str, target_name: &str) -> String {
     let arg = extract_goal_select_arg(goal);
-    if !target_name.is_empty()
-        && pystr::casefold_eq(&arg, pystr::strip(target_name))
-    {
-        let name_re = Regex::new(&format!("(?i){}", regex::escape(target_name)))
-            .expect("escaped literal");
+    if !target_name.is_empty() && pystr::casefold_eq(&arg, pystr::strip(target_name)) {
+        let name_re =
+            Regex::new(&format!("(?i){}", regex::escape(target_name))).expect("escaped literal");
         let without_target = name_re.replace_all(goal, " ");
         let without_target = ROLE_WORD_RE.replace_all(&without_target, " ");
         return extract_goal_select_arg(&without_target);
@@ -235,6 +238,14 @@ pub struct Calibration {
     pub abstain_threshold: f64,
 }
 
+impl Calibration {
+    /// For the resolver-only path, which never reads it.
+    pub const NONE: Calibration = Calibration {
+        temperature: 1.0,
+        abstain_threshold: 1.0,
+    };
+}
+
 /// `SemanticPolicy._batch`: the elements the model sees (targets first),
 /// as `(element, index)` pairs, plus each candidate's target index.
 pub fn build_batch(obs: &Observation, cands: &[Action]) -> Batch {
@@ -250,7 +261,11 @@ pub fn build_batch(obs: &Observation, cands: &[Action]) -> Batch {
         .filter(|e| target_ids.contains(e.id.as_str()))
         .collect();
     let selected_ids: HashSet<&str> = selected.iter().map(|e| e.id.as_str()).collect();
-    selected.extend(obs.elements.iter().filter(|e| !selected_ids.contains(e.id.as_str())));
+    selected.extend(
+        obs.elements
+            .iter()
+            .filter(|e| !selected_ids.contains(e.id.as_str())),
+    );
     selected.truncate(MAX_K);
     let mut batch = Batch::default();
     let mut eidx: std::collections::HashMap<&str, i64> = Default::default();
@@ -258,7 +273,9 @@ pub fn build_batch(obs: &Observation, cands: &[Action]) -> Batch {
         // A later element with the same id takes the index (dict assignment).
         eidx.insert(e.id.as_str(), j as i64);
         batch.role_idx.push(features::role_index(&e.role));
-        batch.elem_text.push(features::text_features(&features::element_text(e)));
+        batch
+            .elem_text
+            .push(features::text_features(&features::element_text(e)));
         batch.numeric.push(features::element_numeric(
             e,
             obs.screen_w,
@@ -329,7 +346,8 @@ pub fn decide(
     }
     decision.decided_by = DecidedBy::Ranker;
     let Some(model) = model else {
-        decision.reason = "the resolver could not name a target and the ranker is not loaded".into();
+        decision.reason =
+            "the resolver could not name a target and the ranker is not loaded".into();
         decision.latency_ms = elapsed(t0);
         return decision;
     };
@@ -359,7 +377,11 @@ pub fn decide(
     let mut order: Vec<usize> = (0..m).collect();
     // torch.sort(descending=True) is not stable; ties only occur between
     // identical candidates, whose strings are equal too.
-    order.sort_by(|a, b| probs[*b].partial_cmp(&probs[*a]).unwrap_or(std::cmp::Ordering::Equal));
+    order.sort_by(|a, b| {
+        probs[*b]
+            .partial_cmp(&probs[*a])
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
     decision.top_k = order
         .iter()
         .take(5)
@@ -378,10 +400,7 @@ pub fn decide(
         return decision;
     }
     if conf < calib.abstain_threshold && !rescue {
-        decision.reason = format!(
-            "max correctness {conf:.2} < {:.2}",
-            calib.abstain_threshold
-        );
+        decision.reason = format!("max correctness {conf:.2} < {:.2}", calib.abstain_threshold);
         return decision;
     }
     decision.abstain = false;
@@ -402,9 +421,4 @@ fn softmax(x: &[f32]) -> Vec<f32> {
 /// Decision summary used by the gate: `str(action)` or `ABSTAIN`.
 pub fn decision_key(decision: &Decision) -> String {
     decision.summary()
-}
-
-#[allow(dead_code)]
-fn _unused(_: &[String]) -> usize {
-    ascii_words("").count()
 }

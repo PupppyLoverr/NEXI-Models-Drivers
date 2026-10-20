@@ -8,4 +8,5 @@ DOVE_ONLY_FILES=(
   .gitignore
   scripts/dove
   rust/crates/dove-grounder
+  LICENSES
 )
