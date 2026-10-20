@@ -186,7 +186,10 @@ impl Tool for StartSessionTool {
         if let Some(error) = invalid_cursor_motion(&args) {
             return error;
         }
-        if args.get("vision").is_some_and(|v| !v.is_boolean() && !v.is_null()) {
+        if args
+            .get("vision")
+            .is_some_and(|v| !v.is_boolean() && !v.is_null())
+        {
             return ToolResult::error("start_session.vision must be a boolean.")
                 .with_structured(json!({ "code": "invalid_vision" }));
         }

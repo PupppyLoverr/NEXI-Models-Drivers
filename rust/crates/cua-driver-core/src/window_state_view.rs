@@ -1401,11 +1401,21 @@ mod tests {
         let window = 7104;
         // Session A reads the window.
         let (mut c1, mut s1) = payload("s000000e1", OLD);
-        apply(&opts(json!({"session": "agent-a"})), &ctx(window), &mut c1, &mut s1);
+        apply(
+            &opts(json!({"session": "agent-a"})),
+            &ctx(window),
+            &mut c1,
+            &mut s1,
+        );
         // Session B reads it after a change.
         let edited = OLD.replace("\"a\"", "\"ab\"");
         let (mut c2, mut s2) = payload("s000000e2", &edited);
-        apply(&opts(json!({"session": "agent-b"})), &ctx(window), &mut c2, &mut s2);
+        apply(
+            &opts(json!({"session": "agent-b"})),
+            &ctx(window),
+            &mut c2,
+            &mut s2,
+        );
         // A's "latest" is its own read, so A is told about the change B saw.
         let (mut c3, mut s3) = payload("s000000e3", &edited);
         apply(
@@ -1438,7 +1448,12 @@ mod tests {
         assert_eq!(s5["since_status"], "no_baseline");
         // A caller without a session keeps upstream's per-window latest.
         let (mut c6, mut s6) = payload("s000000e6", &edited);
-        apply(&opts(json!({"since": "latest"})), &ctx(window), &mut c6, &mut s6);
+        apply(
+            &opts(json!({"since": "latest"})),
+            &ctx(window),
+            &mut c6,
+            &mut s6,
+        );
         assert_eq!(s6["since"], "s000000e5");
     }
 

@@ -1318,6 +1318,9 @@ impl Tool for GetWindowStateTool {
         // the lookup we already did, plus the owning process's executable
         // name. Names the surface on the capture-only path, where no UIA tree
         // identifies it.
+        // Dove W1: with the window's size, a tree-first read keeps the
+        // session's last screenshot frame while the window keeps that size.
+        let window_size = Some((f64::from(window.width), f64::from(window.height)));
         let win_geom = Some((
             window.title.clone(),
             window.x,
@@ -1580,12 +1583,13 @@ impl Tool for GetWindowStateTool {
 
                     let (snapshot_id, replaced) = (!observation_only)
                         .then(|| {
-                            state.snapshots.publish_for_session(
+                            state.snapshots.publish_sized_for_session(
                                 pid as i32,
                                 hwnd,
                                 payload,
                                 session_id.as_deref(),
                                 screenshot_scale,
+                                window_size,
                             )
                         })
                         .flatten()
@@ -1687,7 +1691,7 @@ impl Tool for GetWindowStateTool {
                         hwnd,
                         session_id.as_deref(),
                         scale,
-                        None,
+                        window_size,
                     );
                     if refreshed.is_none() {
                         let payload = crate::uia::snapshot::UiaSnapshot::from_nodes(

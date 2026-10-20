@@ -181,7 +181,11 @@ impl ShotPolicy {
             Some(false) => return ShotPolicy::Never,
             None => {}
         }
-        if args.get("include_accessibility_tree").and_then(Value::as_bool) == Some(false) {
+        if args
+            .get("include_accessibility_tree")
+            .and_then(Value::as_bool)
+            == Some(false)
+        {
             ShotPolicy::Always(ShotReason::NoTree)
         } else if marks_requested(args) {
             ShotPolicy::Always(ShotReason::Marks)
@@ -225,7 +229,9 @@ impl ShotFormat {
     pub fn from_args(args: &Value) -> Result<Self, String> {
         match args.get("screenshot_format") {
             None | Some(Value::Null) => Ok(ShotFormat::Jpeg),
-            Some(Value::String(s)) if s.eq_ignore_ascii_case("jpeg") || s.eq_ignore_ascii_case("jpg") => {
+            Some(Value::String(s))
+                if s.eq_ignore_ascii_case("jpeg") || s.eq_ignore_ascii_case("jpg") =>
+            {
                 Ok(ShotFormat::Jpeg)
             }
             Some(Value::String(s)) if s.eq_ignore_ascii_case("png") => Ok(ShotFormat::Png),
@@ -287,9 +293,8 @@ pub fn encode_for_model(png: &[u8], marks: Option<&[Mark]>, format: ShotFormat) 
     }
     let mut out = Vec::new();
     match format {
-        ShotFormat::Png => {
-            DynamicImage::ImageRgba8(img).write_to(&mut std::io::Cursor::new(&mut out), ImageFormat::Png)?
-        }
+        ShotFormat::Png => DynamicImage::ImageRgba8(img)
+            .write_to(&mut std::io::Cursor::new(&mut out), ImageFormat::Png)?,
         ShotFormat::Jpeg => {
             let rgb = DynamicImage::ImageRgba8(img).to_rgb8();
             image::codecs::jpeg::JpegEncoder::new_with_quality(&mut out, JPEG_QUALITY)
@@ -331,7 +336,13 @@ pub fn draw_marks(img: &mut RgbaImage, marks: &[Mark]) {
     if iw == 0 || ih == 0 {
         return;
     }
-    let scale: i64 = if iw.max(ih) >= 900 { 2 } else { 1 };
+    // Glyph pixel size: 7 px digits only on thumbnails, so a label stays
+    // legible on a typical window screenshot after JPEG encoding.
+    let scale: i64 = match iw.max(ih) {
+        ..400 => 1,
+        400..1600 => 2,
+        _ => 3,
+    };
     let mut visible: Vec<Mark> = marks
         .iter()
         .copied()
@@ -425,10 +436,19 @@ mod tests {
     #[test]
     fn explicit_arguments_settle_the_screenshot() {
         let decide = |args: Value| ShotPolicy::from_args(&args).decide(Some(100));
-        assert_eq!(decide(json!({"include_screenshot": true})), Some(ShotReason::Requested));
-        assert_eq!(decide(json!({"screenshot_out_file": "C:/x.png"})), Some(ShotReason::Requested));
+        assert_eq!(
+            decide(json!({"include_screenshot": true})),
+            Some(ShotReason::Requested)
+        );
+        assert_eq!(
+            decide(json!({"screenshot_out_file": "C:/x.png"})),
+            Some(ShotReason::Requested)
+        );
         assert_eq!(decide(json!({"marks": true})), Some(ShotReason::Marks));
-        assert_eq!(decide(json!({"include_accessibility_tree": false})), Some(ShotReason::NoTree));
+        assert_eq!(
+            decide(json!({"include_accessibility_tree": false})),
+            Some(ShotReason::NoTree)
+        );
         // An explicit false wins over marks, vision and a sparse tree.
         let never = ShotPolicy::from_args(&json!({"include_screenshot": false, "marks": true}));
         assert_eq!(never.decide(Some(0)), None);
@@ -445,7 +465,10 @@ mod tests {
         let read = json!({"session": key, "pid": 1, "window_id": 2});
         assert_eq!(ShotPolicy::from_args(&read), ShotPolicy::IfSparse);
         record_start_session(&json!({"session": key, "vision": true}));
-        assert_eq!(ShotPolicy::from_args(&read), ShotPolicy::Always(ShotReason::Vision));
+        assert_eq!(
+            ShotPolicy::from_args(&read),
+            ShotPolicy::Always(ShotReason::Vision)
+        );
         // Another session is unaffected.
         let other = json!({"session": "dove-obs-test-other"});
         assert_eq!(ShotPolicy::from_args(&other), ShotPolicy::IfSparse);
@@ -466,14 +489,19 @@ mod tests {
     fn the_implicit_session_is_used_without_a_label() {
         let args = json!({"_session_id": "dove-obs-test-implicit", "vision": true});
         record_start_session(&args);
-        assert!(session_vision(&json!({"_session_id": "dove-obs-test-implicit"})));
+        assert!(session_vision(
+            &json!({"_session_id": "dove-obs-test-implicit"})
+        ));
         assert!(!session_vision(&json!({"session": "default"})));
     }
 
     #[test]
     fn screenshot_format_defaults_to_jpeg() {
         assert_eq!(ShotFormat::from_args(&json!({})), Ok(ShotFormat::Jpeg));
-        assert_eq!(ShotFormat::from_args(&json!({"screenshot_format": "PNG"})), Ok(ShotFormat::Png));
+        assert_eq!(
+            ShotFormat::from_args(&json!({"screenshot_format": "PNG"})),
+            Ok(ShotFormat::Png)
+        );
         assert!(ShotFormat::from_args(&json!({"screenshot_format": "gif"})).is_err());
     }
 
@@ -494,7 +522,13 @@ mod tests {
         ]);
         assert_eq!(
             marks_from_elements(&elements),
-            vec![Mark { index: 3, x: 10, y: 20, w: 30, h: 12 }]
+            vec![Mark {
+                index: 3,
+                x: 10,
+                y: 20,
+                w: 30,
+                h: 12
+            }]
         );
     }
 
@@ -502,9 +536,21 @@ mod tests {
     fn a_mark_draws_its_outline_and_label_and_skips_the_window_itself() {
         let mut img = RgbaImage::from_pixel(200, 100, Rgba([250, 250, 250, 255]));
         let marks = [
-            Mark { index: 7, x: 40, y: 30, w: 60, h: 30 },
+            Mark {
+                index: 7,
+                x: 40,
+                y: 30,
+                w: 60,
+                h: 30,
+            },
             // Covers the whole image: the window, not a control.
-            Mark { index: 0, x: 0, y: 0, w: 200, h: 100 },
+            Mark {
+                index: 0,
+                x: 0,
+                y: 0,
+                w: 200,
+                h: 100,
+            },
         ];
         draw_marks(&mut img, &marks);
         let [r, g, b] = PALETTE[7 % PALETTE.len()];
@@ -521,7 +567,16 @@ mod tests {
     #[test]
     fn labels_stay_on_the_image() {
         let mut img = RgbaImage::from_pixel(50, 20, Rgba([0, 0, 0, 255]));
-        draw_marks(&mut img, &[Mark { index: 123, x: 45, y: 15, w: 4, h: 4 }]);
+        draw_marks(
+            &mut img,
+            &[Mark {
+                index: 123,
+                x: 45,
+                y: 15,
+                w: 4,
+                h: 4,
+            }],
+        );
         // The 3-digit label (19x9 px) is moved left and up so it is fully
         // visible: its left edge is at 50 - 19 and its top at 20 - 9.
         let [r, g, b] = PALETTE[123 % PALETTE.len()];
@@ -530,9 +585,34 @@ mod tests {
     }
 
     #[test]
+    fn labels_scale_with_the_image() {
+        // A 600 px window gets 2x glyphs: the label for "1" is 14x18 px.
+        let mut img = RgbaImage::from_pixel(600, 400, Rgba([250, 250, 250, 255]));
+        draw_marks(
+            &mut img,
+            &[Mark {
+                index: 1,
+                x: 100,
+                y: 100,
+                w: 80,
+                h: 30,
+            }],
+        );
+        let [r, g, b] = PALETTE[1];
+        assert_eq!(img.get_pixel(113, 117), &Rgba([r, g, b, 255]));
+        assert_eq!(img.get_pixel(114, 117), &Rgba([250, 250, 250, 255]));
+    }
+
+    #[test]
     fn marked_png_round_trips() {
         let png = png(120, 80);
-        let marks = [Mark { index: 12, x: 5, y: 5, w: 40, h: 20 }];
+        let marks = [Mark {
+            index: 12,
+            x: 5,
+            y: 5,
+            w: 40,
+            h: 20,
+        }];
         let out = encode_for_model(&png, Some(&marks), ShotFormat::Png).unwrap();
         let img = image::load_from_memory(&out).unwrap().to_rgba8();
         assert_ne!(img.get_pixel(6, 6), &Rgba([250, 250, 250, 255]));

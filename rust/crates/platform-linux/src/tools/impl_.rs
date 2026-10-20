@@ -1063,12 +1063,16 @@ impl Tool for GetWindowStateTool {
                 other-window or differently-scoped (query/max_elements/max_depth) `since` falls \
                 back to a full read and `since_status` says why. The focused element is not \
                 reported on Linux yet.\n\n\
-                Always returns BOTH the element tree AND a screenshot — ground on \
-                both and cross-check (the tree lies on some surfaces). Choose the \
-                modality at ACTION time: an element ax action \
-                (element_token → accessibility rung) or an element px \
-                action (x,y → pixel rung off this screenshot). capture_mode is \
-                deprecated and ignored. On Wayland, where output capture cannot prove \
+                TREE-FIRST: a read returns the element tree and NO screenshot unless you \
+                pass `include_screenshot:true` or `marks:true`, the session was started \
+                with `start_session {vision:true}`, or the tree has fewer than 5 elements \
+                (canvas, games, remote desktop), in which case the screenshot comes \
+                automatically. Screenshots are window-scoped, downscaled and JPEG unless \
+                `screenshot_format:\"png\"`. `marks:true` draws each row's index N on the \
+                screenshot at its element frame: act on what you see by element_token \
+                `<snapshot_id>:N`. Choose the modality at ACTION time: an element ax \
+                action (element_token → accessibility rung) or an element px action (x,y → \
+                pixel rung off a screenshot). capture_mode is deprecated and ignored. On Wayland, where output capture cannot prove \
                 the requested surface's identity, the truthful tree is returned without \
                 a screenshot and `screenshot_error.code` is \
                 `surface_identity_unproven`.\n\n\
@@ -1108,7 +1112,7 @@ impl Tool for GetWindowStateTool {
                 popup's own AT-SPI toplevel so its menu items get element indices \
                 (then click them by element_token). Omitting window_id while a popup \
                 of this pid is open walks that popup.".into(),
-            input_schema: cua_driver_core::window_state_view::extend_input_schema(json!({"type":"object","required":["pid"],"properties":{
+            input_schema: cua_driver_core::dove_observation::extend_window_state_schema(cua_driver_core::window_state_view::extend_input_schema(json!({"type":"object","required":["pid"],"properties":{
                 "session": cua_driver_core::tool_schema::session_schema(),
                 "pid":{"type":"integer","description":"Process ID that owns the window."},
                 "window_id":{"type":"integer","description":"Native window identifier from list_windows, or the `popup.window_id` a click / right_click result named (an open context menu / popover; its menu items then get element indices). Omitted: the pid's open popup menu when one is mapped, else its focused / active / largest window."},
@@ -1116,7 +1120,7 @@ impl Tool for GetWindowStateTool {
                 "include_accessibility_tree":{"type":"boolean",
                     "description":"Default true — walk the AT-SPI tree and return it (per `tree_format`) alongside the screenshot. Set false to SKIP the AT-SPI walk entirely and return just the screenshot plus window metadata (window_bounds, app_name, window_title) — the capture-only path for a live window preview / picture-in-picture. Mirrors include_screenshot. Setting BOTH include_accessibility_tree:false AND include_screenshot:false is an error (nothing to return)."},
                 "include_screenshot":{"type":"boolean",
-                    "description":"Default true — returns a grounding screenshot alongside the tree. Set false to skip the grab and return tree only (the cheap path for re-indexing before an element ax action)."},
+                    "description":"Omit for tree-first reads: a screenshot comes only when the tree has fewer than 5 elements, `marks` is set, or the session declared vision. true always returns a screenshot (window-scoped, downscaled, JPEG by default); false never does."},
                 "screenshot_out_file":{"type":"string",
                     "description":"When set, write the PNG to this file path (~ expanded) instead of embedding base64 in the response. The structured output carries screenshot_file_path instead."},
                 "query":{"type":"string","description":"Optional case-insensitive substring. Projects both tree_markdown and structured elements to matches plus ancestors while preserving original indices. Compare total_element_count with returned_element_count."},
@@ -1125,7 +1129,7 @@ impl Tool for GetWindowStateTool {
                 "timeout_ms": cua_driver_core::tool_schema::timeout_ms_schema(),
                 "max_dimension":{"type":"integer","minimum":1,"description":"Legacy optional cap on the returned screenshot's long edge. Applied on top of the configured max_image_dimension ceiling when max_image_dimension is omitted."},
                 "max_image_dimension":{"type":"integer","minimum":0,"description":"Per-call long-edge override. This value wins over configured and legacy limits; 0 returns native-resolution PNG bytes. Omit to preserve configured behavior."}
-            },"additionalProperties":false})),
+            },"additionalProperties":false}))),
             read_only: true, destructive: false, idempotent: false, open_world: false,
         })
     }
@@ -1221,7 +1225,14 @@ impl Tool for GetWindowStateTool {
         // pair is the default; `include_screenshot:false` skips the grab and returns
         // tree only (the cheap re-index path before an element ax action). A
         // screenshot_out_file still forces a capture (to disk), regardless.
-        let include_screenshot = args.get("include_screenshot").and_then(|v| v.as_bool());
+        // Dove W1: tree-first screenshot policy, model-facing image format
+        // and set-of-marks labels.
+        let shot_policy = cua_driver_core::dove_observation::ShotPolicy::from_args(&args);
+        let shot_format = match cua_driver_core::dove_observation::ShotFormat::from_args(&args) {
+            Ok(format) => format,
+            Err(refusal) => return ToolResult::error(refusal),
+        };
+        let marks = cua_driver_core::dove_observation::marks_requested(&args);
         // `include_accessibility_tree` (default true) mirrors include_screenshot:
         // set false to SKIP the AT-SPI walk and return just the screenshot +
         // window metadata (the capture-only / preview path).
@@ -1290,6 +1301,9 @@ impl Tool for GetWindowStateTool {
                     height: popup.height,
                 })
             });
+        let window_size = window_meta
+            .as_ref()
+            .map(|w| (f64::from(w.width), f64::from(w.height)));
         let window_matches = if crate::wayland::is_wayland() {
             window_meta.as_ref().is_some_and(|w| w.pid == Some(pid))
                 || crate::wayland::window_was_listed_for_pid(pid, xid)
@@ -1318,8 +1332,7 @@ impl Tool for GetWindowStateTool {
         // cross-checks the (sometimes-lying) tree against the frame. An explicit
         // `include_screenshot:false` skips the grab; an unproven Wayland surface
         // returns the tree with a typed screenshot error instead of unrelated pixels.
-        let should_capture = include_screenshot != Some(false) || screenshot_out_file.is_some();
-        if !want_tree && !should_capture {
+        if !want_tree && shot_policy == cua_driver_core::dove_observation::ShotPolicy::Never {
             return ToolResult::error(
                 "Nothing to return: both include_accessibility_tree:false and \
                  include_screenshot:false. Set at least one to true, or pass \
@@ -1352,6 +1365,15 @@ impl Tool for GetWindowStateTool {
             } else {
                 None
             };
+            // The tree is walked first, so a sparse tree (canvas, game, remote
+            // desktop) can still bring a screenshot with it.
+            let shot_reason = shot_policy.decide(tree_result.as_ref().map(|tree| {
+                tree.nodes
+                    .iter()
+                    .filter(|n| n.element_index.is_some())
+                    .count()
+            }));
+            let should_capture = shot_reason.is_some();
             // Bounds and element indices come from the same captured AT-SPI
             // traversal. Joining two live walks by ordinal mis-associated
             // Chromium controls when its lazy subtree changed between walks.
@@ -1421,12 +1443,13 @@ impl Tool for GetWindowStateTool {
                         };
                         let (w, h) = crate::capture::png_dimensions_pub(&png)?;
                         let original_w = if w < orig_w { Some(orig_w) } else { None };
-                        let (b64, file_path) = if let Some(ref path) = screenshot_out_file {
+                        // The embedded copy is encoded for the model (JPEG,
+                        // marks) once the element frames are known.
+                        let (model_png, file_path) = if let Some(ref path) = screenshot_out_file {
                             std::fs::write(path, &png)?;
                             (None, Some(path.clone()))
                         } else {
-                            use base64::{engine::general_purpose::STANDARD as B64, Engine as _};
-                            (Some(B64.encode(&png)), None)
+                            (Some(png.clone()), None)
                         };
                         let capture_id = if observation_only {
                             None
@@ -1441,7 +1464,7 @@ impl Tool for GetWindowStateTool {
                                 (orig_w, orig_h),
                             )?)
                         };
-                        Some((b64, file_path, w, h, original_w, capture_id))
+                        Some((model_png, file_path, w, h, original_w, capture_id))
                     }
                     Err(error) if crate::wayland::is_surface_identity_unproven(&error) => {
                         screenshot_error = Some(error.to_string());
@@ -1465,12 +1488,12 @@ impl Tool for GetWindowStateTool {
             } else {
                 None
             };
-            Ok((tree_result, screenshot, bounds, screenshot_error, overlays))
+            Ok((tree_result, screenshot, bounds, screenshot_error, overlays, shot_reason))
         })
         .await;
 
         match result {
-            Ok(Ok((tree_opt, shot_opt, bounds, screenshot_error, overlays))) => {
+            Ok(Ok((tree_opt, shot_opt, bounds, screenshot_error, overlays, shot_reason))) => {
                 let mut content = Vec::new();
                 let mut structured = json!({ "window_id": xid, "pid": pid });
                 let screenshot_scale = shot_opt.as_ref().map(|(_, _, w, _, original_w, _)| {
@@ -1534,9 +1557,12 @@ impl Tool for GetWindowStateTool {
                         invalidated.extend(state.snapshots.remove(pid as i32, xid));
                         crate::atspi::snapshot::forget_window(pid, xid);
                     }
+                    // Dove W1: with the window's size, a tree-first read keeps
+                    // the session's last screenshot frame while the window keeps
+                    // that size, so x/y off that screenshot still apply.
                     let (snapshot_id, replaced) = (!observation_only && target_scoped)
                         .then(|| {
-                            state.snapshots.publish_for_session(
+                            state.snapshots.publish_sized_for_session(
                                 pid as i32,
                                 xid,
                                 crate::atspi::snapshot::update_snapshot(
@@ -1544,6 +1570,7 @@ impl Tool for GetWindowStateTool {
                                 ),
                                 session_id.as_deref(),
                                 screenshot_scale,
+                                window_size,
                             )
                         })
                         .flatten()
@@ -1699,7 +1726,7 @@ impl Tool for GetWindowStateTool {
                         xid,
                         session_id.as_deref(),
                         scale,
-                        None,
+                        window_size,
                     );
                     if refreshed.is_none() {
                         if let Some((_, replaced)) = state.snapshots.publish_capture_for_session(
@@ -1734,14 +1761,42 @@ impl Tool for GetWindowStateTool {
                     structured["invalidated_snapshot_ids"] = json!(ids);
                 }
 
-                if let Some((b64_opt, file_path, w, h, orig_w, capture_id)) = shot_opt {
+                if let Some((model_png, file_path, w, h, orig_w, capture_id)) = shot_opt {
                     // ax mode + screenshot_out_file writes the PNG to disk and
-                    // returns b64=None — never embed the image bytes in that case.
+                    // returns no embedded copy — never embed the image bytes in that case.
                     // Keep a text content part when the image went to disk so the
                     // response is never empty on the capture-only path (which has
                     // no tree markdown either).
-                    if let Some(b64) = b64_opt {
-                        content.push(cua_driver_core::protocol::Content::image_png(b64));
+                    let mut mime_type = "image/png";
+                    if let Some(model_png) = model_png {
+                        use base64::{engine::general_purpose::STANDARD as B64, Engine as _};
+                        let marks = marks.then(|| {
+                            cua_driver_core::dove_observation::marks_from_elements(
+                                &structured["elements"],
+                            )
+                        });
+                        if let Some(marks) = &marks {
+                            structured["marks"] = json!(marks.len());
+                        }
+                        let encoded = tokio::task::spawn_blocking(move || {
+                            match cua_driver_core::dove_observation::encode_for_model(
+                                &model_png,
+                                marks.as_deref(),
+                                shot_format,
+                            ) {
+                                Ok(bytes) => (bytes, shot_format.mime_type()),
+                                Err(_) => (model_png, "image/png"),
+                            }
+                        })
+                        .await;
+                        if let Ok((bytes, mime)) = encoded {
+                            mime_type = mime;
+                            content.push(cua_driver_core::protocol::Content::Image {
+                                data: B64.encode(&bytes),
+                                mime_type: mime.into(),
+                                annotations: None,
+                            });
+                        }
                     } else if let Some(fp) = &file_path {
                         content.push(cua_driver_core::protocol::Content::text(format!(
                             "window_id={xid} pid={pid} size={w}x{h} screenshot written to {fp}"
@@ -1759,7 +1814,10 @@ impl Tool for GetWindowStateTool {
                     // Surface 7: mirror the MCP image part's `mimeType` onto
                     // the structured payload so consumers don't have to sniff
                     // magic bytes off the base64 to know the format.
-                    structured["screenshot_mime_type"] = json!("image/png");
+                    structured["screenshot_mime_type"] = json!(mime_type);
+                    if let Some(reason) = shot_reason {
+                        structured["screenshot_reason"] = json!(reason.as_str());
+                    }
                     if let Some(capture_id) = capture_id {
                         structured["capture_id"] = json!(capture_id);
                     }
@@ -1771,6 +1829,10 @@ impl Tool for GetWindowStateTool {
                     structured["screenshot_frame_valid"] = json!(false);
                     structured["screenshot_error"] =
                         surface_identity_unproven_error(xid, reason.clone());
+                } else if shot_reason.is_none()
+                    && shot_policy == cua_driver_core::dove_observation::ShotPolicy::IfSparse
+                {
+                    cua_driver_core::dove_observation::mark_screenshot_omitted(&mut structured);
                 }
                 // Window identity metadata (additive): app + title + on-screen
                 // rectangle for the requested window_id, useful on the

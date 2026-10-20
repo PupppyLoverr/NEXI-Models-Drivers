@@ -64,6 +64,46 @@ the surface has no tree, or when the session declares vision.
 baseline at equal or better success rate, and a `since:"latest"` re-read after a small change is under 15% of a
 full read.
 
+**Status (2026-10-20), patch `0005-observation.patch`:** W1.2, W1.3 and W1.4 are built and wired on Windows and
+Linux (behaviour changes in NOTICE.md). On macOS only the per-session `since:"latest"` applies, because it lives in
+`cua-driver-core`. Its `get_window_state` still returns a PNG on every read, and wiring it is not started. `marks` and
+`screenshot_format` are not in the typed contract (`cua-driver-contract/src/windows.rs`, the SDK and the generated
+bindings) yet. W1.1 pruning is not started.
+
+Measured on Linux (Ubuntu 24.04, Xvfb 1280x1024, AT-SPI 2.52, the GTK3 harness `/tests/fixtures/apps/linux/gtk3`,
+a 560x720 window with 18 element rows, debug build). The small change is a click on `btn-increment`, which turns
+`counter=0` into `counter=1`. Sizes are bytes of the MCP result's text parts and of the whole JSON-RPC result.
+
+| Read | Text | Whole result | Image |
+|---|---|---|---|
+| Full read, W1 default (tree-first) | 3,730 | 8,405 | none |
+| `since:"latest"`, nothing changed | 257 (6.9%) | 1,093 (13.0%) | none |
+| `since:"latest"` after the click | 303 (8.1%) | 1,186 (14.1%) | none |
+| `include_screenshot:true` | 3,795 | 69,747 | JPEG, 61 KB base64 |
+| `include_screenshot:true, screenshot_format:"png"` | 3,795 | 118,689 | PNG, 110 KB base64 |
+| `marks:true` (14 labels) | 3,795 | 116,638 | JPEG, 108 KB base64 |
+| Canvas window (no actionable rows), W1 default | 170 | 7,078 | JPEG, `screenshot_reason: "sparse_tree"` |
+| Same full read before W1 (fork tip `a41d24f`) | 3,730 | 119,450 | PNG on every read |
+| `since:"latest"` after the click before W1 | 303 | 111,319 | PNG on every read |
+
+The re-read after a small change is 8.1% of a full read in text and 14.1% in whole-result bytes, which meets the
+15% target. Most of the remaining whole-result bytes are fixed metadata in `structuredContent` (`frame_note` and
+window identity). Also checked on Linux: `since:"latest"` from another session gets `no_baseline`; a
+`start_session {vision:true}` session's read gets a JPEG without asking, and `include_screenshot:false` opts a read out;
+element tokens from a `marks` read click the right control; and an x/y click after a tree-first re-read is accepted
+(before W1 it was refused). Windows builds and type-checks for `x86_64-pc-windows-gnu`, tests included, but has not
+run.
+
+Pending on the Windows PC:
+
+- `cargo test -p cua-driver-core -p platform-windows` on Windows (the new `dove_observation` tests run on every OS
+  and pass on Linux).
+- The same measurements on Windows against the WPF/WinUI3 harness: full read, `since:"latest"` unchanged and
+  after a small change (target under 15%), `include_screenshot:true` JPEG against PNG, `marks:true` labels drawn on
+  the right controls, a vision session, and a sparse-tree window (a canvas or game) bringing its own screenshot.
+- An x/y click after a tree-first re-read, and a token click after a `marks` read.
+- The W8 token comparison against a screenshot-only baseline (the 10× target); that needs the W8 harness.
+
 ## W2. Semantic actions first
 
 **Goal:** act through accessibility patterns before synthetic input, and say exactly what happened.
