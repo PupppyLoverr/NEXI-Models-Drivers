@@ -19,7 +19,7 @@ fn test_socket(directory: &tempfile::TempDir, suffix: &str) -> String {
 }
 
 fn rejected_serve(socket: &str, extra_args: &[&str]) -> std::process::Output {
-    let mut command = Command::new(env!("CARGO_BIN_EXE_cua-driver"));
+    let mut command = Command::new(env!("CARGO_BIN_EXE_dove-driver"));
     command.args([
         "serve",
         "--socket",
@@ -66,7 +66,7 @@ fn mcp_rejects_serve_only_authorization_flags() {
     ];
 
     for (args, rejected_flag) in cases {
-        let output = Command::new(env!("CARGO_BIN_EXE_cua-driver"))
+        let output = Command::new(env!("CARGO_BIN_EXE_dove-driver"))
             .args(*args)
             .stdin(Stdio::null())
             .env("CUA_DRIVER_RS_TELEMETRY_ENABLED", "false")
@@ -91,7 +91,7 @@ fn mcp_rejects_serve_only_authorization_flags() {
 
 #[test]
 fn direct_mcp_still_reads_permission_profile_from_environment() {
-    let output = Command::new(env!("CARGO_BIN_EXE_cua-driver"))
+    let output = Command::new(env!("CARGO_BIN_EXE_dove-driver"))
         .args(["mcp", "--direct"])
         .stdin(Stdio::null())
         .env("CUA_DRIVER_PERMISSION_MODE", "bounded")
@@ -109,7 +109,7 @@ fn missing_configured_policy_prevents_daemon_startup() {
     let missing_policy = directory.path().join("missing-policy.yaml");
 
     let socket = test_socket(&directory, "missing-policy");
-    let output = Command::new(env!("CARGO_BIN_EXE_cua-driver"))
+    let output = Command::new(env!("CARGO_BIN_EXE_dove-driver"))
         .args([
             "serve",
             "--socket",
@@ -145,7 +145,7 @@ fn missing_managed_policy_prevents_daemon_startup() {
     let directory = tempfile::tempdir().expect("temporary managed policy test directory");
     let missing_policy = directory.path().join("missing-managed-policy.yaml");
     let socket = test_socket(&directory, "missing-managed-policy");
-    let output = Command::new(env!("CARGO_BIN_EXE_cua-driver"))
+    let output = Command::new(env!("CARGO_BIN_EXE_dove-driver"))
         .args([
             "serve",
             "--socket",
@@ -213,7 +213,7 @@ fn danger_acknowledgement_cannot_weaken_standard_mode() {
 fn danger_flag_alone_selects_unrestricted_and_managed_config_can_disable_it() {
     let directory = tempfile::tempdir().expect("temporary mode test directory");
     let socket = test_socket(&directory, "unrestricted-admin-disabled");
-    let output = Command::new(env!("CARGO_BIN_EXE_cua-driver"))
+    let output = Command::new(env!("CARGO_BIN_EXE_dove-driver"))
         .args([
             "serve",
             "--socket",

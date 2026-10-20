@@ -10,7 +10,7 @@ use sha2::{Digest, Sha256};
 use tempfile::TempDir;
 
 fn run(home: &std::path::Path, args: &[&str]) -> Output {
-    Command::new(env!("CARGO_BIN_EXE_cua-driver"))
+    Command::new(env!("CARGO_BIN_EXE_dove-driver"))
         .args(args)
         .env("CUA_DRIVER_RS_HOME", home)
         .env("CUA_DRIVER_CLI_TELEMETRY_CHILD", "1")

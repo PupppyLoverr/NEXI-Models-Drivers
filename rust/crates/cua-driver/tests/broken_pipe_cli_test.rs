@@ -11,7 +11,7 @@ const BROKEN_PIPE_EXIT_CODE: i32 = 141;
 
 fn run_with_closed_stdout(wrapped_child: bool) -> (ExitStatus, String) {
     let home = TempDir::new().unwrap();
-    let mut command = Command::new(env!("CARGO_BIN_EXE_cua-driver"));
+    let mut command = Command::new(env!("CARGO_BIN_EXE_dove-driver"));
     // `dump-docs` is desktop-free and prints far more than a pipe buffer, so
     // the write fails even if the reader closes after the first chunk.
     command

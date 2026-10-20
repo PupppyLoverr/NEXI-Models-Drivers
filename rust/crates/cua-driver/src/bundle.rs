@@ -7,8 +7,8 @@
 
 use std::path::Path;
 
-pub const RELEASE_CLI_NAME: &str = "cua-driver";
-pub const LOCAL_CLI_NAME: &str = "cua-driver-local";
+pub const RELEASE_CLI_NAME: &str = "dove-driver";
+pub const LOCAL_CLI_NAME: &str = "dove-driver-local";
 
 pub const RELEASE_APP_NAME: &str = "CuaDriver";
 pub const LOCAL_APP_NAME: &str = "CuaDriverLocal";
@@ -62,18 +62,18 @@ pub fn user_home_subdirectory() -> &'static str {
 #[cfg(target_os = "windows")]
 pub fn uia_executable_name() -> &'static str {
     if is_local_installation() {
-        "cua-driver-uia-local.exe"
+        "dove-driver-uia-local.exe"
     } else {
-        "cua-driver-uia.exe"
+        "dove-driver-uia.exe"
     }
 }
 
 #[cfg(target_os = "windows")]
 pub fn autostart_task_name() -> &'static str {
     if is_local_installation() {
-        "cua-driver-local-serve"
+        "dove-driver-local-serve"
     } else {
-        "cua-driver-serve"
+        "dove-driver-serve"
     }
 }
 
@@ -133,15 +133,15 @@ mod tests {
     #[test]
     fn local_identity_requires_the_explicit_local_product_name() {
         assert!(path_is_local(Path::new(
-            "/Applications/CuaDriverLocal.app/Contents/MacOS/cua-driver-local"
+            "/Applications/CuaDriverLocal.app/Contents/MacOS/dove-driver-local"
         )));
         assert!(path_is_local(Path::new(
-            "/dev/.cua-driver-local/cua-driver-local.exe"
+            "/dev/.cua-driver-local/dove-driver-local.exe"
         )));
         assert!(!path_is_local(Path::new(
-            "/Applications/CuaDriver.app/Contents/MacOS/cua-driver"
+            "/Applications/CuaDriver.app/Contents/MacOS/dove-driver"
         )));
-        assert!(!path_is_local(Path::new("/tmp/cua-driver-local-test")));
+        assert!(!path_is_local(Path::new("/tmp/dove-driver-local-test")));
     }
 
     #[cfg(target_os = "windows")]

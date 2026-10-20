@@ -31,9 +31,9 @@ pub fn driver_binary() -> PathBuf {
         return PathBuf::from(path);
     }
     let name = if cfg!(target_os = "windows") {
-        "cua-driver.exe"
+        "dove-driver.exe"
     } else {
-        "cua-driver"
+        "dove-driver"
     };
     if let Ok(test_exe) = std::env::current_exe() {
         if let Some(profile_dir) = test_exe

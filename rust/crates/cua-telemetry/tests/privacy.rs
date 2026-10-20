@@ -895,8 +895,8 @@ fn a_switch_flipped_elsewhere_applies_after_refresh_and_clears_the_spool() {
 #[test]
 fn docs_page_names_every_event_and_property() {
     let page = concat!(
-        include_str!("../../../../../docs/content/docs/cua-sdk/concepts/telemetry.mdx"),
-        include_str!("../../../../../docs/content/docs/cua-sdk/concepts/telemetry-events.mdx"),
+        include_str!("../data/telemetry.mdx"),
+        include_str!("../data/telemetry-events.mdx"),
     );
     for spec in schema::EVENTS {
         assert!(

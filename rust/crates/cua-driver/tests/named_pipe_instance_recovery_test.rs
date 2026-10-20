@@ -214,7 +214,7 @@ fn wait_for_listening_instance(socket: &str, timeout: Duration) -> bool {
 
 #[test]
 fn daemon_keeps_serving_after_a_later_pipe_instance_fails() {
-    let mut driver = CliDriver::with_binary(env!("CARGO_BIN_EXE_cua-driver"));
+    let mut driver = CliDriver::with_binary(env!("CARGO_BIN_EXE_dove-driver"));
     assert!(driver.available(), "test daemon failed to start");
     let socket = driver
         .daemon_socket()

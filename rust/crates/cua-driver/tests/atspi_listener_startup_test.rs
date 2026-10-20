@@ -46,7 +46,7 @@ fn serve_binds_while_reachable_atspi_initialization_is_stalled() {
         }
     });
 
-    let mut command = Command::new(env!("CARGO_BIN_EXE_cua-driver"));
+    let mut command = Command::new(env!("CARGO_BIN_EXE_dove-driver"));
     command
         .args([
             "serve",

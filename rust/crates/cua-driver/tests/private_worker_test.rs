@@ -24,7 +24,7 @@ fn isolated_environment(state: &IsolatedStateRoot) -> Vec<EmbeddedEnvironmentVar
 
 fn worker_options(state: &IsolatedStateRoot) -> PrivateWorkerOptions {
     PrivateWorkerOptions {
-        binary_path: env!("CARGO_BIN_EXE_cua-driver").to_owned(),
+        binary_path: env!("CARGO_BIN_EXE_dove-driver").to_owned(),
         host_bundle_id: "com.trycua.private-worker-test".into(),
         startup_timeout_ms: Some(10_000),
         shutdown_timeout_ms: Some(2_000),
@@ -271,7 +271,7 @@ async fn dropping_the_host_closes_and_terminates_the_private_worker() {
 async fn embedded_service_binds_authority_to_the_original_host_connection() {
     let state = IsolatedStateRoot::new().unwrap();
     let host = cua_driver_sdk::EmbeddedCuaDriverHost::with_options(EmbeddedDriverHostOptions {
-        binary_path: env!("CARGO_BIN_EXE_cua-driver").to_owned(),
+        binary_path: env!("CARGO_BIN_EXE_dove-driver").to_owned(),
         host_bundle_id: "com.trycua.trusted-service-test".into(),
         socket_path: None,
         startup_timeout_ms: Some(10_000),

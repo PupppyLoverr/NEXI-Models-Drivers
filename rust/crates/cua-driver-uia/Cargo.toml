@@ -17,7 +17,7 @@ description = "Windows uiAccess-elevated worker for cua-driver-rs (Calculator / 
 # so we split the elevation into this dedicated worker.
 
 [[bin]]
-name = "cua-driver-uia"
+name = "dove-driver-uia"
 path = "src/main.rs"
 
 [target.'cfg(target_os = "windows")'.dependencies]

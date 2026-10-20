@@ -30,7 +30,7 @@ fn isolated_driver_host(
 ) -> (std::sync::Arc<EmbeddedCuaDriverHost>, IsolatedStateRoot) {
     let state = IsolatedStateRoot::new().expect("isolated driver state root");
     let host = EmbeddedCuaDriverHost::with_options(EmbeddedDriverHostOptions {
-        binary_path: env!("CARGO_BIN_EXE_cua-driver").into(),
+        binary_path: env!("CARGO_BIN_EXE_dove-driver").into(),
         host_bundle_id: host_bundle_id.into(),
         socket_path: None,
         startup_timeout_ms: None,

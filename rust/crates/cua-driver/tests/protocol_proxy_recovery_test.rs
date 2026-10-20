@@ -124,7 +124,7 @@ impl Process {
 
     fn spawn_with_session_ttl(args: &[&str], session_ttl_seconds: u64) -> Self {
         let driver_home = tempfile::tempdir().expect("isolated driver state");
-        let mut command = Command::new(env!("CARGO_BIN_EXE_cua-driver"));
+        let mut command = Command::new(env!("CARGO_BIN_EXE_dove-driver"));
         command
             .args(args)
             .stdin(Stdio::piped())

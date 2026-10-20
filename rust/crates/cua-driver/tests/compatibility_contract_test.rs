@@ -12,7 +12,7 @@ const MCP_FIXTURE: &str = include_str!("../../../../compat-fixtures/mcp.json");
 #[test]
 fn released_cli_help_and_manifest_fields_remain_compatible() {
     let fixture: Value = serde_json::from_str(CLI_FIXTURE).expect("valid CLI fixture");
-    let executable = env!("CARGO_BIN_EXE_cua-driver");
+    let executable = env!("CARGO_BIN_EXE_dove-driver");
 
     let help = Command::new(executable)
         .arg("--help")
@@ -85,7 +85,7 @@ fn released_cli_help_and_manifest_fields_remain_compatible() {
 
 #[test]
 fn prime_agent_connection_guidance_uses_the_skill_and_cli_path() {
-    let output = Command::new(env!("CARGO_BIN_EXE_cua-driver"))
+    let output = Command::new(env!("CARGO_BIN_EXE_dove-driver"))
         .args(["mcp-config", "--client", "prime-agent"])
         .output()
         .expect("run Prime Agent connection guidance");

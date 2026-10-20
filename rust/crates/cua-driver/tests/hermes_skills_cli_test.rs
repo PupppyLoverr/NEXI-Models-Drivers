@@ -20,7 +20,7 @@ mod unix {
         fs::write(local_skill.join("SKILL.md"), "# test\n").expect("write test skill");
         symlink(&local_skill, &hermes_link).expect("link test skill into Hermes");
 
-        let status = Command::new(env!("CARGO_BIN_EXE_cua-driver"))
+        let status = Command::new(env!("CARGO_BIN_EXE_dove-driver"))
             .args(["skills", "status"])
             .env("CUA_DRIVER_RS_HOME", &driver_home)
             .env("HERMES_HOME", &hermes_home)
@@ -36,7 +36,7 @@ mod unix {
         assert!(stdout.contains("Hermes"), "{stdout}");
         assert!(stdout.contains("linked"), "{stdout}");
 
-        let uninstall = Command::new(env!("CARGO_BIN_EXE_cua-driver"))
+        let uninstall = Command::new(env!("CARGO_BIN_EXE_dove-driver"))
             .args(["skills", "uninstall"])
             .env("CUA_DRIVER_RS_HOME", &driver_home)
             .env("HERMES_HOME", &hermes_home)

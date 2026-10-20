@@ -10,7 +10,7 @@ fn cargo_built_driver() -> std::path::PathBuf {
     // executable. `--all-targets` alone only guarantees the binary test
     // harness, so a restored target directory could otherwise supply an old
     // standalone `target/debug/cua-driver`.
-    std::path::PathBuf::from(env!("CARGO_BIN_EXE_cua-driver"))
+    std::path::PathBuf::from(env!("CARGO_BIN_EXE_dove-driver"))
 }
 
 #[test]
