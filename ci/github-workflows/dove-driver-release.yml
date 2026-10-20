@@ -1,0 +1,625 @@
+name: "Release: dove-driver"
+
+# Builds, signs and drafts a dove-driver release on PupppyLoverr/NEXI-Models-Drivers.
+#
+# This file is Dove-only. It lives in the fork at ci/github-workflows/ and is
+# copied to the NEXI-Models-Drivers root .github/workflows/ by
+# scripts/dove/publish-folder.sh, because GitHub only runs workflows from the
+# repository root. Every step runs inside the dove-driver/ folder.
+#
+#   tag push dove-driver-v<version>   build, sign, verify, then create a DRAFT
+#                                      release (after the dove-driver-release
+#                                      environment approval). A person publishes it.
+#   workflow_dispatch                  build and verify only; nothing is released.
+#
+# Assets (see dove-driver/RELEASES.md):
+#   dove-driver-<v>-windows-x86_64.zip, -windows-arm64.zip   dove-driver.exe + dove-driver-uia.exe
+#   dove-driver-<v>-macos-universal.tar.gz                    only when macOS signing is enabled (R0.3)
+#   dove-driver-<v>-linux-x86_64.tar.gz, -linux-arm64.tar.gz
+#   dove-grounder-<v>-fp16.<ext>                               optional W9 weights
+#   dove-driver-manifest.json, SHA256SUMS                      and <file>.sigstore.json for every file
+#
+# Configuration (repository settings; nothing here is a default credential):
+#   vars.DOVE_WINDOWS_SIGNING          azure | pfx | none (unset = none)
+#   vars.DOVE_WINDOWS_SIGNER_SUBJECT   expected Authenticode subject CN, e.g. Dove Labs Pty Ltd
+#   vars.DOVE_ALLOW_UNSIGNED_WINDOWS   'true' lets a release carry unsigned Windows archives
+#   vars.DOVE_MACOS_SIGNING            'enabled' turns on the macOS job's signing (needs R0.3)
+#   environment dove-driver-signing    holds the signing secrets; restrict it to dove-driver-v* tags
+#   environment dove-driver-release    required reviewer: the release owner
+# The full list of secrets is in dove-driver/RELEASES.md.
+
+on:
+  push:
+    tags:
+      - "dove-driver-v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dove-driver-release-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+    working-directory: dove-driver
+
+env:
+  CARGO_NET_RETRY: "10"
+  CARGO_HTTP_TIMEOUT: "120"
+  CARGO_INCREMENTAL: "0"
+  # Programs run here never send usage telemetry.
+  CUA_TELEMETRY: "0"
+  DOVE_DRIVER_TELEMETRY: "0"
+  DO_NOT_TRACK: "1"
+
+jobs:
+  # The dove-driver/ folder at this commit must be exactly a commit of the
+  # dove-driver/main branch, and that commit must pass the parity check
+  # (upstream + scripted Dove changes). Tag and VERSION must agree.
+  preflight:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+      commit: ${{ steps.version.outputs.commit }}
+      fork_commit: ${{ steps.fork.outputs.fork_commit }}
+      fork_tree: ${{ steps.fork.outputs.fork_tree }}
+      upstream: ${{ steps.fork.outputs.upstream }}
+      publish: ${{ steps.version.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Determine version
+        id: version
+        run: |
+          set -euo pipefail
+          VERSION="$(tr -d '[:space:]' < rust/VERSION)"
+          PUBLISH=false
+          if [[ "$GITHUB_EVENT_NAME" == push && "$GITHUB_REF" == refs/tags/dove-driver-v* ]]; then
+            TAG_VERSION="${GITHUB_REF#refs/tags/dove-driver-v}"
+            if [[ "$TAG_VERSION" != "$VERSION" ]]; then
+              echo "::error::tag dove-driver-v$TAG_VERSION does not match dove-driver/rust/VERSION ($VERSION)"
+              exit 1
+            fi
+            PUBLISH=true
+          fi
+          {
+            echo "version=$VERSION"
+            echo "tag=dove-driver-v$VERSION"
+            echo "commit=$GITHUB_SHA"
+            echo "publish=$PUBLISH"
+          } >> "$GITHUB_OUTPUT"
+          echo "dove-driver $VERSION from $GITHUB_SHA (publish: $PUBLISH)"
+      - name: Find the fork commit and run the parity check
+        id: fork
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin \
+            "+refs/heads/dove-driver/main:refs/remotes/origin/dove-driver/main" \
+            "+refs/heads/dove-driver/upstream:refs/remotes/origin/dove-driver/upstream"
+          FORK_TREE="$(git rev-parse "$GITHUB_SHA:dove-driver")"
+          FORK_COMMIT="$(git log origin/dove-driver/main --format='%H %T' | awk -v t="$FORK_TREE" '$2 == t {print $1; exit}')"
+          if [[ -z "$FORK_COMMIT" ]]; then
+            echo "::error::dove-driver/ at $GITHUB_SHA (tree $FORK_TREE) is not a commit of dove-driver/main; refresh it with scripts/dove/publish-folder.sh"
+            exit 1
+          fi
+          echo "dove-driver/ = dove-driver/main commit $FORK_COMMIT"
+          git worktree add --detach "$RUNNER_TEMP/fork" "$FORK_COMMIT"
+          cd "$RUNNER_TEMP/fork"
+          git branch upstream origin/dove-driver/upstream
+          bash scripts/dove/parity-check.sh
+          UPSTREAM="$(git log -1 --format=%s upstream | sed -E 's/.* at ([^ ]+) .*/\1/')"
+          [[ "$UPSTREAM" == cua-driver-rs-v* ]] || { echo "::error::cannot read the upstream base from '$UPSTREAM'"; exit 1; }
+          {
+            echo "upstream=$UPSTREAM"
+            echo "fork_commit=$FORK_COMMIT"
+            echo "fork_tree=$FORK_TREE"
+          } >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Test the release scripts and the manifest checks
+        run: |
+          python -m pip install --quiet "jsonschema==4.23.0"
+          python scripts/dove/release/test_manifest.py
+
+  build-windows:
+    name: windows-${{ matrix.arch }}
+    needs: preflight
+    runs-on: windows-latest
+    # Signing secrets only for tag builds; manual runs build unsigned.
+    environment: ${{ needs.preflight.outputs.publish == 'true' && 'dove-driver-signing' || '' }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            target: x86_64-pc-windows-msvc
+          - arch: arm64
+            target: aarch64-pc-windows-msvc
+    env:
+      VERSION: ${{ needs.preflight.outputs.version }}
+      TARGET: ${{ matrix.target }}
+      SIGNING: ${{ needs.preflight.outputs.publish == 'true' && vars.DOVE_WINDOWS_SIGNING || 'none' }}
+      SIGNER_SUBJECT: ${{ vars.DOVE_WINDOWS_SIGNER_SUBJECT }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      # regorus enables msvc_spectre_libs with `error`, so the build fails
+      # without the Spectre-mitigated runtime libraries (ROADMAP R0.5).
+      - name: Ensure MSVC Spectre-mitigated libraries
+        shell: pwsh
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vs = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $vs) { throw "Visual Studio with the x64 C++ tools was not found" }
+          $need = @('Microsoft.VisualStudio.Component.VC.Runtimes.x86.x64.Spectre')
+          if ($env:ARCH -eq 'arm64') {
+            $need += 'Microsoft.VisualStudio.Component.VC.Tools.ARM64'
+            $need += 'Microsoft.VisualStudio.Component.VC.Runtimes.ARM64.Spectre'
+          }
+          $missing = @($need | Where-Object { -not (& $vswhere -latest -products * -requires $_ -property installationPath) })
+          if ($missing.Count -gt 0) {
+            Write-Host "Installing: $($missing -join ', ')"
+            $installer = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vs_installer.exe"
+            $argList = @('modify', '--installPath', "`"$vs`"", '--quiet', '--norestart', '--nocache')
+            foreach ($c in $missing) { $argList += @('--add', $c) }
+            $p = Start-Process -FilePath $installer -ArgumentList $argList -Wait -PassThru
+            if ($p.ExitCode -ne 0 -and $p.ExitCode -ne 3010) { throw "vs_installer exited $($p.ExitCode)" }
+          }
+          foreach ($c in $need) {
+            if (-not (& $vswhere -latest -products * -requires $c -property installationPath)) { throw "$c is still missing" }
+          }
+          Write-Host "Spectre-mitigated libraries present: $($need -join ', ')"
+      - uses: dtolnay/rust-toolchain@59a558e8c538bf4a23bbffa19e5a278b703f2920 # 1.97.1
+        with:
+          targets: ${{ matrix.target }}
+      - name: Build (release)
+        working-directory: dove-driver/rust
+        run: |
+          rustup target add "$TARGET"
+          cargo build --locked -p cua-driver -p cua-driver-uia --release --target "$TARGET"
+      - name: Smoke test
+        if: matrix.arch == 'x86_64'
+        working-directory: dove-driver/rust
+        run: |
+          OUT="$("target/$TARGET/release/dove-driver.exe" --version)"
+          echo "$OUT"
+          test "$OUT" = "dove-driver $VERSION"
+      - name: Azure login for Artifact Signing
+        if: env.SIGNING == 'azure'
+        uses: azure/login@f5d393ae46f8fde4be8b75f32e3fc50e654ad0ca # v3.0.1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Sign with Azure Artifact Signing
+        if: env.SIGNING == 'azure'
+        uses: azure/artifact-signing-action@c7ab2a863ab5f9a846ddb8265964877ef296ee82 # v2.0.0
+        with:
+          endpoint: ${{ vars.AZURE_ARTIFACT_SIGNING_ENDPOINT }}
+          signing-account-name: ${{ vars.AZURE_ARTIFACT_SIGNING_ACCOUNT_NAME }}
+          certificate-profile-name: ${{ vars.AZURE_ARTIFACT_SIGNING_CERTIFICATE_PROFILE_NAME }}
+          files: |
+            ${{ github.workspace }}\dove-driver\rust\target\${{ matrix.target }}\release\dove-driver.exe
+            ${{ github.workspace }}\dove-driver\rust\target\${{ matrix.target }}\release\dove-driver-uia.exe
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+          description: dove-driver
+          description-url: https://github.com/PupppyLoverr/NEXI-Models-Drivers
+      - name: Sign with a code-signing certificate (PFX)
+        if: env.SIGNING == 'pfx'
+        shell: pwsh
+        working-directory: dove-driver/rust
+        env:
+          PFX_BASE64: ${{ secrets.WINDOWS_CODESIGN_PFX_BASE64 }}
+          PFX_PASSWORD: ${{ secrets.WINDOWS_CODESIGN_PFX_PASSWORD }}
+          TIMESTAMP_URL: ${{ vars.WINDOWS_TIMESTAMP_URL || 'http://timestamp.digicert.com' }}
+        run: |
+          if (-not $env:PFX_BASE64) { throw "WINDOWS_CODESIGN_PFX_BASE64 is not set" }
+          $pfx = Join-Path $env:RUNNER_TEMP 'codesign.pfx'
+          [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:PFX_BASE64))
+          try {
+            $signtool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\signtool.exe" |
+              Sort-Object FullName | Select-Object -Last 1 -ExpandProperty FullName
+            if (-not $signtool) { throw "signtool.exe was not found" }
+            foreach ($f in @("target/$env:TARGET/release/dove-driver.exe", "target/$env:TARGET/release/dove-driver-uia.exe")) {
+              & $signtool sign /fd SHA256 /tr $env:TIMESTAMP_URL /td SHA256 /d dove-driver /f $pfx /p $env:PFX_PASSWORD $f
+              if ($LASTEXITCODE -ne 0) { throw "signtool failed for $f" }
+            }
+          } finally {
+            Remove-Item $pfx -Force
+          }
+      - name: Verify Authenticode signatures
+        if: env.SIGNING != 'none'
+        shell: pwsh
+        working-directory: dove-driver/rust
+        run: |
+          if (-not $env:SIGNER_SUBJECT) { throw "vars.DOVE_WINDOWS_SIGNER_SUBJECT is not set" }
+          foreach ($f in @("target/$env:TARGET/release/dove-driver.exe", "target/$env:TARGET/release/dove-driver-uia.exe")) {
+            $s = Get-AuthenticodeSignature -FilePath $f
+            $s | Format-List Status, StatusMessage, Path, SignerCertificate, TimeStamperCertificate
+            if ($s.Status -ne 'Valid') { throw "invalid Authenticode signature on ${f}: $($s.StatusMessage)" }
+            if (-not $s.TimeStamperCertificate) { throw "${f} has no timestamp" }
+            $cn = $s.SignerCertificate.GetNameInfo([Security.Cryptography.X509Certificates.X509NameType]::SimpleName, $false)
+            if ($cn -ne $env:SIGNER_SUBJECT) { throw "unexpected signer for ${f}: $cn" }
+          }
+      - name: Package
+        run: |
+          set -euo pipefail
+          if [[ "$SIGNING" == none ]]; then
+            AUTH=(--authenticode unsigned)
+          else
+            AUTH=(--authenticode signed --authenticode-subject "$SIGNER_SUBJECT")
+          fi
+          python scripts/dove/release/package.py --platform "windows-${{ matrix.arch }}" \
+            --version "$VERSION" --bin-dir "rust/target/$TARGET/release" --out-dir ../release "${AUTH[@]}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dove-driver-asset-windows-${{ matrix.arch }}
+          path: release/
+          if-no-files-found: error
+
+  build-linux:
+    name: linux-${{ matrix.arch }}
+    needs: preflight
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            target: x86_64-unknown-linux-gnu
+            runner: ubuntu-latest
+          - arch: arm64
+            target: aarch64-unknown-linux-gnu
+            runner: ubuntu-24.04-arm
+    # Debian 11 keeps the glibc floor at 2.31, as upstream's release does.
+    container:
+      image: debian:11
+    env:
+      VERSION: ${{ needs.preflight.outputs.version }}
+      TARGET: ${{ matrix.target }}
+    steps:
+      - name: Install base tooling
+        working-directory: /
+        run: |
+          cat > /etc/apt/sources.list <<'EOF'
+          deb [check-valid-until=no signed-by=/usr/share/keyrings/debian-archive-keyring.gpg] http://snapshot.debian.org/archive/debian/20260901T000000Z/ bullseye main
+          deb [check-valid-until=no signed-by=/usr/share/keyrings/debian-archive-keyring.gpg] http://snapshot.debian.org/archive/debian/20260901T000000Z/ bullseye-updates main
+          deb [check-valid-until=no signed-by=/usr/share/keyrings/debian-archive-keyring.gpg] http://snapshot.debian.org/archive/debian-security/20260901T000000Z/ bullseye-security main
+          EOF
+          apt-get -o Dir::Etc::sourceparts=- -o Acquire::Retries=5 update
+          apt-get -o Dir::Etc::sourceparts=- -o Acquire::Retries=5 install -y --no-install-recommends \
+            git ca-certificates curl python3 build-essential pkg-config \
+            libx11-dev libxi-dev libxtst-dev libxext-dev libwayland-dev libxkbcommon-dev
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@59a558e8c538bf4a23bbffa19e5a278b703f2920 # 1.97.1
+        with:
+          targets: ${{ matrix.target }}
+      - name: Build (release)
+        working-directory: dove-driver/rust
+        run: cargo build --locked -p cua-driver --release --features cua-driver/portal-input --target "$TARGET"
+      - name: Smoke test
+        working-directory: dove-driver/rust
+        run: |
+          OUT="$("target/$TARGET/release/dove-driver" --version)"
+          echo "$OUT"
+          test "$OUT" = "dove-driver $VERSION"
+          echo "glibc floor: $(objdump -T "target/$TARGET/release/dove-driver" | grep -o 'GLIBC_[0-9.]*' | sort -V | tail -1)"
+      - name: Package
+        run: |
+          python3 scripts/dove/release/package.py --platform "linux-${{ matrix.arch }}" \
+            --version "$VERSION" --bin-dir "rust/target/$TARGET/release" --out-dir ../release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dove-driver-asset-linux-${{ matrix.arch }}
+          path: release/
+          if-no-files-found: error
+
+  # Always builds the universal binary so a macOS break shows up. Signing and
+  # notarization run only when vars.DOVE_MACOS_SIGNING is 'enabled', which
+  # needs R0.3 (DoveDriver.app identity under Dove's Apple team). Without it
+  # the archive is uploaded as a test artifact and is NOT part of the release.
+  build-macos:
+    name: macos-universal
+    needs: preflight
+    runs-on: macos-26
+    # Signing secrets only for tag builds; manual runs build unsigned.
+    environment: ${{ needs.preflight.outputs.publish == 'true' && 'dove-driver-signing' || '' }}
+    timeout-minutes: 90
+    env:
+      VERSION: ${{ needs.preflight.outputs.version }}
+      MACOS_SIGNING: ${{ needs.preflight.outputs.publish == 'true' && vars.DOVE_MACOS_SIGNING == 'enabled' }}
+      KEYCHAIN_PASSWORD: temporary-dove-release-keychain
+      MACOSX_DEPLOYMENT_TARGET: "13.0"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@59a558e8c538bf4a23bbffa19e5a278b703f2920 # 1.97.1
+        with:
+          targets: aarch64-apple-darwin, x86_64-apple-darwin
+      - name: Build arm64 and x86_64
+        working-directory: dove-driver/rust
+        run: |
+          rustup target add aarch64-apple-darwin x86_64-apple-darwin
+          cargo build --locked -p cua-driver --release --target aarch64-apple-darwin
+          cargo build --locked -p cua-driver --release --target x86_64-apple-darwin
+      - name: Create universal binary
+        working-directory: dove-driver/rust
+        run: |
+          mkdir -p release/universal
+          lipo -create target/aarch64-apple-darwin/release/dove-driver target/x86_64-apple-darwin/release/dove-driver \
+            -output release/universal/dove-driver
+          lipo -info release/universal/dove-driver
+          OUT="$(release/universal/dove-driver --version)"
+          echo "$OUT"
+          test "$OUT" = "dove-driver $VERSION"
+      # R0.3 gate: refuse to sign anything that still carries upstream's identity.
+      - name: Check the Dove macOS identity (R0.3)
+        if: env.MACOS_SIGNING == 'true'
+        working-directory: dove-driver/rust
+        env:
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          test -f scripts/DoveDriverBundle/Contents/Info.plist || { echo "::error::R0.3 not done: rust/scripts/DoveDriverBundle is missing"; exit 1; }
+          test -f scripts/DoveDriver.entitlements || { echo "::error::R0.3 not done: rust/scripts/DoveDriver.entitlements is missing"; exit 1; }
+          BUNDLE_ID="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' scripts/DoveDriverBundle/Contents/Info.plist)"
+          case "$BUNDLE_ID" in com.trycua.*|"") echo "::error::bundle id '$BUNDLE_ID' is not Dove's"; exit 1;; esac
+          [[ "$TEAM_ID" =~ ^[A-Z0-9]{10}$ ]] || { echo "::error::APPLE_TEAM_ID is not set"; exit 1; }
+          echo "bundle id $BUNDLE_ID, team $TEAM_ID"
+      - name: Import the Developer ID certificate
+        if: env.MACOS_SIGNING == 'true'
+        env:
+          CERT_P12_BASE64: ${{ secrets.APPLE_DEVELOPER_ID_CERT_P12_BASE64 }}
+          CERT_PASSWORD: ${{ secrets.APPLE_DEVELOPER_ID_CERT_PASSWORD }}
+        run: |
+          set -euo pipefail
+          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security set-keychain-settings -t 3600 -l build.keychain
+          printf '%s' "$CERT_P12_BASE64" | base64 --decode > "$RUNNER_TEMP/devid.p12"
+          security import "$RUNNER_TEMP/devid.p12" -k build.keychain -P "$CERT_PASSWORD" -T /usr/bin/codesign >/dev/null
+          rm -f "$RUNNER_TEMP/devid.p12"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain >/dev/null
+          security find-identity -v -p codesigning build.keychain | grep -q "Developer ID Application" ||
+            { echo "::error::no Developer ID Application identity imported"; exit 1; }
+      - name: Sign, assemble DoveDriver.app, notarize and staple
+        if: env.MACOS_SIGNING == 'true'
+        working-directory: dove-driver/rust
+        env:
+          DEVELOPER_NAME: ${{ secrets.APPLE_DEVELOPER_NAME }}
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          NOTARY_KEY_P8_BASE64: ${{ secrets.APPLE_NOTARY_API_KEY_P8_BASE64 }}
+          NOTARY_KEY_ID: ${{ secrets.APPLE_NOTARY_API_KEY_ID }}
+          NOTARY_ISSUER_ID: ${{ secrets.APPLE_NOTARY_API_ISSUER_ID }}
+          PROVISIONING_PROFILE_BASE64: ${{ secrets.DOVE_DRIVER_PROVISIONING_PROFILE_BASE64 }}
+        run: |
+          set -euo pipefail
+          IDENTITY="Developer ID Application: ${DEVELOPER_NAME} (${TEAM_ID})"
+          codesign --force --timestamp --options runtime --entitlements scripts/DoveDriver.entitlements \
+            --sign "$IDENTITY" release/universal/dove-driver
+          codesign --verify --strict --verbose=2 release/universal/dove-driver
+
+          rm -rf release/DoveDriver.app
+          mkdir -p release/DoveDriver.app
+          cp -R scripts/DoveDriverBundle/Contents release/DoveDriver.app/Contents
+          rm -f release/DoveDriver.app/Contents/MacOS/.gitkeep
+          cp release/universal/dove-driver release/DoveDriver.app/Contents/MacOS/dove-driver
+          BUNDLE_VERSION="${VERSION%%-*}"
+          plutil -replace CFBundleShortVersionString -string "$BUNDLE_VERSION" release/DoveDriver.app/Contents/Info.plist
+          plutil -replace CFBundleVersion -string "$BUNDLE_VERSION" release/DoveDriver.app/Contents/Info.plist
+          # A provisioning profile is only needed for restricted entitlements
+          # (for example a keychain access group); R0.3 decides.
+          if [[ -n "$PROVISIONING_PROFILE_BASE64" ]]; then
+            printf '%s' "$PROVISIONING_PROFILE_BASE64" | base64 --decode > release/DoveDriver.app/Contents/embedded.provisionprofile
+          fi
+          codesign --force --timestamp --options runtime --entitlements scripts/DoveDriver.entitlements \
+            --sign "$IDENTITY" release/DoveDriver.app
+          codesign --verify --strict --verbose=2 release/DoveDriver.app
+
+          printf '%s' "$NOTARY_KEY_P8_BASE64" | base64 --decode > "$RUNNER_TEMP/notary.p8"
+          /usr/bin/ditto -c -k --keepParent release/DoveDriver.app release/DoveDriver.app.zip
+          xcrun notarytool submit release/DoveDriver.app.zip \
+            --key "$RUNNER_TEMP/notary.p8" --key-id "$NOTARY_KEY_ID" --issuer "$NOTARY_ISSUER_ID" \
+            --wait --timeout 30m
+          rm -f "$RUNNER_TEMP/notary.p8" release/DoveDriver.app.zip
+          xcrun stapler staple release/DoveDriver.app
+          xcrun stapler validate release/DoveDriver.app
+          spctl -a -vv -t exec release/DoveDriver.app
+      - name: Package (signed)
+        if: env.MACOS_SIGNING == 'true'
+        env:
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          python3 scripts/dove/release/package.py --platform macos-universal --version "$VERSION" \
+            --bin-dir rust/release/universal --app-bundle rust/release/DoveDriver.app --out-dir ../release \
+            --apple-notarized notarized --apple-team-id "$TEAM_ID"
+      - name: Package (unsigned, test only)
+        if: env.MACOS_SIGNING != 'true'
+        run: |
+          echo "::notice::macOS signing is off (R0.3); the macOS archive is a test artifact and is not released."
+          python3 scripts/dove/release/package.py --platform macos-universal --version "$VERSION" \
+            --bin-dir rust/release/universal --out-dir ../release --apple-notarized unsigned
+      - uses: actions/upload-artifact@v4
+        with:
+          # Only dove-driver-asset-* artifacts are released.
+          name: ${{ env.MACOS_SIGNING == 'true' && 'dove-driver-asset-macos-universal' || 'dove-driver-unsigned-macos-universal' }}
+          path: release/
+          if-no-files-found: error
+      - name: Remove the build keychain
+        if: always() && env.MACOS_SIGNING == 'true'
+        run: security delete-keychain build.keychain || true
+
+  # Optional W9 grounder weights, configured in scripts/dove/release/grounder.env.
+  grounder:
+    needs: preflight
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.preflight.outputs.version }}
+    outputs:
+      present: ${{ steps.weights.outputs.present }}
+      name: ${{ steps.weights.outputs.name }}
+      format: ${{ steps.weights.outputs.format }}
+      precision: ${{ steps.weights.outputs.precision }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Collect the weights
+        id: weights
+        run: |
+          set -euo pipefail
+          # shellcheck disable=SC1091
+          source scripts/dove/release/grounder.env
+          NAME="dove-grounder-${VERSION}-${GROUNDER_PRECISION}.${GROUNDER_FORMAT}"
+          mkdir -p ../release
+          if [[ -n "${GROUNDER_URL:-}" ]]; then
+            [[ "${GROUNDER_SHA256:-}" =~ ^[0-9a-f]{64}$ ]] || { echo "::error::GROUNDER_URL needs GROUNDER_SHA256"; exit 1; }
+            curl -fsSL --retry 5 -o "../release/$NAME" "$GROUNDER_URL"
+            echo "$GROUNDER_SHA256  ../release/$NAME" | sha256sum -c -
+          elif [[ -f "$GROUNDER_WEIGHTS" ]]; then
+            cp "$GROUNDER_WEIGHTS" "../release/$NAME"
+          else
+            echo "::notice::no grounder weights at $GROUNDER_WEIGHTS; the release has no grounder asset"
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          ls -l "../release/$NAME"
+          { echo "present=true"; echo "name=$NAME"; echo "format=$GROUNDER_FORMAT"; echo "precision=$GROUNDER_PRECISION"; } >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        if: steps.weights.outputs.present == 'true'
+        with:
+          name: dove-driver-asset-grounder
+          path: release/
+          if-no-files-found: error
+
+  # Collects only dove-driver-asset-* artifacts, writes and verifies the
+  # manifest, signs every file with keyless Sigstore, and creates a DRAFT
+  # release. Needs the dove-driver-release environment's approval.
+  release:
+    needs: [preflight, build-windows, build-linux, build-macos, grounder]
+    if: needs.preflight.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    environment: dove-driver-release
+    permissions:
+      contents: write
+      id-token: write
+    env:
+      VERSION: ${{ needs.preflight.outputs.version }}
+      TAG: ${{ needs.preflight.outputs.tag }}
+      GH_TOKEN: ${{ github.token }}
+      MACOS_SIGNING: ${{ vars.DOVE_MACOS_SIGNING == 'enabled' }}
+      ALLOW_UNSIGNED_WINDOWS: ${{ vars.DOVE_ALLOW_UNSIGNED_WINDOWS == 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: dove-driver-asset-*
+          merge-multiple: true
+          path: release-upload
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build and verify the manifest
+        env:
+          COMMIT: ${{ needs.preflight.outputs.commit }}
+          FORK_TREE: ${{ needs.preflight.outputs.fork_tree }}
+          UPSTREAM: ${{ needs.preflight.outputs.upstream }}
+          GROUNDER_PRESENT: ${{ needs.grounder.outputs.present }}
+          GROUNDER_NAME: ${{ needs.grounder.outputs.name }}
+          GROUNDER_FORMAT: ${{ needs.grounder.outputs.format }}
+          GROUNDER_PRECISION: ${{ needs.grounder.outputs.precision }}
+        run: |
+          set -euo pipefail
+          cd ..
+          REQUIRE=windows-x86_64,windows-arm64,linux-x86_64,linux-arm64
+          [[ "$MACOS_SIGNING" == true ]] && REQUIRE="$REQUIRE,macos-universal"
+          GROUNDER=()
+          if [[ "$GROUNDER_PRESENT" == true ]]; then
+            GROUNDER=(--grounder "$GROUNDER_NAME" --grounder-format "$GROUNDER_FORMAT"
+                      --grounder-precision "$GROUNDER_PRECISION")
+          fi
+          python dove-driver/scripts/dove/release/build_manifest.py --assets-dir release-upload \
+            --version "$VERSION" --repository "$GITHUB_REPOSITORY" \
+            --commit "$COMMIT" --fork-tree "$FORK_TREE" --upstream "$UPSTREAM" \
+            --require "$REQUIRE" "${GROUNDER[@]}" --out release-upload/dove-driver-manifest.json
+          rm -f release-upload/*.meta.json
+          python -m pip install --quiet "jsonschema==4.23.0"
+          python dove-driver/scripts/dove/release/verify_manifest.py release-upload/dove-driver-manifest.json \
+            --assets-dir release-upload --schema
+      - name: Refuse unsigned Windows archives unless allowed
+        run: |
+          set -euo pipefail
+          cd ..
+          UNSIGNED="$(python - <<'PY'
+          import json
+          m = json.load(open("release-upload/dove-driver-manifest.json"))
+          print(" ".join(k for k, a in m["platforms"].items() if a["signing"]["authenticode"] == "unsigned"))
+          PY
+          )"
+          if [[ -n "$UNSIGNED" && "$ALLOW_UNSIGNED_WINDOWS" != true ]]; then
+            echo "::error::unsigned Windows archives ($UNSIGNED). Configure Authenticode or set DOVE_ALLOW_UNSIGNED_WINDOWS=true."
+            exit 1
+          fi
+          [[ -n "$UNSIGNED" ]] && echo "::warning::releasing unsigned Windows archives: $UNSIGNED"
+          true
+      - uses: sigstore/cosign-installer@d58896d6a1865668819e1d91763c7751a165e159 # v3.9.2
+      - name: SHA256SUMS and Sigstore bundles
+        run: |
+          set -euo pipefail
+          cd ../release-upload
+          mapfile -t ASSETS < <(find . -maxdepth 1 -type f -printf '%f\n' | LC_ALL=C sort)
+          sha256sum "${ASSETS[@]}" > SHA256SUMS
+          IDENTITY="https://github.com/$GITHUB_REPOSITORY/.github/workflows/dove-driver-release.yml@$GITHUB_REF"
+          for f in "${ASSETS[@]}" SHA256SUMS; do
+            cosign sign-blob --yes --bundle "$f.sigstore.json" "$f" >/dev/null
+            cosign verify-blob --bundle "$f.sigstore.json" \
+              --certificate-identity "$IDENTITY" \
+              --certificate-oidc-issuer https://token.actions.githubusercontent.com "$f" >/dev/null
+          done
+          python ../dove-driver/scripts/dove/release/verify_manifest.py dove-driver-manifest.json --assets-dir . --bundles
+          cat SHA256SUMS
+      - name: Create the draft release
+        run: |
+          set -euo pipefail
+          cd ..
+          {
+            echo "dove-driver $VERSION for Dove (fork of trycua cua-driver, MIT)."
+            echo
+            echo "Source: \`${{ needs.preflight.outputs.commit }}\` (dove-driver/main \`${{ needs.preflight.outputs.fork_commit }}\`)."
+            echo "Dove installs these assets through \`dove-driver-manifest.json\`; see dove-driver/RELEASES.md."
+            echo
+            echo '```'
+            cat release-upload/SHA256SUMS
+            echo '```'
+            echo
+            echo "Verify any file:"
+            echo
+            echo '```'
+            echo "cosign verify-blob --bundle <file>.sigstore.json \\"
+            echo "  --certificate-identity https://github.com/$GITHUB_REPOSITORY/.github/workflows/dove-driver-release.yml@refs/tags/$TAG \\"
+            echo "  --certificate-oidc-issuer https://token.actions.githubusercontent.com <file>"
+            echo '```'
+          } > release-notes.md
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --verify-tag --draft \
+            --title "dove-driver $VERSION" --notes-file release-notes.md release-upload/*
+          echo "::notice::Draft release $TAG created. Review it and publish it by hand."

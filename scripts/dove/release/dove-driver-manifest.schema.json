@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/PupppyLoverr/NEXI-Models-Drivers/blob/main/dove-driver/scripts/dove/release/dove-driver-manifest.schema.json",
+  "title": "dove-driver release manifest",
+  "description": "dove-driver-manifest.json, published with every dove-driver-v<version> release. Dove compiles it in and verifies every download against it. See RELEASES.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "manifest_version",
+    "name",
+    "version",
+    "tag",
+    "repository",
+    "published_at",
+    "source",
+    "min_dove_version",
+    "sigstore",
+    "platforms"
+  ],
+  "properties": {
+    "manifest_version": { "const": 1 },
+    "name": { "const": "dove-driver" },
+    "version": { "$ref": "#/$defs/semver" },
+    "tag": { "type": "string", "pattern": "^dove-driver-v[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$" },
+    "repository": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$" },
+    "published_at": { "type": "string", "format": "date-time", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$" },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commit", "upstream"],
+      "properties": {
+        "commit": { "$ref": "#/$defs/git_sha" },
+        "fork_tree": { "$ref": "#/$defs/git_sha" },
+        "upstream": { "type": "string", "pattern": "^cua-driver-rs-v[0-9]+\\.[0-9]+\\.[0-9]+" }
+      }
+    },
+    "min_dove_version": { "$ref": "#/$defs/semver" },
+    "sigstore": {
+      "type": "object",
+      "description": "Keyless cosign identity that signed every asset and this manifest. A bundle is published next to each file as <file>.sigstore.json.",
+      "additionalProperties": false,
+      "required": ["certificate_identity", "certificate_oidc_issuer"],
+      "properties": {
+        "certificate_identity": { "type": "string", "pattern": "^https://github\\.com/.+/\\.github/workflows/.+@refs/tags/dove-driver-v.+$" },
+        "certificate_oidc_issuer": { "const": "https://token.actions.githubusercontent.com" }
+      }
+    },
+    "platforms": {
+      "type": "object",
+      "description": "One archive per platform. A platform that is missing is not offered by this release.",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "propertyNames": { "enum": ["windows-x86_64", "windows-arm64", "macos-universal", "linux-x86_64", "linux-arm64"] },
+      "patternProperties": {
+        "^": { "$ref": "#/$defs/platform_asset" }
+      }
+    },
+    "optional_assets": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "grounder": { "$ref": "#/$defs/grounder_asset" }
+      }
+    }
+  },
+  "$defs": {
+    "semver": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$" },
+    "git_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "file_name": { "type": "string", "pattern": "^[A-Za-z0-9._-]+$" },
+    "url": { "type": "string", "pattern": "^https://" },
+    "downloadable": {
+      "type": "object",
+      "required": ["name", "url", "sha256", "size", "sigstore_bundle"],
+      "properties": {
+        "name": { "$ref": "#/$defs/file_name" },
+        "url": { "$ref": "#/$defs/url" },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "size": { "type": "integer", "minimum": 1 },
+        "sigstore_bundle": { "$ref": "#/$defs/file_name" }
+      }
+    },
+    "platform_asset": {
+      "allOf": [{ "$ref": "#/$defs/downloadable" }],
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": ["os", "arch", "archive", "root", "entrypoint", "files", "signing"],
+      "properties": {
+        "name": true,
+        "url": true,
+        "sha256": true,
+        "size": true,
+        "sigstore_bundle": true,
+        "os": { "enum": ["windows", "macos", "linux"] },
+        "arch": { "enum": ["x86_64", "arm64", "universal"] },
+        "archive": { "enum": ["zip", "tar.gz"] },
+        "root": { "$ref": "#/$defs/file_name", "description": "The single top-level directory every archive entry lives under." },
+        "entrypoint": { "type": "string", "description": "Path of the dove-driver executable, relative to root." },
+        "files": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Every regular file in the archive, relative to root, sorted by path. Dove re-checks the executables against these hashes before launching them.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "sha256", "size"],
+            "properties": {
+              "path": { "type": "string", "pattern": "^[^/\\\\][^\\\\]*$", "not": { "pattern": "(^|/)\\.\\.(/|$)" } },
+              "sha256": { "$ref": "#/$defs/sha256" },
+              "size": { "type": "integer", "minimum": 0 },
+              "executable": { "type": "boolean" },
+              "role": { "enum": ["driver", "uia-sidecar", "app-bundle-driver", "license", "notice"] }
+            }
+          }
+        },
+        "signing": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["authenticode", "apple_notarized"],
+          "properties": {
+            "authenticode": { "enum": ["signed", "unsigned", "not-applicable"] },
+            "authenticode_subject": { "type": "string" },
+            "apple_notarized": { "enum": ["notarized", "unsigned", "not-applicable"] },
+            "apple_team_id": { "type": "string", "pattern": "^[A-Z0-9]{10}$" }
+          }
+        }
+      }
+    },
+    "grounder_asset": {
+      "allOf": [{ "$ref": "#/$defs/downloadable" }],
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": ["format", "precision"],
+      "properties": {
+        "name": true,
+        "url": true,
+        "sha256": true,
+        "size": true,
+        "sigstore_bundle": true,
+        "format": { "enum": ["onnx", "safetensors", "gguf", "bin"] },
+        "precision": { "enum": ["fp16", "fp32", "int8"] },
+        "description": { "type": "string" }
+      }
+    }
+  }
+}

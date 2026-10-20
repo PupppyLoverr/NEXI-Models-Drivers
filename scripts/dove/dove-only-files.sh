@@ -11,4 +11,5 @@ DOVE_ONLY_FILES=(
   LICENSES
   ci
   bench
+  RELEASES.md
 )
