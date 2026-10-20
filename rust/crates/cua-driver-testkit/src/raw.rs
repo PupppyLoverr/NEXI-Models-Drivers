@@ -65,7 +65,13 @@ impl RawDriver {
     /// Permission-mode tests use this to model a trusted host's launch-time
     /// configuration without mutating the test process environment.
     pub fn spawn_with_env(env: &[(&str, &str)]) -> Option<Self> {
-        Self::spawn_daemon_backed(driver_binary(), false, env)
+        Self::spawn_daemon_backed(driver_binary(), false, env, &[])
+    }
+
+    /// Spawn the daemon-backed driver with an environment for the `mcp`
+    /// proxy process itself, which answers `tools/list` from its cache.
+    pub fn spawn_with_proxy_env(env: &[(&str, &str)]) -> Option<Self> {
+        Self::spawn_daemon_backed(driver_binary(), false, &[], env)
     }
 
     /// Spawn a daemon-backed raw driver with the certified platform overlay
@@ -77,13 +83,14 @@ impl RawDriver {
 
     /// Spawn an overlay-enabled daemon with explicit trusted launch settings.
     pub fn spawn_with_overlay_and_env(env: &[(&str, &str)]) -> Option<Self> {
-        Self::spawn_daemon_backed(driver_binary(), true, env)
+        Self::spawn_daemon_backed(driver_binary(), true, env, &[])
     }
 
     fn spawn_daemon_backed(
         bin: PathBuf,
         overlay_enabled: bool,
         env: &[(&str, &str)],
+        proxy_env: &[(&str, &str)],
     ) -> Option<Self> {
         if !ensure_driver_binary(&bin) {
             return None;
@@ -97,6 +104,7 @@ impl RawDriver {
         let mut command = Command::new(&bin);
         command
             .args(["mcp", "--socket", &daemon.socket])
+            .envs(proxy_env.iter().copied())
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::null());
@@ -122,7 +130,13 @@ impl RawDriver {
     /// so this helper is available only where bare `mcp` owns its runtime.
     #[cfg(not(target_os = "macos"))]
     pub fn spawn_direct() -> Option<Self> {
-        Self::spawn_direct_with_args(&["mcp"])
+        Self::spawn_direct_with_args(&["mcp"], &[])
+    }
+
+    /// Spawn the platform-default direct MCP runtime with extra environment.
+    #[cfg(not(target_os = "macos"))]
+    pub fn spawn_direct_with_env(env: &[(&str, &str)]) -> Option<Self> {
+        Self::spawn_direct_with_args(&["mcp"], env)
     }
 
     /// Spawn the explicitly selected direct MCP runtime without a service.
@@ -130,10 +144,10 @@ impl RawDriver {
     /// Unlike [`Self::spawn_direct`], this is available on macOS because the
     /// caller has deliberately opted out of the signed app/service default.
     pub fn spawn_explicit_direct() -> Option<Self> {
-        Self::spawn_direct_with_args(&["mcp", "--direct"])
+        Self::spawn_direct_with_args(&["mcp", "--direct"], &[])
     }
 
-    fn spawn_direct_with_args(args: &[&str]) -> Option<Self> {
+    fn spawn_direct_with_args(args: &[&str], env: &[(&str, &str)]) -> Option<Self> {
         let bin = driver_binary();
         if !ensure_driver_binary(&bin) {
             return None;
@@ -146,6 +160,7 @@ impl RawDriver {
         command
             .args(args)
             .env("CUA_DRIVER_RS_TELEMETRY_ENABLED", "false")
+            .envs(env.iter().copied())
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::null());

@@ -112,8 +112,10 @@ and W8 reports round trips per task.
 | W5.2 | `describe_tools {names: [...]}` returns full input schemas on demand. Calling a tool whose schema was withheld still works, and a bad call returns the schema in the error. | `cua-driver-core/src/tool.rs`; each platform's `tools/mod.rs` (`build_registry`) |
 | W5.3 | MCP server instructions (the "efficient loop") and the bundled `dove-computer` skill describe the lazy flow. | `cua-driver-core/src/mcp_skills.rs`, `/rust/Skills/` |
 
-**Done when:** the `tools/list` payload in lazy mode is under 3 KB, and W8 shows no success-rate loss against eager
-mode.
+**Done when:** the `tools/list` payload in lazy mode stays under the limit in `tool_disclosure_test.rs` (the measured
+size plus a small margin, about 20 KB against about 226 KB eager), and W8 shows no success-rate loss against eager
+mode. The 3 KB first planned is not reachable while every tool stays listed: 59 bare name-only entries already take
+3.4 KB, and clients such as Claude Code only call listed tools (user decision 2026-10-20, option A).
 
 ## W6. Safety
 

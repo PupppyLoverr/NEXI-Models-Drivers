@@ -890,9 +890,13 @@ async fn handle_request_inner(
         Err(response) => return response,
     };
     if req.method == "tools/call" {
-        if let Err(response) =
-            crate::mcp_wire::validate_tool_call(&req, id.clone(), era, &provider.tools_list())
-        {
+        let disclosure = crate::tool_disclosure::Disclosure::from_env();
+        if let Err(response) = crate::mcp_wire::validate_tool_call(
+            &req,
+            id.clone(),
+            era,
+            &disclosure.advertised(provider.tools_list()),
+        ) {
             return response;
         }
     }
@@ -918,12 +922,24 @@ async fn dispatch_request(
             Response::ok(id, initialize_result())
         }
 
-        "tools/list" => Response::ok(id, provider.tools_list()),
+        "tools/list" => Response::ok(
+            id,
+            crate::tool_disclosure::Disclosure::from_env().advertised(provider.tools_list()),
+        ),
 
         "tools/call" => match req.tool_call() {
             Err(e) => Response::error(id, -32602, format!("Invalid params: {e}")),
             Ok(mut call) => {
                 crate::tool_args::sanitize_reserved_args(&mut call.args);
+                let disclosure = crate::tool_disclosure::Disclosure::from_env();
+                let full_list = disclosure.is_lazy().then(|| provider.tools_list());
+                if let Some(full_list) = full_list.as_ref() {
+                    if let Some(result) =
+                        disclosure.intercept_call(full_list, &call.name, &call.args)
+                    {
+                        return Response::ok(id, result);
+                    }
+                }
                 if let Err(error) = authorize_tool_call(&call.name, &call.args) {
                     return Response::ok(
                         id,
@@ -973,7 +989,11 @@ async fn dispatch_request(
                     Ok(result) => result,
                     Err(error) => tool_error_result(error, serde_json::json!({"exit_code": 1})),
                 };
-                Response::ok(id, conforming_tool_result(&call.name, result))
+                let mut result = conforming_tool_result(&call.name, result);
+                if let Some(full_list) = full_list.as_ref() {
+                    disclosure.annotate_result(full_list, &call.name, &mut result);
+                }
+                Response::ok(id, result)
             }
         },
 
