@@ -114,7 +114,9 @@ jobs:
             libxtst-dev libxext-dev libssl-dev libxdo-dev libwayland-dev
             libxkbcommon-dev ffmpeg jq
           )
-          if [[ "${{ matrix.display }}" == sway ]]; then packages+=(sway); fi
+          # wtype: Wayland keyboard input for the Px/Foreground cases; grim and
+          # wf-recorder: capture and recordings (upstream's Sway lane).
+          if [[ "${{ matrix.display }}" == sway ]]; then packages+=(sway wtype grim wf-recorder); fi
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends "${packages[@]}"
       - name: Build dove-driver
