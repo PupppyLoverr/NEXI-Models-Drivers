@@ -15,6 +15,7 @@ This file is Dove-only. The pieces:
 | `scripts/dove/release/build_manifest.py` | Turns the `.meta.json` files, the archives and the optional grounder weights into `dove-driver-manifest.json`. |
 | `scripts/dove/release/verify_manifest.py` | Checks a manifest, and with `--assets-dir` the archives it describes. This is the same check Dove's installer makes. |
 | `scripts/dove/release/dove-driver-manifest.schema.json` | JSON Schema (draft 2020-12) of the manifest. |
+| `scripts/dove/release/test_manifest.py` | Tests: packages dummy binaries for every platform, builds a manifest, and checks that `verify_manifest.py` and the schema accept it and reject broken manifests, tampered archives and links. Runs in the workflow's preflight. |
 | `scripts/dove/release/min-dove-version` | The oldest Dove that can run this dove-driver. Raise it when the driver needs a newer Dove. |
 | `scripts/dove/release/grounder.env` | Where the release finds the optional W9 grounder weights. |
 
@@ -99,18 +100,20 @@ Fields:
 | `manifest_version` | Always `1` for this format. Dove refuses any other value. A breaking change gets a new number. |
 | `version`, `tag` | dove-driver's version (`rust/VERSION`) and the release tag, `dove-driver-v<version>`. |
 | `repository` | The GitHub repository holding the release. Every `url` is `https://github.com/<repository>/releases/download/<tag>/<name>`. |
-| `published_at` | When the manifest was built (RFC 3339, UTC). |
+| `published_at` | When the manifest was built, in UTC, exactly `YYYY-MM-DDTHH:MM:SSZ`. |
 | `source.commit` | The NEXI-Models-Drivers commit the tag points at. `source.fork_tree` is the tree of its `dove-driver/` folder, which equals a commit of `dove-driver/main`. `source.upstream` is the trycua release the fork is based on. |
 | `min_dove_version` | The oldest Dove that may install this release. |
 | `sigstore` | The keyless signer of every asset: this workflow, at this tag, on GitHub Actions. |
-| `platforms` | One entry per platform key: `windows-x86_64`, `windows-arm64`, `macos-universal`, `linux-x86_64`, `linux-arm64`. A missing key means this release does not support that platform. Each entry has the download fields (`name`, `url`, `sha256`, `size`, `sigstore_bundle`), the archive layout (`archive`: `zip` or `tar.gz`; `root`; `entrypoint`, relative to `root`), `files` (every regular file, sorted by path, with `sha256`, `size`, optional `executable` and `role`: `driver`, `uia-sidecar`, `app-bundle-driver`, `license`, `notice`), and `signing`. |
+| `platforms` | One entry per platform key: `windows-x86_64`, `windows-arm64`, `macos-universal`, `linux-x86_64`, `linux-arm64`. A missing key means this release does not support that platform. Each entry has the download fields (`name`, `url`, `sha256`, `size`, `sigstore_bundle`), `os` (`windows`, `macos`, `linux`) and `arch` (`x86_64`, `arm64`, `universal`), which follow from the key, the archive layout (`archive`: `zip` or `tar.gz`; `root`; `entrypoint`, relative to `root`), `files` (every regular file, sorted by path, with `sha256`, `size`, optional `executable` and `role`: `driver`, `uia-sidecar`, `app-bundle-driver`, `license`, `notice`; files without a role, such as `wayland-helper/` on Linux, are support files), and `signing`. Exactly one file has role `driver`, and it is the `entrypoint`. |
 | `signing.authenticode` | Windows: `signed` or `unsigned`; elsewhere `not-applicable`. `authenticode_subject` is the signer's CN. |
 | `signing.apple_notarized` | macOS: `notarized` or `unsigned`; elsewhere `not-applicable`. `apple_team_id` is the Developer ID team. |
 | `optional_assets.grounder` | The W9 weights: download fields plus `format` (`onnx`, `safetensors`, `gguf`, `bin`) and `precision` (`fp16`, `fp32`, `int8`). Absent when the release has none. |
 
 `verify_manifest.py` and the schema enforce all of this, including that `url` and `sigstore_bundle` follow from
 `name`, that `root` and `name` follow from `version` and the platform key, that Windows archives contain the
-`uia-sidecar`, and that no path is absolute or contains `..`.
+`uia-sidecar`, that `entrypoint` is the `driver`, that no path is absolute or contains `..`, and that no object has
+keys other than those listed here. The schema cannot express the cross-field rules (`url`, `tag`, `root`, roles,
+`signing` per OS); `verify_manifest.py` checks those too, so Dove should port `verify_manifest.py`, not just the schema.
 
 ## How Dove uses it
 
@@ -132,8 +135,10 @@ Fields:
 2. Download `url` over HTTPS into a temporary file, stopping once more than `size` bytes arrive. Reject it unless the
    size equals `size` and the SHA-256 equals `sha256`.
 3. Extract only after the hash matches. Accept regular files and directories only, all under `root/`, no absolute
-   paths, no `..`, no links, and exactly the paths in `files`, each with its listed hash and size. Extract into a
-   new directory, then move it into place, so a failed install leaves the old version untouched.
+   paths, no `..`, no links, and exactly the paths in `files`, each with its listed hash and size. Ignore the
+   permissions stored in the archive: on Linux and macOS make a file executable (0755) only when `files` says
+   `executable: true`, and everything else 0644. Extract into a new directory, then move it into place, so a failed
+   install leaves the old version untouched.
 4. Install into Dove's own directory (for example `%LOCALAPPDATA%\Dove\drivers\dove-driver\<version>\`). Before
    each launch, re-hash `entrypoint` (and on Windows `dove-driver-uia.exe`) against `files`.
 5. The grounder is offered separately ("Download local grounder, 3.2 MB"). It is verified the same way (size and
@@ -178,7 +183,7 @@ Windows, `azure` route (environment `dove-driver-signing`):
 
 | Kind | Name | Value |
 | --- | --- | --- |
-| secret | `AZURE_CLIENT_ID` | App registration (client) id with a federated credential for this repository's `dove-driver-signing` environment |
+| secret | `AZURE_CLIENT_ID` | App registration (client) id with a federated credential whose subject is `repo:PupppyLoverr/NEXI-Models-Drivers:environment:dove-driver-signing`, and Artifact Signing's "Certificate Profile Signer" role on the certificate profile |
 | secret | `AZURE_TENANT_ID` | Azure tenant id |
 | secret | `AZURE_SUBSCRIPTION_ID` | Subscription holding the Artifact Signing account |
 | variable | `AZURE_ARTIFACT_SIGNING_ENDPOINT` | e.g. `https://eus.codesigning.azure.net/` |
@@ -193,13 +198,15 @@ Windows, `pfx` route (environment `dove-driver-signing`):
 | secret | `WINDOWS_CODESIGN_PFX_PASSWORD` | Its password |
 | variable | `WINDOWS_TIMESTAMP_URL` | Optional; default `http://timestamp.digicert.com` |
 
-Windows, both routes (repository variables):
+Repository variables (Settings → Secrets and variables → Actions → Variables). These must be repository
+variables, not environment variables: the release job runs in `dove-driver-release` and reads them too.
 
 | Kind | Name | Value |
 | --- | --- | --- |
 | variable | `DOVE_WINDOWS_SIGNING` | `azure`, `pfx` or `none` |
 | variable | `DOVE_WINDOWS_SIGNER_SUBJECT` | Expected signer CN, exactly as on the certificate |
 | variable | `DOVE_ALLOW_UNSIGNED_WINDOWS` | `true` only to release unsigned Windows archives on purpose |
+| variable | `DOVE_MACOS_SIGNING` | `enabled` to turn on signing and include macOS in the release. Leave unset until R0.3. |
 
 macOS (environment `dove-driver-signing`; only after R0.3):
 
@@ -213,7 +220,6 @@ macOS (environment `dove-driver-signing`; only after R0.3):
 | secret | `APPLE_NOTARY_API_KEY_ID` | Its key id |
 | secret | `APPLE_NOTARY_API_ISSUER_ID` | Its issuer id |
 | secret | `DOVE_DRIVER_PROVISIONING_PROFILE_BASE64` | Optional; only if R0.3's entitlements need a provisioning profile |
-| variable | `DOVE_MACOS_SIGNING` | `enabled` to turn on signing and include macOS in the release |
 
 Sigstore and the release itself need no secret: the workflow's `GITHUB_TOKEN` (`contents: write`) creates the draft,
 and its OIDC token (`id-token: write`) signs.
@@ -236,7 +242,8 @@ and its OIDC token (`id-token: write`) signs.
 
 ## Checking locally (dry run)
 
-From the fork root, with a build in `rust/target/release`:
+From the fork root, with a build in `rust/target/release` (on Linux, `--platform linux-x86_64` and a build with
+`--features cua-driver/portal-input`):
 
 ```bash
 python scripts/dove/release/package.py --platform windows-x86_64 --version "$(cat rust/VERSION)" --bin-dir rust/target/release --out-dir /tmp/dd-release
@@ -244,7 +251,12 @@ python scripts/dove/release/build_manifest.py --assets-dir /tmp/dd-release --com
 python scripts/dove/release/verify_manifest.py /tmp/dd-release/dove-driver-manifest.json --assets-dir /tmp/dd-release
 ```
 
-Add `--schema` to the last command to validate against the JSON Schema as well (needs `pip install jsonschema`).
+Add `--schema` to the last command to validate against the JSON Schema as well, and run
+`python scripts/dove/release/test_manifest.py` after changing any of these scripts (both need
+`pip install jsonschema==4.23.0`).
+
+Dry runs so far: Windows x86_64 (local build); Linux x86_64 and arm64 (built in an Ubuntu 20.04 container, glibc
+2.31 like the release's Debian 11; arm64 cross-compiled), packaged and checked with `--schema` into one manifest.
 
 ## Differences from upstream's release
 

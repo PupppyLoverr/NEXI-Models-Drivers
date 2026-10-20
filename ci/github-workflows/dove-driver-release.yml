@@ -88,10 +88,12 @@ jobs:
             fi
             PUBLISH=true
           fi
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "tag=dove-driver-v$VERSION" >> "$GITHUB_OUTPUT"
-          echo "commit=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
-          echo "publish=$PUBLISH" >> "$GITHUB_OUTPUT"
+          {
+            echo "version=$VERSION"
+            echo "tag=dove-driver-v$VERSION"
+            echo "commit=$GITHUB_SHA"
+            echo "publish=$PUBLISH"
+          } >> "$GITHUB_OUTPUT"
           echo "dove-driver $VERSION from $GITHUB_SHA (publish: $PUBLISH)"
       - name: Find the fork commit and run the parity check
         id: fork
@@ -113,9 +115,18 @@ jobs:
           bash scripts/dove/parity-check.sh
           UPSTREAM="$(git log -1 --format=%s upstream | sed -E 's/.* at ([^ ]+) .*/\1/')"
           [[ "$UPSTREAM" == cua-driver-rs-v* ]] || { echo "::error::cannot read the upstream base from '$UPSTREAM'"; exit 1; }
-          echo "upstream=$UPSTREAM" >> "$GITHUB_OUTPUT"
-          echo "fork_commit=$FORK_COMMIT" >> "$GITHUB_OUTPUT"
-          echo "fork_tree=$FORK_TREE" >> "$GITHUB_OUTPUT"
+          {
+            echo "upstream=$UPSTREAM"
+            echo "fork_commit=$FORK_COMMIT"
+            echo "fork_tree=$FORK_TREE"
+          } >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Test the release scripts and the manifest checks
+        run: |
+          python -m pip install --quiet "jsonschema==4.23.0"
+          python scripts/dove/release/test_manifest.py
 
   build-windows:
     name: windows-${{ matrix.arch }}
@@ -169,7 +180,7 @@ jobs:
             if (-not (& $vswhere -latest -products * -requires $c -property installationPath)) { throw "$c is still missing" }
           }
           Write-Host "Spectre-mitigated libraries present: $($need -join ', ')"
-      - uses: dtolnay/rust-toolchain@4716b85f2fac3e324e64fa2810f6b5c3905760a5 # 1.97.1
+      - uses: dtolnay/rust-toolchain@59a558e8c538bf4a23bbffa19e5a278b703f2920 # 1.97.1
         with:
           targets: ${{ matrix.target }}
       - name: Build (release)
@@ -296,7 +307,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - uses: dtolnay/rust-toolchain@4716b85f2fac3e324e64fa2810f6b5c3905760a5 # 1.97.1
+      - uses: dtolnay/rust-toolchain@59a558e8c538bf4a23bbffa19e5a278b703f2920 # 1.97.1
         with:
           targets: ${{ matrix.target }}
       - name: Build (release)
@@ -339,7 +350,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - uses: dtolnay/rust-toolchain@4716b85f2fac3e324e64fa2810f6b5c3905760a5 # 1.97.1
+      - uses: dtolnay/rust-toolchain@59a558e8c538bf4a23bbffa19e5a278b703f2920 # 1.97.1
         with:
           targets: aarch64-apple-darwin, x86_64-apple-darwin
       - name: Build arm64 and x86_64
@@ -529,21 +540,27 @@ jobs:
         with:
           python-version: "3.12"
       - name: Build and verify the manifest
+        env:
+          COMMIT: ${{ needs.preflight.outputs.commit }}
+          FORK_TREE: ${{ needs.preflight.outputs.fork_tree }}
+          UPSTREAM: ${{ needs.preflight.outputs.upstream }}
+          GROUNDER_PRESENT: ${{ needs.grounder.outputs.present }}
+          GROUNDER_NAME: ${{ needs.grounder.outputs.name }}
+          GROUNDER_FORMAT: ${{ needs.grounder.outputs.format }}
+          GROUNDER_PRECISION: ${{ needs.grounder.outputs.precision }}
         run: |
           set -euo pipefail
           cd ..
           REQUIRE=windows-x86_64,windows-arm64,linux-x86_64,linux-arm64
           [[ "$MACOS_SIGNING" == true ]] && REQUIRE="$REQUIRE,macos-universal"
           GROUNDER=()
-          if [[ "${{ needs.grounder.outputs.present }}" == true ]]; then
-            GROUNDER=(--grounder "${{ needs.grounder.outputs.name }}"
-                      --grounder-format "${{ needs.grounder.outputs.format }}"
-                      --grounder-precision "${{ needs.grounder.outputs.precision }}")
+          if [[ "$GROUNDER_PRESENT" == true ]]; then
+            GROUNDER=(--grounder "$GROUNDER_NAME" --grounder-format "$GROUNDER_FORMAT"
+                      --grounder-precision "$GROUNDER_PRECISION")
           fi
           python dove-driver/scripts/dove/release/build_manifest.py --assets-dir release-upload \
             --version "$VERSION" --repository "$GITHUB_REPOSITORY" \
-            --commit "${{ needs.preflight.outputs.commit }}" --fork-tree "${{ needs.preflight.outputs.fork_tree }}" \
-            --upstream "${{ needs.preflight.outputs.upstream }}" \
+            --commit "$COMMIT" --fork-tree "$FORK_TREE" --upstream "$UPSTREAM" \
             --require "$REQUIRE" "${GROUNDER[@]}" --out release-upload/dove-driver-manifest.json
           rm -f release-upload/*.meta.json
           python -m pip install --quiet "jsonschema==4.23.0"
@@ -570,7 +587,7 @@ jobs:
         run: |
           set -euo pipefail
           cd ../release-upload
-          mapfile -t ASSETS < <(ls | sort)
+          mapfile -t ASSETS < <(find . -maxdepth 1 -type f -printf '%f\n' | LC_ALL=C sort)
           sha256sum "${ASSETS[@]}" > SHA256SUMS
           IDENTITY="https://github.com/$GITHUB_REPOSITORY/.github/workflows/dove-driver-release.yml@$GITHUB_REF"
           for f in "${ASSETS[@]}" SHA256SUMS; do

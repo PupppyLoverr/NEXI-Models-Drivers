@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build dove-driver-manifest.json from packaged release assets.
 
-    python3 scripts/dove/release/build-manifest.py --assets-dir release-upload \
+    python3 scripts/dove/release/build_manifest.py --assets-dir release-upload \
         --version 0.37.0 --commit <40-hex sha> --out release-upload/dove-driver-manifest.json \
         [--grounder dove-grounder-0.37.0-fp16.onnx --grounder-format onnx --grounder-precision fp16] \
         [--require windows-x86_64,windows-arm64,linux-x86_64,linux-arm64]
@@ -10,7 +10,7 @@ Reads every <archive>.meta.json that package.py wrote in --assets-dir, hashes
 each archive (and the optional grounder weights) again, and writes the manifest
 described in RELEASES.md and dove-driver-manifest.schema.json. Fails if a
 --require'd platform is missing, a meta file disagrees with its archive, or the
-result does not pass verify-manifest.py.
+result does not pass verify_manifest.py.
 
 Python 3.9+, standard library only.
 """

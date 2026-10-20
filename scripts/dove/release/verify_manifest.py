@@ -31,6 +31,9 @@ SEMVER = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$")
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
 GIT_SHA = re.compile(r"^[0-9a-f]{40}$")
 FILE_NAME = re.compile(r"^[A-Za-z0-9._-]+$")
+REPOSITORY = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
+UTC_TIME = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$")
+APPLE_TEAM = re.compile(r"^[A-Z0-9]{10}$")
 PLATFORMS = {
     "windows-x86_64": ("windows", "x86_64", "zip"),
     "windows-arm64": ("windows", "arm64", "zip"),
@@ -43,6 +46,13 @@ TOP_KEYS = {"manifest_version", "name", "version", "tag", "repository", "publish
 ASSET_KEYS = {"name", "url", "sha256", "size", "sigstore_bundle"}
 PLATFORM_KEYS = ASSET_KEYS | {"os", "arch", "archive", "root", "entrypoint", "files", "signing"}
 GROUNDER_KEYS = ASSET_KEYS | {"format", "precision", "description"}
+FILE_KEYS = {"path", "sha256", "size", "executable", "role"}
+ROLES = {"driver", "uia-sidecar", "app-bundle-driver", "license", "notice"}
+SIGNING_KEYS = {"authenticode", "authenticode_subject", "apple_notarized", "apple_team_id"}
+
+
+def is_int(v):
+    return isinstance(v, int) and not isinstance(v, bool)
 
 
 def sha256_bytes(data):
@@ -68,7 +78,7 @@ def check_asset(where, a, base_url, keys, errors):
         errors.append(f"{where}: url is not {base_url}/<name>")
     if not SHA256.match(str(a.get("sha256", ""))):
         errors.append(f"{where}: bad sha256")
-    if not isinstance(a.get("size"), int) or a.get("size", 0) < 1:
+    if not is_int(a.get("size")) or a["size"] < 1:
         errors.append(f"{where}: bad size")
     if a.get("sigstore_bundle") != f"{a.get('name')}.sigstore.json":
         errors.append(f"{where}: sigstore_bundle is not <name>.sigstore.json")
@@ -90,7 +100,13 @@ def check_shape(m, errors):
         errors.append("tag must be dove-driver-v<version>")
     if not SEMVER.match(str(m.get("min_dove_version", ""))):
         errors.append("min_dove_version is not semver")
+    if not UTC_TIME.match(str(m.get("published_at", ""))):
+        errors.append("published_at must be RFC 3339 UTC, YYYY-MM-DDTHH:MM:SSZ")
+    if not REPOSITORY.match(str(m.get("repository", ""))):
+        errors.append("repository must be <owner>/<name>")
     src = m.get("source", {})
+    for k in sorted(set(src) - {"commit", "fork_tree", "upstream"}):
+        errors.append(f"source: unknown key {k}")
     if not GIT_SHA.match(str(src.get("commit", ""))):
         errors.append("source.commit is not a 40-hex sha")
     if "fork_tree" in src and not GIT_SHA.match(str(src["fork_tree"])):
@@ -99,6 +115,8 @@ def check_shape(m, errors):
         errors.append("source.upstream must be a cua-driver-rs-v* tag")
     repo = m.get("repository", "")
     sig = m.get("sigstore", {})
+    for k in sorted(set(sig) - {"certificate_identity", "certificate_oidc_issuer"}):
+        errors.append(f"sigstore: unknown key {k}")
     if sig.get("certificate_oidc_issuer") != "https://token.actions.githubusercontent.com":
         errors.append("sigstore.certificate_oidc_issuer must be GitHub Actions")
     if not re.match(rf"^https://github\.com/{re.escape(repo)}/\.github/workflows/[^@]+@refs/tags/{re.escape(m.get('tag', ''))}$",
@@ -126,26 +144,45 @@ def check_shape(m, errors):
         paths = [f.get("path", "") for f in files]
         if paths != sorted(paths) or len(paths) != len(set(paths)):
             errors.append(f"{where}: files must be sorted and unique")
+        if not files:
+            errors.append(f"{where}: files is empty")
         for f in files:
             p = f.get("path", "")
-            if not p or p.startswith("/") or "\\" in p or ".." in p.split("/"):
+            for k in sorted(set(f) - FILE_KEYS):
+                errors.append(f"{where}: unknown key {k} for {p}")
+            if not isinstance(p, str) or not p or p.startswith("/") or "\\" in p or ".." in p.split("/"):
                 errors.append(f"{where}: unsafe path {p!r}")
             if not SHA256.match(str(f.get("sha256", ""))):
                 errors.append(f"{where}: bad sha256 for {p}")
-        if a.get("entrypoint") not in paths:
+            if not is_int(f.get("size")) or f["size"] < 0:
+                errors.append(f"{where}: bad size for {p}")
+            if "executable" in f and not isinstance(f["executable"], bool):
+                errors.append(f"{where}: executable must be true or false for {p}")
+            if "role" in f and f["role"] not in ROLES:
+                errors.append(f"{where}: unknown role {f['role']!r} for {p}")
+        entry = next((f for f in files if f.get("path") == a.get("entrypoint")), None)
+        if entry is None:
             errors.append(f"{where}: entrypoint is not in files")
+        elif entry.get("role") != "driver":
+            errors.append(f"{where}: entrypoint must be the file with role driver")
         roles = [f.get("role") for f in files]
         if roles.count("driver") != 1:
             errors.append(f"{where}: needs exactly one driver file")
         if os_name == "windows" and roles.count("uia-sidecar") != 1:
             errors.append(f"{where}: Windows archives need the dove-driver-uia sidecar")
         s = a.get("signing", {})
+        for k in sorted(set(s) - SIGNING_KEYS):
+            errors.append(f"{where}: signing: unknown key {k}")
         want_auth = {"signed", "unsigned"} if os_name == "windows" else {"not-applicable"}
         want_notary = {"notarized", "unsigned"} if os_name == "macos" else {"not-applicable"}
         if s.get("authenticode") not in want_auth:
             errors.append(f"{where}: signing.authenticode must be one of {sorted(want_auth)}")
         if s.get("apple_notarized") not in want_notary:
             errors.append(f"{where}: signing.apple_notarized must be one of {sorted(want_notary)}")
+        if "authenticode_subject" in s and (s.get("authenticode") != "signed" or not isinstance(s["authenticode_subject"], str)):
+            errors.append(f"{where}: signing.authenticode_subject is only for signed archives")
+        if "apple_team_id" in s and (s.get("apple_notarized") != "notarized" or not APPLE_TEAM.match(str(s["apple_team_id"]))):
+            errors.append(f"{where}: signing.apple_team_id must be a 10-character team id of a notarized archive")
 
     opt = m.get("optional_assets", {})
     for k in sorted(set(opt) - {"grounder"}):
@@ -164,6 +201,9 @@ def archive_members(path, kind):
     if kind == "zip":
         with zipfile.ZipFile(path) as z:
             for info in z.infolist():
+                file_type = (info.external_attr >> 16) & 0o170000
+                if file_type not in (0, 0o100000, 0o040000):
+                    raise ValueError(f"{info.filename}: links and special files are not allowed")
                 yield info.filename.rstrip("/"), info.is_dir(), None if info.is_dir() else z.read(info)
     else:
         with tarfile.open(path, "r:gz") as t:
