@@ -367,16 +367,32 @@ class WindowsPerceiver:
         EnumWindows(EnumWindowsProc(cb), 0)
         return out
 
-    def focus_window(self, name: str) -> bool:
+    def focus_window(self, name: str, timeout: float = 1.0) -> bool:
+        """Bring the first window whose title contains `name` to the front.
+
+        Returns True only once that window really is the foreground window.
+        Windows' foreground lock can refuse SetForegroundWindow (for example
+        while the user is working in another app), and then this returns
+        False instead of letting the caller type into whatever is in front.
+        """
         import ctypes
+        u = ctypes.windll.user32
         for w in self.windows():
             if name.lower() in w["name"].lower():
                 hwnd = w["hwnd"]
-                u = ctypes.windll.user32
                 SW_RESTORE = 9
                 u.ShowWindow(hwnd, SW_RESTORE)
                 u.SetForegroundWindow(hwnd)
-                return True
+                # windows() reports handles as unsigned 32-bit values and
+                # GetForegroundWindow returns a C int, so compare 32 bits.
+                want = hwnd & 0xFFFFFFFF
+                deadline = time.time() + timeout
+                while True:
+                    if (u.GetForegroundWindow() & 0xFFFFFFFF) == want:
+                        return True
+                    if time.time() >= deadline:
+                        return False
+                    time.sleep(0.05)
         return False
 
     def screenshot(self, path: str) -> str:

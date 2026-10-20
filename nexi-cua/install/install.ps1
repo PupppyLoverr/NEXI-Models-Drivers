@@ -55,7 +55,7 @@ if (Test-Path -LiteralPath $CheckoutManifest) {
     $Checkout = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
     $PackageSpec = "$Checkout[$Extra]"
 } else {
-    $PackageSpec = 'nexi-cua[windows] @ https://github.com/PupppyLoverr/gabbledobo-71588/raw/main/nexi-cua/releases/nexi_cua-0.4.0-py3-none-any.whl'
+    $PackageSpec = 'nexi-cua[windows] @ https://github.com/PupppyLoverr/NEXI-Models-Drivers/raw/main/nexi-cua/releases/nexi_cua-0.4.0-py3-none-any.whl'
 }
 & $VenvPython -m pip install $PackageSpec
 if ($LASTEXITCODE -ne 0) {

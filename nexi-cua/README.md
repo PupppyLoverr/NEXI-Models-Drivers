@@ -99,8 +99,8 @@ for semantic accessibility-tree or DOM control.
 
 | OS | Command |
 |---|---|
-| macOS / Linux | `curl -fsSL https://raw.githubusercontent.com/PupppyLoverr/gabbledobo-71588/main/nexi-cua/install/install.sh \| sh` |
-| Windows (PowerShell) | `irm https://raw.githubusercontent.com/PupppyLoverr/gabbledobo-71588/main/nexi-cua/install/install.ps1 \| iex` |
+| macOS / Linux | `curl -fsSL https://raw.githubusercontent.com/PupppyLoverr/NEXI-Models-Drivers/main/nexi-cua/install/install.sh \| sh` |
+| Windows (PowerShell) | `irm https://raw.githubusercontent.com/PupppyLoverr/NEXI-Models-Drivers/main/nexi-cua/install/install.ps1 \| iex` |
 
 The installers create an isolated venv (`~/.nexi-cua` or
 `%LOCALAPPDATA%\nexi-cua`), install the platform extra and policy weights,
@@ -118,12 +118,15 @@ Documents: [ARCHITECTURE.md](ARCHITECTURE.md) · [USE_CASES.md](USE_CASES.md) ·
 
 ### From source
 
-Download the preserved v0.4.0 source, driver, and policy bundle:
-[nexi-cua-v0.4.0.zip](https://github.com/PupppyLoverr/gabbledobo-71588/archive/refs/tags/nexi-cua-v0.4.0.zip).
+Download the v0.4.0 source distribution (driver source and policy bundle):
+[nexi_cua-0.4.0.tar.gz](https://github.com/PupppyLoverr/NEXI-Models-Drivers/raw/main/nexi-cua/releases/nexi_cua-0.4.0.tar.gz).
+Or check out only this folder:
 
 ```bash
-git clone https://github.com/PupppyLoverr/gabbledobo-71588.git
-cd gabbledobo-71588/nexi-cua
+git clone --filter=blob:none --sparse https://github.com/PupppyLoverr/NEXI-Models-Drivers.git
+cd NEXI-Models-Drivers
+git sparse-checkout set nexi-cua
+cd nexi-cua
 python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[macos]"       # use .[windows] or .[linux] on those systems

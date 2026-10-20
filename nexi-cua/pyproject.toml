@@ -31,8 +31,8 @@ vision-mlx = ["mlx-vlm>=0.1"]
 nexi-cua = "nexi_cua.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/PupppyLoverr/gabbledobo-71588"
-Source = "https://github.com/PupppyLoverr/gabbledobo-71588/tree/main/nexi-cua"
+Homepage = "https://github.com/PupppyLoverr/NEXI-Models-Drivers/tree/main/nexi-cua"
+Source = "https://github.com/PupppyLoverr/NEXI-Models-Drivers/tree/main/nexi-cua"
 
 [tool.setuptools.packages.find]
 include = ["nexi_cua*"]
