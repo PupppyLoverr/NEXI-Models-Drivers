@@ -1,0 +1,153 @@
+diff --git a/rust/crates/cua-driver/src/dove_env.rs b/rust/crates/cua-driver/src/dove_env.rs
+index 0c3740f..5bb5d6c 100644
+--- a/rust/crates/cua-driver/src/dove_env.rs
++++ b/rust/crates/cua-driver/src/dove_env.rs
+@@ -10,6 +10,13 @@
+ 
+ use std::ffi::{OsStr, OsString};
+ 
++/// Dove's plugin manager installs and updates dove-driver, so the driver
++/// never queries upstream releases or runs upstream's installer.
++pub const UPDATES_MANAGED_BY_DOVE: bool = true;
++pub const UPDATES_MESSAGE: &str =
++    "dove-driver does not update itself: Dove installs and updates it \
++     (Settings > Integrations > Computer use)";
++
+ const DOVE_PREFIX: &str = "DOVE_DRIVER_";
+ const UPSTREAM_PREFIX: &str = "CUA_DRIVER_";
+ 
+diff --git a/rust/crates/cua-driver/src/telemetry.rs b/rust/crates/cua-driver/src/telemetry.rs
+index 3d62816..f1a42d5 100644
+--- a/rust/crates/cua-driver/src/telemetry.rs
++++ b/rust/crates/cua-driver/src/telemetry.rs
+@@ -22,7 +22,9 @@ use std::sync::atomic::{AtomicUsize, Ordering};
+ use std::sync::{Arc, Condvar, Mutex, OnceLock};
+ use std::time::{Duration, Instant};
+ 
+-const POSTHOG_CAPTURE_URL: &str = "https://eu.i.posthog.com/capture/";
++/// Dove fork: where telemetry is sent when the operator turns it on. There is
++/// no default endpoint, so an unset variable means nothing leaves the machine.
++const ENV_TELEMETRY_URL: &str = "CUA_DRIVER_TELEMETRY_URL";
+ const POSTHOG_API_KEY: &str = "phc_eSkLnbLxsnYFaXksif1ksbrNzYlJShr35miFLDppF14";
+ const POSTHOG_TIMEOUT_SECS: u64 = 3;
+ const LIFECYCLE_RETRY_BACKOFF_SECS: u64 = 15 * 60;
+@@ -238,7 +240,8 @@ fn effective_enabled() -> (bool, &'static str) {
+     if let Some(value) = persisted_enabled() {
+         return (value, "persisted");
+     }
+-    (true, "default")
++    // Dove fork: off by default.
++    (false, "default")
+ }
+ 
+ /// `[telemetry] enabled = "off"` in `$CUA_HOME/config.toml` (outside
+@@ -2223,12 +2226,18 @@ fn post_to_posthog(payload: &Value) -> Result<u16, String> {
+ }
+ 
+ fn post_to_posthog_with_timeout(payload: &Value, timeout: Duration) -> Result<u16, String> {
++    let Some(capture_url) = std::env::var(ENV_TELEMETRY_URL)
++        .ok()
++        .filter(|url| !url.trim().is_empty())
++    else {
++        return Err(format!("no telemetry endpoint: {ENV_TELEMETRY_URL} is unset"));
++    };
+     let agent = ureq::Agent::config_builder()
+         .timeout_global(Some(timeout))
+         .build()
+         .new_agent();
+     match agent
+-        .post(POSTHOG_CAPTURE_URL)
++        .post(&capture_url)
+         .header("Content-Type", "application/json")
+         .send_json(payload)
+     {
+@@ -2685,7 +2694,12 @@ mod tests {
+             std::env::remove_var("DO_NOT_TRACK");
+             std::env::remove_var("CUA_TELEMETRY");
+             std::env::remove_var("CUA_HOME");
++            // No endpoint: any real send fails at once, without the network.
++            std::env::remove_var(ENV_TELEMETRY_URL);
+         }
++        // Dove fork: telemetry is off by default. These tests exercise the
++        // send path, so the isolated home starts with the operator's opt-in.
++        set_enabled(true).unwrap();
+         let result = test(&root);
+         let _ = std::fs::remove_dir_all(&root);
+         unsafe {
+@@ -2915,11 +2929,33 @@ mod tests {
+         });
+     }
+ 
++    #[test]
++    fn telemetry_is_off_by_default() {
++        let _guard = ENV_LOCK.lock().unwrap();
++        with_isolated_home(|root| {
++            remove_file_if_exists(&root.join(HOME_SUBDIRECTORY).join(CONFIG_FILE_NAME)).unwrap();
++            assert_eq!(effective_enabled(), (false, "default"));
++        });
++    }
++
++    #[test]
++    fn nothing_is_sent_without_a_configured_endpoint() {
++        let _guard = ENV_LOCK.lock().unwrap();
++        with_isolated_home(|_| {
++            unsafe {
++                std::env::remove_var(ENV_TELEMETRY_URL);
++            }
++            let error = post_to_posthog_with_timeout(&serde_json::json!({}), Duration::from_secs(1))
++                .unwrap_err();
++            assert!(error.contains(ENV_TELEMETRY_URL), "{error}");
++        });
++    }
++
+     #[test]
+     fn precedence_is_environment_then_persisted_then_default() {
+         let _guard = ENV_LOCK.lock().unwrap();
+         with_isolated_home(|_| {
+-            assert_eq!(effective_enabled(), (true, "default"));
++            assert_eq!(effective_enabled(), (true, "persisted"));
+             set_enabled(false).unwrap();
+             assert_eq!(effective_enabled(), (false, "persisted"));
+             unsafe {
+@@ -2936,7 +2972,7 @@ mod tests {
+     fn shared_cua_switches_turn_the_driver_off() {
+         let _guard = ENV_LOCK.lock().unwrap();
+         with_isolated_home(|home| {
+-            assert_eq!(effective_enabled(), (true, "default"));
++            assert_eq!(effective_enabled(), (true, "persisted"));
+             unsafe {
+                 std::env::set_var("DO_NOT_TRACK", "1");
+                 std::env::set_var(ENV_TELEMETRY_ENABLED, "true");
+diff --git a/rust/crates/cua-driver/src/updater.rs b/rust/crates/cua-driver/src/updater.rs
+index 65a7bfe..8912370 100644
+--- a/rust/crates/cua-driver/src/updater.rs
++++ b/rust/crates/cua-driver/src/updater.rs
+@@ -103,6 +103,12 @@ const RELEASE_VERSION_ENV: &str = "CUA_DRIVER_RELEASE_VERSION";
+ /// installer's exit status so the caller can produce the right
+ /// "succeeded / failed — re-run manually" message.
+ pub fn run_install_script(version: &str) -> std::io::Result<ExitStatus> {
++    if crate::dove_env::UPDATES_MANAGED_BY_DOVE {
++        return Err(std::io::Error::new(
++            std::io::ErrorKind::Unsupported,
++            crate::dove_env::UPDATES_MESSAGE,
++        ));
++    }
+     run_install_script_with_ownership(version, is_pacman_managed())
+ }
+ 
+diff --git a/rust/crates/cua-driver/src/version_check.rs b/rust/crates/cua-driver/src/version_check.rs
+index 06893c8..6bc3459 100644
+--- a/rust/crates/cua-driver/src/version_check.rs
++++ b/rust/crates/cua-driver/src/version_check.rs
+@@ -756,6 +756,11 @@ pub fn fetch_latest_version() -> Result<String, crate::release_source::FetchErro
+ pub fn fetch_latest_version_for(
+     channel: crate::release_channel::ReleaseChannel,
+ ) -> Result<String, crate::release_source::FetchError> {
++    if crate::dove_env::UPDATES_MANAGED_BY_DOVE {
++        return Err(crate::release_source::FetchError::Other(
++            crate::dove_env::UPDATES_MESSAGE.to_owned(),
++        ));
++    }
+     if crate::updater::is_pacman_managed() {
+         return Err(crate::release_source::FetchError::Other(
+             crate::updater::PACMAN_UPDATE_GUIDANCE.to_owned(),

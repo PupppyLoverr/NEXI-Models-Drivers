@@ -1,0 +1,593 @@
+diff --git a/compat-fixtures/mcp.json b/compat-fixtures/mcp.json
+index ddee851..b82ef85 100644
+--- a/compat-fixtures/mcp.json
++++ b/compat-fixtures/mcp.json
+@@ -5,7 +5,7 @@
+     "capability_keys": [
+       "tools"
+     ],
+-    "server_name": "cua-driver",
++    "server_name": "dove-driver",
+     "server_version_format": "semver"
+   },
+   "tools_list": {
+diff --git a/rust/crates/cua-driver-core/src/browser/prepare.rs b/rust/crates/cua-driver-core/src/browser/prepare.rs
+index 82f7dff..623dd92 100644
+--- a/rust/crates/cua-driver-core/src/browser/prepare.rs
++++ b/rust/crates/cua-driver-core/src/browser/prepare.rs
+@@ -349,12 +349,12 @@ fn profile_root() -> Result<PathBuf, BrowserRefusal> {
+     #[cfg(target_os = "windows")]
+     let root = std::env::var_os("LOCALAPPDATA")
+         .map(PathBuf::from)
+-        .map(|path| path.join("CuaDriver").join("BrowserProfiles"));
++        .map(|path| path.join("DoveDriver").join("BrowserProfiles"));
+     #[cfg(target_os = "macos")]
+     let root = std::env::var_os("HOME").map(PathBuf::from).map(|path| {
+         path.join("Library")
+             .join("Application Support")
+-            .join("CuaDriver")
++            .join("DoveDriver")
+             .join("BrowserProfiles")
+     });
+     #[cfg(all(unix, not(target_os = "macos")))]
+@@ -365,7 +365,7 @@ fn profile_root() -> Result<PathBuf, BrowserRefusal> {
+                 .map(PathBuf::from)
+                 .map(|path| path.join(".local").join("state"))
+         })
+-        .map(|path| path.join("cua-driver").join("browser-profiles"));
++        .map(|path| path.join("dove-driver").join("browser-profiles"));
+     root.ok_or_else(|| {
+         refusal(
+             BrowserRefusalCode::BrowserRouteUnavailable,
+diff --git a/rust/crates/cua-driver-core/src/health_report.rs b/rust/crates/cua-driver-core/src/health_report.rs
+index 81f7d27..c6f7891 100644
+--- a/rust/crates/cua-driver-core/src/health_report.rs
++++ b/rust/crates/cua-driver-core/src/health_report.rs
+@@ -200,7 +200,7 @@ impl CheckEntry {
+     pub fn binary_version() -> Self {
+         Self::pass(
+             NAME_BINARY_VERSION,
+-            format!("cua-driver {}", env!("CARGO_PKG_VERSION")),
++            format!("dove-driver {}", env!("CARGO_PKG_VERSION")),
+         )
+     }
+ 
+@@ -337,7 +337,7 @@ pub fn text_summary(report: &Report) -> String {
+         Overall::Failed => "failed",
+     };
+     let mut lines = vec![format!(
+-        "{overall_icon} cua-driver {} on {} — {overall_word}",
++        "{overall_icon} dove-driver {} on {} — {overall_word}",
+         report.driver_version, report.platform
+     )];
+     for entry in &report.checks {
+@@ -501,7 +501,7 @@ mod tests {
+         assert_eq!(version.status, CheckStatus::Pass);
+         assert_eq!(
+             version.message,
+-            format!("cua-driver {}", env!("CARGO_PKG_VERSION"))
++            format!("dove-driver {}", env!("CARGO_PKG_VERSION"))
+         );
+ 
+         let session = CheckEntry::session_active();
+diff --git a/rust/crates/cua-driver-core/src/mcp_wire.rs b/rust/crates/cua-driver-core/src/mcp_wire.rs
+index 7b3d30d..2fd0bc9 100644
+--- a/rust/crates/cua-driver-core/src/mcp_wire.rs
++++ b/rust/crates/cua-driver-core/src/mcp_wire.rs
+@@ -129,7 +129,7 @@ pub fn finish_response(era: ProtocolEra, method: &str, mut response: Response) -
+                     *meta = json!({});
+                 }
+                 meta["io.modelcontextprotocol/serverInfo"] =
+-                    json!({"name": "cua-driver", "version": env!("CARGO_PKG_VERSION")});
++                    json!({"name": "dove-driver", "version": env!("CARGO_PKG_VERSION")});
+                 if method == "server/discover"
+                     || method.ends_with("/list")
+                     || method.ends_with("/read")
+@@ -288,7 +288,7 @@ mod tests {
+         assert_eq!(result["cacheScope"], "private");
+         assert_eq!(
+             result["_meta"]["io.modelcontextprotocol/serverInfo"]["name"],
+-            "cua-driver"
++            "dove-driver"
+         );
+         assert!(result.get("serverInfo").is_none());
+         let structured = json!({"resultType": "domain-value", "private": [1, 2]});
+diff --git a/rust/crates/cua-driver-core/src/protocol.rs b/rust/crates/cua-driver-core/src/protocol.rs
+index 63733f8..e837bfd 100644
+--- a/rust/crates/cua-driver-core/src/protocol.rs
++++ b/rust/crates/cua-driver-core/src/protocol.rs
+@@ -344,7 +344,7 @@ pub fn initialize_result() -> Value {
+     serde_json::json!({
+         "protocolVersion": "2025-06-18",
+         "capabilities": crate::mcp_wire::server_capabilities(),
+-        "serverInfo": { "name": "cua-driver", "version": env!("CARGO_PKG_VERSION") },
++        "serverInfo": { "name": "dove-driver", "version": env!("CARGO_PKG_VERSION") },
+         "instructions": agent_instructions()
+     })
+ }
+diff --git a/rust/crates/cua-driver-core/src/script_tool.rs b/rust/crates/cua-driver-core/src/script_tool.rs
+index fff3648..17eb15f 100644
+--- a/rust/crates/cua-driver-core/src/script_tool.rs
++++ b/rust/crates/cua-driver-core/src/script_tool.rs
+@@ -86,7 +86,7 @@ pub fn disabled_by() -> Option<String> {
+         .or_else(|| std::env::var_os("USERPROFILE"))
+         .map(|home| {
+             std::path::PathBuf::from(home)
+-                .join(".cua-driver")
++                .join(".dove-driver")
+                 .join("config.json")
+         });
+     disabled_from(
+diff --git a/rust/crates/cua-driver-sdk/src/lib.rs b/rust/crates/cua-driver-sdk/src/lib.rs
+index 776cd63..1acd4b9 100644
+--- a/rust/crates/cua-driver-sdk/src/lib.rs
++++ b/rust/crates/cua-driver-sdk/src/lib.rs
+@@ -981,7 +981,7 @@ impl CuaDriver {
+     /// This is the temporary compatibility path for released socket clients.
+     #[uniffi::constructor]
+     pub fn connect(socket_path: Option<String>) -> Result<Arc<Self>, DriverError> {
+-        let socket_path = socket_path.unwrap_or_else(|| socket_path_for_namespace("cua-driver"));
++        let socket_path = socket_path.unwrap_or_else(|| socket_path_for_namespace("dove-driver"));
+         if socket_path.trim().is_empty() {
+             return Err(DriverError::Configuration {
+                 reason: "socket_path must not be empty".into(),
+diff --git a/rust/crates/cua-driver-uia/src/main.rs b/rust/crates/cua-driver-uia/src/main.rs
+index c1c0d48..aa3ff8b 100644
+--- a/rust/crates/cua-driver-uia/src/main.rs
++++ b/rust/crates/cua-driver-uia/src/main.rs
+@@ -76,9 +76,9 @@ fn pipe_path() -> &'static str {
+         .and_then(|name| name.to_str().map(str::to_owned))
+         .is_some_and(|name| name.eq_ignore_ascii_case("dove-driver-uia-local.exe"));
+     if is_local {
+-        r"\\.\pipe\cua-driver-local-uia"
++        r"\\.\pipe\dove-driver-local-uia"
+     } else {
+-        r"\\.\pipe\cua-driver-uia"
++        r"\\.\pipe\dove-driver-uia"
+     }
+ }
+ 
+diff --git a/rust/crates/cua-driver/src/bundle.rs b/rust/crates/cua-driver/src/bundle.rs
+index a062ddc..0535a5d 100644
+--- a/rust/crates/cua-driver/src/bundle.rs
++++ b/rust/crates/cua-driver/src/bundle.rs
+@@ -45,17 +45,17 @@ pub fn cli_name() -> &'static str {
+ 
+ pub fn state_namespace() -> &'static str {
+     if is_local_installation() {
+-        "cua-driver-local"
++        "dove-driver-local"
+     } else {
+-        "cua-driver"
++        "dove-driver"
+     }
+ }
+ 
+ pub fn user_home_subdirectory() -> &'static str {
+     if is_local_installation() {
+-        ".cua-driver-local"
++        ".dove-driver-local"
+     } else {
+-        ".cua-driver"
++        ".dove-driver"
+     }
+ }
+ 
+diff --git a/rust/crates/cua-driver/src/cli.rs b/rust/crates/cua-driver/src/cli.rs
+index 4098709..e0ba89f 100644
+--- a/rust/crates/cua-driver/src/cli.rs
++++ b/rust/crates/cua-driver/src/cli.rs
+@@ -539,7 +539,7 @@ pub fn parse_command() -> Command {
+     // Handle --version / -V before any other parsing so they are never
+     // silently stripped as "bare flags" and swallowed by MCP mode.
+     if args.iter().any(|a| a == "--version" || a == "-V") {
+-        println!("cua-driver {}", env!("CARGO_PKG_VERSION"));
++        println!("dove-driver {}", env!("CARGO_PKG_VERSION"));
+         std::process::exit(0);
+     }
+     if args.iter().any(|a| a == "--help" || a == "-h") {
+diff --git a/rust/crates/cua-driver/src/doctor.rs b/rust/crates/cua-driver/src/doctor.rs
+index 092168d..bd755c0 100644
+--- a/rust/crates/cua-driver/src/doctor.rs
++++ b/rust/crates/cua-driver/src/doctor.rs
+@@ -172,7 +172,7 @@ fn probe_version() -> Probe {
+     } else {
+         build.git_sha.chars().take(12).collect()
+     };
+-    Probe::ok("binary", format!("cua-driver {version} ({target})")).with_detail(format!(
++    Probe::ok("binary", format!("dove-driver {version} ({target})")).with_detail(format!(
+         "git: {git}\nsha256: {}",
+         if build.exe_sha256.is_empty() {
+             "unreadable"
+diff --git a/rust/crates/cua-driver/src/dove_env.rs b/rust/crates/cua-driver/src/dove_env.rs
+new file mode 100644
+index 0000000..0c3740f
+--- /dev/null
++++ b/rust/crates/cua-driver/src/dove_env.rs
+@@ -0,0 +1,81 @@
++//! Dove fork: environment aliases.
++//!
++//! The driver reads upstream's `CUA_DRIVER_*` variables. Every
++//! `DOVE_DRIVER_<NAME>` the caller sets is copied to `CUA_DRIVER_<NAME>`
++//! when that is unset, so Dove can configure the driver under its own names
++//! while upstream's names keep working. `DOVE_DRIVER_HOME` also fills
++//! `CUA_DRIVER_RS_HOME`, the home override most of the driver reads.
++//!
++//! Runs first in `main`, before any thread starts.
++
++use std::ffi::{OsStr, OsString};
++
++const DOVE_PREFIX: &str = "DOVE_DRIVER_";
++const UPSTREAM_PREFIX: &str = "CUA_DRIVER_";
++
++pub fn apply_aliases() {
++    for (name, value) in aliases(std::env::vars_os()) {
++        if name == "CUA_DRIVER_HOME" {
++            set_if_unset("CUA_DRIVER_RS_HOME", &value);
++        }
++        set_if_unset(&name, &value);
++    }
++}
++
++/// The upstream name for each `DOVE_DRIVER_*` variable, with its value.
++fn aliases(vars: impl Iterator<Item = (OsString, OsString)>) -> Vec<(String, OsString)> {
++    vars.filter_map(|(key, value)| {
++        let suffix = key.to_str()?.strip_prefix(DOVE_PREFIX)?;
++        (!suffix.is_empty()).then(|| (format!("{UPSTREAM_PREFIX}{suffix}"), value))
++    })
++    .collect()
++}
++
++fn set_if_unset(name: &str, value: &OsStr) {
++    if std::env::var_os(name).is_none() {
++        std::env::set_var(name, value);
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    fn vars(pairs: &[(&str, &str)]) -> impl Iterator<Item = (OsString, OsString)> {
++        pairs
++            .iter()
++            .map(|(k, v)| (OsString::from(k), OsString::from(v)))
++            .collect::<Vec<_>>()
++            .into_iter()
++    }
++
++    #[test]
++    fn dove_names_map_to_upstream_names() {
++        let mapped = aliases(vars(&[
++            ("DOVE_DRIVER_HOME", "/d"),
++            ("DOVE_DRIVER_PERMISSION_MODE", "bounded"),
++            ("DOVE_DRIVER_", "ignored"),
++            ("CUA_DRIVER_HOME", "/c"),
++            ("PATH", "/bin"),
++        ]));
++        assert_eq!(
++            mapped,
++            vec![
++                ("CUA_DRIVER_HOME".to_owned(), OsString::from("/d")),
++                ("CUA_DRIVER_PERMISSION_MODE".to_owned(), OsString::from("bounded")),
++            ]
++        );
++    }
++
++    #[test]
++    fn an_upstream_value_already_set_wins() {
++        let name = "CUA_DRIVER_DOVE_ENV_TEST_KEEP";
++        std::env::set_var(name, "upstream");
++        set_if_unset(name, OsStr::new("dove"));
++        assert_eq!(std::env::var(name).as_deref(), Ok("upstream"));
++        std::env::remove_var(name);
++        set_if_unset(name, OsStr::new("dove"));
++        assert_eq!(std::env::var(name).as_deref(), Ok("dove"));
++        std::env::remove_var(name);
++    }
++}
+diff --git a/rust/crates/cua-driver/src/history_runtime.rs b/rust/crates/cua-driver/src/history_runtime.rs
+index 7095468..8b4060d 100644
+--- a/rust/crates/cua-driver/src/history_runtime.rs
++++ b/rust/crates/cua-driver/src/history_runtime.rs
+@@ -284,7 +284,7 @@ pub fn verify_installed_app_for_history() -> anyhow::Result<()> {
+         team_identifier,
+         &compact,
+         crate::bundle::bundle_id(),
+-        crate::bundle::state_namespace() == "cua-driver",
++        crate::bundle::state_namespace() == crate::bundle::RELEASE_CLI_NAME,
+     )
+ }
+ 
+@@ -369,13 +369,13 @@ fn installed_package_helper_path() -> anyhow::Result<PathBuf> {
+         std::env::var_os("CUA_DRIVER_LOCAL_HOME")
+             .filter(|value| !value.is_empty())
+             .map(PathBuf::from)
+-            .unwrap_or_else(|| user_home.join(".cua-driver-local"))
++            .unwrap_or_else(|| user_home.join(crate::bundle::user_home_subdirectory()))
+     } else {
+         std::env::var_os("CUA_DRIVER_HOME")
+             .filter(|value| !value.is_empty())
+             .or_else(|| std::env::var_os("CUA_DRIVER_RS_HOME").filter(|value| !value.is_empty()))
+             .map(PathBuf::from)
+-            .unwrap_or_else(|| user_home.join(".cua-driver"))
++            .unwrap_or_else(|| user_home.join(crate::bundle::user_home_subdirectory()))
+     };
+     let executable = if cfg!(target_os = "windows") {
+         format!("{}.exe", crate::bundle::cli_name())
+diff --git a/rust/crates/cua-driver/src/main.rs b/rust/crates/cua-driver/src/main.rs
+index a7abdcb..2ff44e5 100644
+--- a/rust/crates/cua-driver/src/main.rs
++++ b/rust/crates/cua-driver/src/main.rs
+@@ -23,6 +23,7 @@ mod bundle;
+ mod check_update_tool;
+ mod cli;
+ mod doctor;
++mod dove_env;
+ mod driver_service_http;
+ #[cfg(any(target_os = "macos", all(test, unix)))]
+ mod duplicate_copies;
+@@ -491,6 +492,7 @@ mod mcp_runtime_selection_tests {
+ 
+ #[cfg(target_os = "macos")]
+ fn main() {
++    dove_env::apply_aliases();
+     cua_driver_core::build_info::init(env!("CUA_DRIVER_GIT_SHA"));
+     cua_driver_sdk::configure_perception_client_resolver(
+         extension_manager::perception_client_resolver(),
+@@ -924,6 +926,7 @@ fn main() {
+ 
+ #[cfg(not(target_os = "macos"))]
+ fn main() -> anyhow::Result<()> {
++    dove_env::apply_aliases();
+     cua_driver_core::build_info::init(env!("CUA_DRIVER_GIT_SHA"));
+     // An elevated Driver runs shell launches through this executable with a
+     // standard-user token (#3607). Checked first so the helper does no other
+diff --git a/rust/crates/cua-driver/src/serve.rs b/rust/crates/cua-driver/src/serve.rs
+index d97ca38..4d07a5d 100644
+--- a/rust/crates/cua-driver/src/serve.rs
++++ b/rust/crates/cua-driver/src/serve.rs
+@@ -348,9 +348,9 @@ pub fn default_socket_path() -> String {
+ #[cfg(target_os = "windows")]
+ pub fn default_uia_pipe_path() -> String {
+     if crate::bundle::is_local_installation() {
+-        r"\\.\pipe\cua-driver-local-uia".to_owned()
++        r"\\.\pipe\dove-driver-local-uia".to_owned()
+     } else {
+-        r"\\.\pipe\cua-driver-uia".to_owned()
++        r"\\.\pipe\dove-driver-uia".to_owned()
+     }
+ }
+ 
+diff --git a/rust/crates/cua-driver/src/skills.rs b/rust/crates/cua-driver/src/skills.rs
+index 3ffeed2..8929a06 100644
+--- a/rust/crates/cua-driver/src/skills.rs
++++ b/rust/crates/cua-driver/src/skills.rs
+@@ -135,7 +135,7 @@ fn is_excluded_platform_doc(basename: &str, all_platforms: bool) -> bool {
+ 
+ /// Legacy subdir name. `sweep_legacy_skill_pack` removes any skill-pack
+ /// artifacts that landed here before the rename.
+-const LEGACY_HOME_SUBDIRECTORY: &str = ".cua-driver-rs";
++const LEGACY_HOME_SUBDIRECTORY: &str = ".dove-driver-rs";
+ 
+ /// Local install path for the skill pack: `<HomeDir>/skills/cua-driver`.
+ fn local_skill_dir() -> Result<PathBuf> {
+diff --git a/rust/crates/cua-driver/src/telemetry.rs b/rust/crates/cua-driver/src/telemetry.rs
+index 0d1ed60..3d62816 100644
+--- a/rust/crates/cua-driver/src/telemetry.rs
++++ b/rust/crates/cua-driver/src/telemetry.rs
+@@ -29,8 +29,8 @@ const LIFECYCLE_RETRY_BACKOFF_SECS: u64 = 15 * 60;
+ const TOOL_TELEMETRY_LIMIT_PER_HOUR: usize = 1_000;
+ const TOOL_TELEMETRY_WINDOW: Duration = Duration::from_secs(60 * 60);
+ 
+-const HOME_SUBDIRECTORY: &str = ".cua-driver";
+-const LEGACY_HOME_SUBDIRECTORY: &str = ".cua-driver-rs";
++const HOME_SUBDIRECTORY: &str = ".dove-driver";
++const LEGACY_HOME_SUBDIRECTORY: &str = ".dove-driver-rs";
+ const CONFIG_FILE_NAME: &str = "config.json";
+ const CONFIG_ENABLED_KEY: &str = "telemetry_enabled";
+ const TELEMETRY_ID_FILE_NAME: &str = ".telemetry_id";
+diff --git a/rust/crates/cua-driver/src/version_check.rs b/rust/crates/cua-driver/src/version_check.rs
+index b423fef..06893c8 100644
+--- a/rust/crates/cua-driver/src/version_check.rs
++++ b/rust/crates/cua-driver/src/version_check.rs
+@@ -46,7 +46,7 @@ const CACHE_FILE_NAME: &str = "version_check.json";
+ /// there by an older build into the canonical home and drops the directory
+ /// once it is empty — same shape as the telemetry and skill-pack
+ /// migrations. Nothing in this module writes here.
+-const LEGACY_HOME_SUBDIRECTORY: &str = ".cua-driver-rs";
++const LEGACY_HOME_SUBDIRECTORY: &str = ".dove-driver-rs";
+ 
+ /// Single-invocation opt-out env var. Recognised values mirror the
+ /// telemetry opt-out: `0|false|no|off` disables the check, everything
+@@ -1485,7 +1485,7 @@ mod tests {
+ 
+         with_isolated_home(|home| {
+             // Write a config that disables the check.
+-            let cfg_dir = home.join(".cua-driver");
++            let cfg_dir = home.join(".dove-driver");
+             std::fs::create_dir_all(&cfg_dir).unwrap();
+             std::fs::write(
+                 cfg_dir.join("config.json"),
+@@ -1529,7 +1529,7 @@ mod tests {
+             );
+ 
+             // Case B: config file present but flag = true → still enabled.
+-            let cfg_dir = home.join(".cua-driver");
++            let cfg_dir = home.join(".dove-driver");
+             std::fs::create_dir_all(&cfg_dir).unwrap();
+             std::fs::write(
+                 cfg_dir.join("config.json"),
+diff --git a/rust/crates/cua-driver/tests/daemon_required_test.rs b/rust/crates/cua-driver/tests/daemon_required_test.rs
+index 89336f3..39fad19 100644
+--- a/rust/crates/cua-driver/tests/daemon_required_test.rs
++++ b/rust/crates/cua-driver/tests/daemon_required_test.rs
+@@ -96,7 +96,7 @@ fn default_mcp_owns_a_runtime_without_a_daemon() {
+     );
+     let response: serde_json::Value =
+         serde_json::from_slice(&output.stdout).expect("initialize response JSON");
+-    assert_eq!(response["result"]["serverInfo"]["name"], "cua-driver");
++    assert_eq!(response["result"]["serverInfo"]["name"], "dove-driver");
+ }
+ 
+ #[cfg(not(target_os = "macos"))]
+diff --git a/rust/crates/cua-driver/tests/testkit_host_state_isolation_test.rs b/rust/crates/cua-driver/tests/testkit_host_state_isolation_test.rs
+index b6a3605..39bddd3 100644
+--- a/rust/crates/cua-driver/tests/testkit_host_state_isolation_test.rs
++++ b/rust/crates/cua-driver/tests/testkit_host_state_isolation_test.rs
+@@ -27,11 +27,11 @@ fn history_roots(home: &Path) -> Vec<PathBuf> {
+     } else {
+         home.join(".local").join("state")
+     };
+-    let mut roots: Vec<_> = ["cua-driver", "cua-driver-local"]
++    let mut roots: Vec<_> = ["dove-driver", "dove-driver-local"]
+         .into_iter()
+         .map(|namespace| base.join(namespace).join("computer-history"))
+         .collect();
+-    roots.push(home.join(".cua-driver").join("computer-history"));
++    roots.push(home.join(".dove-driver").join("computer-history"));
+     roots
+ }
+ 
+@@ -51,7 +51,7 @@ fn seed_admitted_host_home() -> tempfile::TempDir {
+     // Only this single-test binary's process environment changes; it runs
+     // before any thread or child exists.
+     std::env::set_var("HOME", home.path());
+-    std::env::set_var("CUA_DRIVER_RS_HOME", home.path().join(".cua-driver"));
++    std::env::set_var("CUA_DRIVER_RS_HOME", home.path().join(".dove-driver"));
+     if cfg!(target_os = "windows") {
+         std::env::set_var("USERPROFILE", home.path());
+         std::env::set_var("APPDATA", home.path().join("AppData").join("Roaming"));
+@@ -101,7 +101,7 @@ fn testkit_daemons_ignore_host_history_admission() {
+     assert_admission_hint(Some(Path::new("")), true);
+     let empty_home = tempfile::tempdir().expect("empty driver home");
+     assert_admission_hint(Some(empty_home.path()), false);
+-    assert_admission_hint(Some(&host_home.path().join(".cua-driver")), true);
++    assert_admission_hint(Some(&host_home.path().join(".dove-driver")), true);
+ 
+     // Control: sharing the seeded host state reproduces the original failure,
+     // proving the seed is the state that used to leak into test daemons.
+diff --git a/rust/crates/cursor-overlay/src/motion_defaults.rs b/rust/crates/cursor-overlay/src/motion_defaults.rs
+index ebe2c15..57e8edb 100644
+--- a/rust/crates/cursor-overlay/src/motion_defaults.rs
++++ b/rust/crates/cursor-overlay/src/motion_defaults.rs
+@@ -73,11 +73,11 @@ impl SavedMotionDefaults {
+     }
+ }
+ 
+-/// `~/.cua-driver/config.json`, the file `set_config` writes everywhere.
++/// `~/.dove-driver/config.json`, the file `set_config` writes everywhere.
+ pub fn default_config_path() -> Option<PathBuf> {
+     std::env::var_os("HOME")
+         .or_else(|| std::env::var_os("USERPROFILE"))
+-        .map(|home| PathBuf::from(home).join(".cua-driver").join("config.json"))
++        .map(|home| PathBuf::from(home).join(".dove-driver").join("config.json"))
+ }
+ 
+ fn allowed_styles() -> String {
+diff --git a/rust/crates/cursor-overlay/src/theme_artifact.rs b/rust/crates/cursor-overlay/src/theme_artifact.rs
+index 473940e..98bac14 100644
+--- a/rust/crates/cursor-overlay/src/theme_artifact.rs
++++ b/rust/crates/cursor-overlay/src/theme_artifact.rs
+@@ -364,7 +364,7 @@ pub fn theme_store_root() -> Result<PathBuf> {
+         let root = std::env::var_os("LOCALAPPDATA")
+             .map(PathBuf::from)
+             .ok_or_else(|| anyhow!("LOCALAPPDATA is unavailable"))?;
+-        return Ok(root.join("Cua Driver").join("cursor-themes"));
++        return Ok(root.join("Dove Driver").join("cursor-themes"));
+     }
+     #[cfg(target_os = "macos")]
+     {
+@@ -374,13 +374,13 @@ pub fn theme_store_root() -> Result<PathBuf> {
+         Ok(home
+             .join("Library")
+             .join("Application Support")
+-            .join("Cua Driver")
++            .join("Dove Driver")
+             .join("cursor-themes"))
+     }
+     #[cfg(all(unix, not(target_os = "macos")))]
+     {
+         if let Some(root) = std::env::var_os("XDG_DATA_HOME") {
+-            return Ok(PathBuf::from(root).join("cua-driver").join("cursor-themes"));
++            return Ok(PathBuf::from(root).join("dove-driver").join("cursor-themes"));
+         }
+         let home = std::env::var_os("HOME")
+             .map(PathBuf::from)
+@@ -388,7 +388,7 @@ pub fn theme_store_root() -> Result<PathBuf> {
+         Ok(home
+             .join(".local")
+             .join("share")
+-            .join("cua-driver")
++            .join("dove-driver")
+             .join("cursor-themes"))
+     }
+ }
+diff --git a/rust/crates/pip-preview/src/lib.rs b/rust/crates/pip-preview/src/lib.rs
+index 8679316..e470fce 100644
+--- a/rust/crates/pip-preview/src/lib.rs
++++ b/rust/crates/pip-preview/src/lib.rs
+@@ -13,7 +13,7 @@
+ //! a clear "not yet implemented" error so the rest of the daemon
+ //! continues without a PiP window.
+ 
+-/// Canonical `~/.cua-driver/config.json` path matching what the per-platform
++/// Canonical `~/.dove-driver/config.json` path matching what the per-platform
+ /// `set_config` tools write to. Resolves `$HOME` first (Unix/macOS) and falls
+ /// back to `%USERPROFILE%` (Windows, where `HOME` is usually unset). Returns
+ /// `None` when neither is set (sandboxed CI).
+@@ -22,7 +22,7 @@ pub fn default_config_path() -> Option<std::path::PathBuf> {
+         .or_else(|| std::env::var_os("USERPROFILE"))
+         .map(|h| {
+             std::path::PathBuf::from(h)
+-                .join(".cua-driver")
++                .join(".dove-driver")
+                 .join("config.json")
+         })
+ }
+diff --git a/rust/crates/platform-linux/src/wayland/libei.rs b/rust/crates/platform-linux/src/wayland/libei.rs
+index 4ab3a74..640966a 100644
+--- a/rust/crates/platform-linux/src/wayland/libei.rs
++++ b/rust/crates/platform-linux/src/wayland/libei.rs
+@@ -164,7 +164,7 @@ fn wait_for_reply(rx: Receiver<anyhow::Result<()>>) -> anyhow::Result<()> {
+ 
+ fn restore_token_path() -> Option<PathBuf> {
+     let base = dirs::config_dir()?;
+-    Some(base.join("cua-driver").join("libei-persistent.token"))
++    Some(base.join("dove-driver").join("libei-persistent.token"))
+ }
+ 
+ fn read_restore_token() -> Option<String> {
+@@ -720,7 +720,7 @@ impl EisState {
+             Event::Handshake(handshake, ev) => {
+                 if let reis::ei::handshake::Event::HandshakeVersion { .. } = ev {
+                     handshake.handshake_version(1);
+-                    handshake.name("cua-driver");
++                    handshake.name("dove-driver");
+                     handshake.context_type(reis::ei::handshake::ContextType::Sender);
+                     // Advertise the interface set + versions that reis 0.7's own
+                     // EIS client examples use against real compositors. The
+diff --git a/rust/crates/platform-macos/src/tools/check_permissions.rs b/rust/crates/platform-macos/src/tools/check_permissions.rs
+index b761742..28d17be 100644
+--- a/rust/crates/platform-macos/src/tools/check_permissions.rs
++++ b/rust/crates/platform-macos/src/tools/check_permissions.rs
+@@ -68,8 +68,8 @@ fn direct_capture_evidence_store_for_identity(
+     }
+     let bundle_id = driver_bundle_id_for_executable(executable)?;
+     let state_directory = match bundle_id {
+-        "com.trycua.driver.local" => ".cua-driver-local",
+-        "com.trycua.driver" => ".cua-driver",
++        "com.trycua.driver.local" => ".dove-driver-local",
++        "com.trycua.driver" => ".dove-driver",
+         _ => return None,
+     };
+     Some(DirectCaptureEvidenceStore::new(
+@@ -633,7 +633,7 @@ mod tests {
+             std::env::temp_dir().join(format!("cua-direct-capture-test-{}", uuid::Uuid::new_v4()));
+         let store = release_evidence_store(&home);
+         store.record_now().expect("record prior evidence");
+-        let state_directory = home.join(".cua-driver");
++        let state_directory = home.join(".dove-driver");
+         std::fs::set_permissions(&state_directory, std::fs::Permissions::from_mode(0o500))
+             .expect("make evidence directory read-only");
+ 
