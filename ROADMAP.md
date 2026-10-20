@@ -168,8 +168,9 @@ rows. The calling model keeps every judgement call: the grounder abstains when u
 - Synthetic: 95.01% full pipeline and 61.56% ranker alone, which is exactly what nexi-cua v0.4.0 itself scores on
   these inputs. Its documents claim 98.8% and 92.1%; the committed code and weights do not reproduce those
   (Python 3.12 and 3.13, any hash seed), so the gate asserts the measured values.
-- Memory: the grounder adds 13.5 MB peak in isolation (`tests/memory.rs`, release build) and 20.7 MB to a live
-  daemon driving a GTK3 window, whose peak is 72 MB (`tests/daemon.rs`).
+- Memory: the grounder adds about 19 MB peak RSS in isolation (`tests/memory.rs`, release build, 4 ms per
+  decision) and 19-21 MB to a live daemon acting on a GTK3 window over AT-SPI, whose peak is 70-72 MB
+  (`tests/daemon.rs`). Budgets: 30 MB and 250 MB. Windows is still to measure (W9.4).
 - The asset is fp32 (6.4 MB). An fp16 asset (`--fp16`, 3.2 MB) makes the same decisions but ranks a different
   candidate first on 3 abstained near-ties (top two within 0.6%), so it fails the gate. int8 was not tried.
 
