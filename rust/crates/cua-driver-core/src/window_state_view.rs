@@ -68,6 +68,10 @@ pub struct ViewOptions {
     pub verbose: bool,
     pub full_output: bool,
     pub since: Option<String>,
+    /// The caller's session. `since:"latest"` only resolves to a read made
+    /// in the same session (Dove W1), so one agent never diffs against what
+    /// another agent saw.
+    pub session: Option<String>,
 }
 
 /// JSON schema fragments for the shared arguments, so every backend declares
@@ -81,7 +85,7 @@ pub fn schema_properties() -> Value {
         },
         "since": {
             "type": "string",
-            "description": "A `snapshot_id` from an earlier get_window_state of the same window, or \"latest\" for this window's most recent read with the same query/max_elements/max_depth. Use it on every re-read after acting. Returns only what changed against that snapshot: `+` added rows, `~` changed rows, `-` removed rows (removed ids are the old snapshot's), or `no change`. Falls back to a full read when the snapshot is unknown, expired, belongs to another window, or was read with a different query/max_elements/max_depth; `since_status` says which. The response still carries a NEW snapshot_id and its element_tokens; rows not listed keep their previous [N] unless a `reindexed:` line says otherwise."
+            "description": "A `snapshot_id` from an earlier get_window_state of the same window, or \"latest\" for this session's most recent read of this window with the same query/max_elements/max_depth. Use it on every re-read after acting. Returns only what changed against that snapshot: `+` added rows, `~` changed rows, `-` removed rows (removed ids are the old snapshot's), or `no change`. Falls back to a full read when the snapshot is unknown, expired, belongs to another window, or was read with a different query/max_elements/max_depth; `since_status` says which. The response still carries a NEW snapshot_id and its element_tokens; rows not listed keep their previous [N] unless a `reindexed:` line says otherwise."
         },
         "verbose": {
             "type": "boolean",
@@ -198,6 +202,7 @@ impl ViewOptions {
             verbose: args.get("verbose").and_then(Value::as_bool) == Some(true),
             full_output,
             since: if full_output { None } else { since },
+            session: crate::dove_observation::session_key(args),
         })
     }
 
@@ -290,7 +295,8 @@ pub fn apply(
     // `since:"latest"` names this window's most recent read of the same view.
     let since_resolved = opts.since.as_deref().map(|since| {
         if since.eq_ignore_ascii_case(SINCE_LATEST) {
-            latest_snapshot(ctx, snapshot_id.as_deref()).unwrap_or_default()
+            latest_snapshot(ctx, snapshot_id.as_deref(), opts.session.as_deref())
+                .unwrap_or_default()
         } else {
             since.to_owned()
         }
@@ -303,7 +309,7 @@ pub fn apply(
         }
     });
     if let Some(sid) = &snapshot_id {
-        remember(sid, ctx, &md);
+        remember(sid, ctx, &md, opts.session.as_deref());
     }
 
     // Header text added to the first line of the tree block.
@@ -461,8 +467,13 @@ fn token_hint(snapshot_id: &str, md: &str, truncated: bool) -> String {
 }
 
 /// The most recent remembered read of this window with the same view key,
-/// other than the read being shaped now.
-fn latest_snapshot(ctx: &ViewContext<'_>, current_id: Option<&str>) -> Option<String> {
+/// other than the read being shaped now. With a session, only that
+/// session's reads count.
+fn latest_snapshot(
+    ctx: &ViewContext<'_>,
+    current_id: Option<&str>,
+    session: Option<&str>,
+) -> Option<String> {
     let guard = store().lock().unwrap_or_else(|e| e.into_inner());
     guard
         .iter()
@@ -472,6 +483,7 @@ fn latest_snapshot(ctx: &ViewContext<'_>, current_id: Option<&str>) -> Option<St
                 && s.window_id == ctx.window_id
                 && s.key == ctx.key
                 && Some(s.snapshot_id.as_str()) != current_id
+                && (session.is_none() || s.session.as_deref() == session)
                 && s.at.elapsed() <= STORE_TTL
         })
         .map(|s| s.snapshot_id.clone())
@@ -596,6 +608,7 @@ struct StoredSnapshot {
     key: ViewKey,
     markdown: String,
     at: Instant,
+    session: Option<String>,
 }
 
 fn store() -> &'static Mutex<VecDeque<StoredSnapshot>> {
@@ -603,7 +616,7 @@ fn store() -> &'static Mutex<VecDeque<StoredSnapshot>> {
     STORE.get_or_init(|| Mutex::new(VecDeque::new()))
 }
 
-fn remember(snapshot_id: &str, ctx: &ViewContext<'_>, md: &str) {
+fn remember(snapshot_id: &str, ctx: &ViewContext<'_>, md: &str, session: Option<&str>) {
     let mut guard = store().lock().unwrap_or_else(|e| e.into_inner());
     // A screenshot-only read keeps its snapshot id and returns no tree. It
     // must not erase the rows that snapshot's tokens were read from.
@@ -618,6 +631,7 @@ fn remember(snapshot_id: &str, ctx: &ViewContext<'_>, md: &str) {
         key: ctx.key.clone(),
         markdown: md.to_owned(),
         at: Instant::now(),
+        session: session.map(str::to_owned),
     });
     let same_window = |s: &StoredSnapshot| s.pid == ctx.pid && s.window_id == ctx.window_id;
     while guard.iter().filter(|s| same_window(s)).count() > STORE_PER_WINDOW {
@@ -769,7 +783,7 @@ pub(crate) fn remember_for_test(snapshot_id: &str, pid: i64, window_id: u64, mar
         },
         focus_probe: None,
     };
-    remember(snapshot_id, &ctx, markdown);
+    remember(snapshot_id, &ctx, markdown, None);
 }
 
 fn resolve_since(
@@ -1380,6 +1394,67 @@ mod tests {
         );
         assert_eq!(s3["since_status"], "no_change");
         assert_eq!(s3["since"], "s000000f2");
+    }
+
+    #[test]
+    fn since_latest_only_sees_the_callers_own_session() {
+        let window = 7104;
+        // Session A reads the window.
+        let (mut c1, mut s1) = payload("s000000e1", OLD);
+        apply(
+            &opts(json!({"session": "agent-a"})),
+            &ctx(window),
+            &mut c1,
+            &mut s1,
+        );
+        // Session B reads it after a change.
+        let edited = OLD.replace("\"a\"", "\"ab\"");
+        let (mut c2, mut s2) = payload("s000000e2", &edited);
+        apply(
+            &opts(json!({"session": "agent-b"})),
+            &ctx(window),
+            &mut c2,
+            &mut s2,
+        );
+        // A's "latest" is its own read, so A is told about the change B saw.
+        let (mut c3, mut s3) = payload("s000000e3", &edited);
+        apply(
+            &opts(json!({"session": "agent-a", "since": "latest"})),
+            &ctx(window),
+            &mut c3,
+            &mut s3,
+        );
+        assert_eq!(s3["since"], "s000000e1");
+        assert_eq!(s3["since_status"], "diff");
+        // B's "latest" is B's read: nothing changed since.
+        let (mut c4, mut s4) = payload("s000000e4", &edited);
+        apply(
+            &opts(json!({"_session_id": "agent-b", "since": "latest"})),
+            &ctx(window),
+            &mut c4,
+            &mut s4,
+        );
+        assert_eq!(s4["since"], "s000000e2");
+        assert_eq!(s4["since_status"], "no_change");
+        assert!(text_of(&c4).contains("no change since s000000e2"));
+        // A session that never read the window has no baseline.
+        let (mut c5, mut s5) = payload("s000000e5", &edited);
+        apply(
+            &opts(json!({"session": "agent-c", "since": "latest"})),
+            &ctx(window),
+            &mut c5,
+            &mut s5,
+        );
+        assert_eq!(s5["since_status"], "no_baseline");
+        // A caller without a session keeps upstream's per-window latest.
+        let (mut c6, mut s6) = payload("s000000e6", &edited);
+        apply(
+            &opts(json!({"since": "latest"})),
+            &ctx(window),
+            &mut c6,
+            &mut s6,
+        );
+        assert_eq!(s6["since"], "s000000e5");
     }
 
     #[test]

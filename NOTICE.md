@@ -20,7 +20,10 @@ The full license text is in [LICENSE](LICENSE), which is upstream's `LICENSE.md`
 `scripts/dove/dove-only-files.sh`. Nothing else differs. `scripts/dove/parity-check.sh` rebuilds that tree from
 `upstream` and fails on any other difference, and `scripts/dove/sync-upstream.sh <tag>` moves the fork to a new
 upstream release. Every tool, flag and behaviour of the upstream release is therefore in dove-driver. Features Dove
-adds on top must be new files or new code paths that leave upstream behaviour unchanged.
+adds on top must be new files or new code paths that leave upstream behaviour unchanged. The one deliberate
+exception is `0005-observation.patch`, which changes `get_window_state` defaults. Its entry below lists each change.
+Upstream's screenshot on every read and its PNG encoding stay one argument away (`include_screenshot:true` or
+`start_session {vision:true}`, and `screenshot_format:"png"`).
 
 ## Excluded
 
@@ -83,6 +86,42 @@ nexi-cua ships no NOTICE file of its own.
   a derivative of the nexi-cua weights and is distributed under Apache-2.0 with this notice.
 
 The rest of dove-driver stays under upstream's MIT license.
+
+- `0005-observation.patch` (ROADMAP W1.2-W1.4). Tree-first, screenshot-optional observation. This is the one patch
+  that deliberately changes an upstream default. The per-session `since:"latest"` and `start_session {vision}` are
+  in `cua-driver-core` and apply on every OS. The screenshot policy, JPEG, `marks` and the kept screenshot frame are
+  wired on Windows and Linux only; macOS `get_window_state` still returns a PNG on every read, as upstream.
+  - **No screenshot by default.** A read returns the tree and no image. A screenshot comes only with
+    `include_screenshot:true`, `marks:true`, `screenshot_out_file`, a screenshot-only read
+    (`include_accessibility_tree:false`), a session started with `start_session {vision:true}`, or a tree with fewer
+    than 5 actionable elements (canvas, games, remote desktop). `screenshot_reason` says which (`requested`,
+    `marks`, `vision_session`, `no_tree`, `sparse_tree`), and a tree-first read without one carries
+    `screenshot_omitted`. `include_screenshot:false` still wins over everything except `screenshot_out_file`,
+    as upstream. Upstream returned a screenshot on every read unless `include_screenshot:false`.
+  - **JPEG by default.** The embedded image is JPEG (quality 80) with `screenshot_mime_type: "image/jpeg"`;
+    `screenshot_format:"png"` restores PNG. Screenshots stay window-scoped and downscaled as upstream (at or below
+    1.15 megapixels unless `max_image_dimension` says otherwise), so pixel coordinates are unchanged.
+    `screenshot_out_file` still writes PNG. The capture registered for `capture_id` (pixel actions, perception) is
+    the clean PNG at the same size, so its content digest is the PNG's, not the delivered JPEG's.
+  - **`marks:true`** (new) returns a screenshot with each row's index `N` drawn at its element frame
+    (`screenshot_frame`), so a vision model acts by `element_token` `<snapshot_id>:N`. `marks` in the structured
+    output counts the drawn labels. Elements without a frame, and frames covering half the image or more (the
+    window itself), get no label.
+  - **`start_session {vision}`** (new, boolean). `vision:true` makes every read in that session include a
+    screenshot (unless `include_screenshot:false`), and the response carries `vision: true`. `vision:false`
+    clears it, omitting it keeps it, and it ends with the session.
+  - **`since:"latest"` is per session.** It resolves to the calling session's last read of that window with the
+    same `query`/`max_elements`/`max_depth`. The session is the `session` label, else the transport's implicit
+    session. A session that has not read the window gets a full read with `since_status: "no_baseline"`. A call
+    with no session keeps upstream's per-window latest. Upstream resolved `latest` across all callers, so one
+    agent could diff against what another had seen.
+  - **Tree-first reads keep the screenshot frame.** A read without a screenshot keeps the session's last
+    screenshot frame while the window keeps its size, as upstream macOS already did, so x/y taken from that
+    screenshot still work. Upstream Windows and Linux retired the frame on every tree-only read, and the next
+    pixel action was refused until a new screenshot was taken.
+  - The typed contract (`GetWindowStateInput`, SDK, generated bindings) does not carry `marks` or
+    `screenshot_format` yet; they are inputs of the live tool schemas only. Typed SDK reads now get no screenshot
+    unless they pass `include_screenshot:true`.
 
 Still upstream's: internal crate names (`cua-driver-core` and the rest), `CUA_DRIVER_*` variable names (now with
 `DOVE_DRIVER_*` aliases), protocol identifiers (history schema URNs, the policy `server` name, telemetry event

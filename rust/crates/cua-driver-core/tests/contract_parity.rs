@@ -43,6 +43,11 @@ fn canonical_core_contracts_match_live_registry() {
                     .or_insert_with(cua_driver_core::tool_schema::session_schema);
             }
         }
+        // Dove W1 adds `vision` to start_session (dove_observation.rs).
+        if contract.name == "start_session" {
+            expected_schema =
+                cua_driver_core::dove_observation::extend_start_session_schema(expected_schema);
+        }
         assert_eq!(entry["inputSchema"], expected_schema, "inputSchema");
         assert_eq!(
             entry["annotations"]["readOnlyHint"], contract.annotations.read_only,
