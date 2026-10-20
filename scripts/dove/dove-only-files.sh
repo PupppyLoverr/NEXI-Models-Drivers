@@ -9,4 +9,5 @@ DOVE_ONLY_FILES=(
   scripts/dove
   rust/crates/dove-grounder
   LICENSES
+  ci
 )
