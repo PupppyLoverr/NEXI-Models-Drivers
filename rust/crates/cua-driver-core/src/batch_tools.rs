@@ -134,7 +134,7 @@ pub const MAX_EXPECTS: usize = 4;
 /// client call timeouts.
 pub const MAX_BATCH_MS: u64 = 60_000;
 /// Fields a step object may carry besides one action.
-const STEP_KEYS: &[&str] = &["tool", "args", "wait_for", "expect", "timeout_ms"];
+const STEP_KEYS: &[&str] = &["tool", "args", "wait_for", "expect", "timeout_ms", "intent"];
 const OBSERVE_TOOL: &str = "get_window_state";
 /// Batch-level fields that name the window every step inherits.
 const BATCH_WINDOW_KEYS: &[&str] = &["pid", "window_id", "app", "window"];
@@ -156,7 +156,7 @@ static DEF: OnceLock<ToolDef> = OnceLock::new();
 #[async_trait]
 impl Tool for RunStepsTool {
     fn def(&self) -> &ToolDef {
-        DEF.get_or_init(|| ToolDef {
+        DEF.get_or_init(|| with_intent_note(ToolDef {
             name: RUN_STEPS_TOOL.into(),
             description: "The default way to act: run one or more action tools in ONE call, in \
                 order, stop at the first failure, and (with `observe`) get what changed in the \
@@ -282,7 +282,7 @@ impl Tool for RunStepsTool {
             destructive: true,
             idempotent: false,
             open_world: true,
-        })
+        }))
     }
 
     async fn invoke(&self, args: Value) -> ToolResult {
@@ -302,6 +302,18 @@ impl Tool for RunStepsTool {
     }
 }
 
+/// Dove: with the local grounder installed, describe the `intent` step.
+fn with_intent_note(mut def: ToolDef) -> ToolDef {
+    if crate::grounder_tools::enabled() {
+        def.description.push_str(
+            "\n\nINTENT STEPS: `{\"intent\": \"click Save\"}` lets a local model pick the \
+             element and action in the step's window (0 LLM tokens) and act through its token; \
+             the step fails with the model's best candidate rows when it is not confident.",
+        );
+    }
+    def
+}
+
 /// One action of a step.
 struct Action {
     tool: &'static str,
@@ -317,6 +329,8 @@ struct Action {
 
 struct Step {
     action: Option<Action>,
+    /// Dove: an `{"intent": ...}` step, grounded by `grounder_tools`.
+    intent: Option<String>,
     wait_for: Option<Check>,
     expect: Vec<Check>,
     /// A read-only tool placed between actions. It cannot change what later
@@ -328,6 +342,7 @@ impl Step {
     fn label(&self) -> &'static str {
         match (&self.action, self.skipped_read) {
             (Some(action), _) => action.tool,
+            (None, _) if self.intent.is_some() => "intent",
             (None, Some(read)) => read,
             (None, None) if self.wait_for.is_some() => "wait_for",
             (None, None) => "expect",
@@ -532,6 +547,7 @@ impl Plan {
                 }
                 steps.push(Step {
                     action: None,
+                    intent: None,
                     wait_for: None,
                     expect: Vec::new(),
                     skipped_read: Some(tool),
@@ -559,6 +575,7 @@ impl Plan {
                 .action
                 .as_ref()
                 .is_some_and(|action| !action.element.is_empty() && action.window.is_empty())
+                || step.intent.is_some()
                 || step
                     .wait_for
                     .iter()
@@ -894,6 +911,36 @@ async fn run_step(
                 );
             }
         }
+    }
+
+    if let Some(intent) = &step.intent {
+        let window = match locator.window(context).await {
+            Ok(window) => window,
+            Err(miss) => {
+                return failure(index, label, Phase::Find, miss.code, miss.message, report)
+            }
+        };
+        let grounded = crate::grounder_tools::ground_and_act(
+            registry,
+            window.pid,
+            window.window_id,
+            intent,
+            locator.session(),
+        )
+        .await;
+        *last_window = Some(window);
+        report["grounding"] = grounded.report;
+        if !grounded.ok {
+            return failure(
+                index,
+                label,
+                Phase::Action,
+                grounded.code,
+                grounded.line,
+                report,
+            );
+        }
+        notes.push(grounded.line);
     }
 
     if let Some(action) = step.action {
@@ -1629,9 +1676,34 @@ fn parse_step(
             .map_err(|message| PlanError::step(index, format!("expect: {message}")))?],
     };
 
+    let intent = match object.get("intent") {
+        None | Some(Value::Null) => None,
+        Some(Value::String(text)) if !text.trim().is_empty() => {
+            if name.is_some() {
+                return Err(PlanError::step(
+                    index,
+                    "an `intent` step names no tool: the local grounder picks the action",
+                ));
+            }
+            if !crate::grounder_tools::enabled() {
+                return Err(PlanError::step(
+                    index,
+                    "`intent` steps need the local grounder, which is off: its weights are not \
+                     installed (DOVE_DRIVER_GROUNDER_MODEL)",
+                ));
+            }
+            Some(text.trim().to_owned())
+        }
+        Some(_) => {
+            return Err(PlanError::step(
+                index,
+                "`intent` must be a non-empty string",
+            ))
+        }
+    };
     let action = match name {
         None => {
-            if wait_for.is_none() && expect.is_empty() {
+            if wait_for.is_none() && expect.is_empty() && intent.is_none() {
                 return Err(PlanError::step(
                     index,
                     "empty step: give an action ({tool, args} or {<tool>: args}) or a wait_for/expect check",
@@ -1651,6 +1723,7 @@ fn parse_step(
     };
     Ok(Step {
         action,
+        intent,
         wait_for,
         expect,
         skipped_read: None,

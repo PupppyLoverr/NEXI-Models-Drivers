@@ -1380,6 +1380,12 @@ impl ToolRegistry {
         self.register(Box::new(crate::batch_tools::RunStepsTool::new(
             self.replay_registry.clone(),
         )));
+        // Dove: the Local Grounder's `act`, offered only when its weights are installed.
+        if crate::grounder_tools::enabled() {
+            self.register(Box::new(crate::grounder_tools::ActTool::new(
+                self.replay_registry.clone(),
+            )));
+        }
         // On by default; the operator can turn it off (see script_tool).
         #[cfg(feature = "script")]
         match crate::script_tool::disabled_by() {
@@ -2249,6 +2255,7 @@ impl ToolRegistry {
                     | "get_recording_state"
                     | "replay_trajectory"
                     | "run_steps"
+                    | "act"
                     | "run_script"
                     | "start_session"
                     | "end_session"
