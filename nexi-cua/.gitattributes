@@ -1,0 +1,7 @@
+# Checksummed release files must be checked out byte-for-byte on every OS.
+# Without this, Git for Windows (core.autocrlf=true by default) rewrites the
+# line endings of weights/nexi-cua-1.calib.json, and the file no longer matches
+# RELEASE_CHECKSUMS.sha256.
+weights/** -text
+releases/** -text
+RELEASE_CHECKSUMS.sha256 -text

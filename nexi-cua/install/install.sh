@@ -55,7 +55,7 @@ mkdir -p "$NEXI_CUA_HOME"
 if [ -f "$CHECKOUT/pyproject.toml" ]; then
     PACKAGE_SPEC="$CHECKOUT[$EXTRA]"
 else
-    PACKAGE_SPEC="nexi-cua[$EXTRA] @ https://github.com/PupppyLoverr/gabbledobo-71588/raw/main/nexi-cua/releases/nexi_cua-0.4.0-py3-none-any.whl"
+    PACKAGE_SPEC="nexi-cua[$EXTRA] @ https://github.com/PupppyLoverr/NEXI-Models-Drivers/raw/main/nexi-cua/releases/nexi_cua-0.4.0-py3-none-any.whl"
 fi
 "$VENV/bin/python" -m pip install "$PACKAGE_SPEC"
 
