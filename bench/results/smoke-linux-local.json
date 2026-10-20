@@ -1,0 +1,443 @@
+{
+  "meta": {
+    "version": "smoke-linux-local",
+    "harness_commit": "6f03c05",
+    "runs": 3,
+    "step_limit": 30,
+    "models": [
+      "scripted-stub"
+    ],
+    "configs": {
+      "A": {
+        "label": "dove-driver, this release (tree-first defaults, run_steps)",
+        "command": [
+          "/home/user/NEXI-Models-Drivers/rust/target/release/dove-driver",
+          "mcp"
+        ],
+        "env": {
+          "DOVE_USAGE_TOKENS": "1"
+        },
+        "observation": "tree",
+        "notes": ""
+      },
+      "B": {
+        "label": "dove-driver, previous release (its defaults)",
+        "command": [
+          "/home/user/NEXI-Models-Drivers/rust/target/release/dove-driver",
+          "mcp"
+        ],
+        "env": {
+          "DOVE_USAGE_TOKENS": "1"
+        },
+        "observation": "tree",
+        "notes": "Point DOVE_BENCH_DRIVER_B at the previous dove-driver-v* release binary. There is no release yet; the smoke run uses the dove-driver/main build and says so."
+      },
+      "C": {
+        "label": "stock cua-driver, latest upstream release (its defaults)",
+        "command": [
+          "/tmp/claude-0/stock/target/release/cua-driver",
+          "mcp"
+        ],
+        "env": {},
+        "observation": "tree",
+        "notes": "Build with bench/scripts/build-stock-cua-driver.sh (the `upstream` branch, unmodified) and point DOVE_BENCH_DRIVER_C at the result."
+      },
+      "D": {
+        "label": "dove-driver, screenshot-only (tree off, pixel actions only: the vision baseline)",
+        "command": [
+          "/home/user/NEXI-Models-Drivers/rust/target/release/dove-driver",
+          "mcp"
+        ],
+        "env": {
+          "DOVE_USAGE_TOKENS": "1"
+        },
+        "observation": "screenshot",
+        "notes": "The harness, not the driver, removes the tree: get_window_state is forced to screenshot-only, element arguments are stripped from every schema and refused, and run_steps/set_value are not offered. On Linux a pixel click is still resolved to the accessible under the point by the driver; the route metric reports that as the driver does."
+      }
+    },
+    "environments": {
+      "local": {
+        "os": "Linux-6.18.44-fc-v139-x86_64-with-glibc2.39",
+        "display": ":77",
+        "toolkit": "GTK3 via AT-SPI"
+      }
+    },
+    "notes": [
+      "B is the dove-driver/main build (a41d24f; this branch adds only bench/), i.e. the same driver code as A: there is no previous dove-driver release yet.",
+      "C is stock cua-driver 0.37.0 built from the unmodified upstream branch (47cd531) with bench/scripts/build-stock-cua-driver.sh.",
+      "Display stack: Xvfb + openbox + AT-SPI 2.52, GTK 3 task windows under Python 3.12 PyGObject."
+    ],
+    "created": "2026-10-20T22:35:09Z",
+    "stub": true,
+    "unavailable": {
+      "G": {
+        "label": "dove-driver, this release, with the W9 local grounder (act {goal})",
+        "why": "driver offers no act tool"
+      }
+    }
+  },
+  "results": {
+    "local": {
+      "A": {
+        "scripted-stub": {
+          "tasks": 4,
+          "attempts": 12,
+          "runs": 3,
+          "usage_source": "estimate",
+          "driver_version": [
+            "0.37.0"
+          ],
+          "errors": 0,
+          "driver_errors_per_100_calls": 0.0,
+          "success": {
+            "mean": 1.0,
+            "lo": 1.0,
+            "hi": 1.0
+          },
+          "tokens": {
+            "mean": 171371.16666666666,
+            "lo": 171316.3333333333,
+            "hi": 171461.5
+          },
+          "observation_tokens": {
+            "mean": 211.16666666666666,
+            "lo": 180.83333333333331,
+            "hi": 261.5
+          },
+          "wall_time": {
+            "mean": 2.6665591304999907,
+            "lo": 1.8061042037500101,
+            "hi": 3.65391599608328
+          },
+          "model_time": {
+            "mean": 0.009062595333318768,
+            "lo": 0.008275096333439553,
+            "hi": 0.010217674166578188
+          },
+          "driver_time": {
+            "mean": 2.6548494155832905,
+            "lo": 1.7932142102499902,
+            "hi": 3.6430351529999525
+          },
+          "round_trips": {
+            "mean": 2,
+            "lo": 2,
+            "hi": 2
+          },
+          "steps": {
+            "mean": 3,
+            "lo": 3,
+            "hi": 3
+          },
+          "screenshots": {
+            "mean": 0,
+            "lo": 0,
+            "hi": 0
+          },
+          "semantic_share": {
+            "mean": 1.0,
+            "lo": 1.0,
+            "hi": 1.0
+          },
+          "actions": {
+            "semantic": 36,
+            "synthetic": 0,
+            "unknown": 0
+          },
+          "tool_latency_ms": {
+            "list_windows": {
+              "n": 12,
+              "p50": 13.0,
+              "p95": 17.2
+            },
+            "run_steps": {
+              "n": 12,
+              "p50": 2002.3,
+              "p95": 3520.3
+            }
+          }
+        }
+      },
+      "B": {
+        "scripted-stub": {
+          "tasks": 4,
+          "attempts": 12,
+          "runs": 3,
+          "usage_source": "estimate",
+          "driver_version": [
+            "0.37.0"
+          ],
+          "errors": 0,
+          "driver_errors_per_100_calls": 0.0,
+          "success": {
+            "mean": 1.0,
+            "lo": 1.0,
+            "hi": 1.0
+          },
+          "tokens": {
+            "mean": 171371.25,
+            "lo": 171316.5,
+            "hi": 171461.5
+          },
+          "observation_tokens": {
+            "mean": 211.25,
+            "lo": 181,
+            "hi": 261.5
+          },
+          "wall_time": {
+            "mean": 2.6640920013333207,
+            "lo": 1.797022732999968,
+            "hi": 3.6605526638333004
+          },
+          "model_time": {
+            "mean": 0.007704877249958978,
+            "lo": 0.0072392407500198415,
+            "hi": 0.00804664166658616
+          },
+          "driver_time": {
+            "mean": 2.6538079032499886,
+            "lo": 1.7866952227500406,
+            "hi": 3.6500027701666036
+          },
+          "round_trips": {
+            "mean": 2,
+            "lo": 2,
+            "hi": 2
+          },
+          "steps": {
+            "mean": 3,
+            "lo": 3,
+            "hi": 3
+          },
+          "screenshots": {
+            "mean": 0,
+            "lo": 0,
+            "hi": 0
+          },
+          "semantic_share": {
+            "mean": 1.0,
+            "lo": 1.0,
+            "hi": 1.0
+          },
+          "actions": {
+            "semantic": 36,
+            "synthetic": 0,
+            "unknown": 0
+          },
+          "tool_latency_ms": {
+            "list_windows": {
+              "n": 12,
+              "p50": 13.4,
+              "p95": 19.6
+            },
+            "run_steps": {
+              "n": 12,
+              "p50": 2005.7,
+              "p95": 3513.3
+            }
+          }
+        }
+      },
+      "C": {
+        "scripted-stub": {
+          "tasks": 4,
+          "attempts": 12,
+          "runs": 3,
+          "usage_source": "estimate",
+          "driver_version": [
+            "0.37.0"
+          ],
+          "errors": 0,
+          "driver_errors_per_100_calls": 0.0,
+          "success": {
+            "mean": 1.0,
+            "lo": 1.0,
+            "hi": 1.0
+          },
+          "tokens": {
+            "mean": 171371.16666666666,
+            "lo": 171316.3333333333,
+            "hi": 171461.5
+          },
+          "observation_tokens": {
+            "mean": 211.16666666666666,
+            "lo": 180.83333333333331,
+            "hi": 261.5
+          },
+          "wall_time": {
+            "mean": 2.6742504375000444,
+            "lo": 1.8624874825000006,
+            "hi": 3.6125332150000795
+          },
+          "model_time": {
+            "mean": 0.009684477083358919,
+            "lo": 0.008716290333344052,
+            "hi": 0.010486481250040924
+          },
+          "driver_time": {
+            "mean": 2.6619562234166283,
+            "lo": 1.8492476040833403,
+            "hi": 3.600506041166587
+          },
+          "round_trips": {
+            "mean": 2,
+            "lo": 2,
+            "hi": 2
+          },
+          "steps": {
+            "mean": 3,
+            "lo": 3,
+            "hi": 3
+          },
+          "screenshots": {
+            "mean": 0,
+            "lo": 0,
+            "hi": 0
+          },
+          "semantic_share": {
+            "mean": 1.0,
+            "lo": 1.0,
+            "hi": 1.0
+          },
+          "actions": {
+            "semantic": 36,
+            "synthetic": 0,
+            "unknown": 0
+          },
+          "tool_latency_ms": {
+            "list_windows": {
+              "n": 12,
+              "p50": 14.1,
+              "p95": 23.3
+            },
+            "run_steps": {
+              "n": 12,
+              "p50": 1975.8,
+              "p95": 3500.2
+            }
+          }
+        }
+      },
+      "D": {
+        "scripted-stub": {
+          "tasks": 4,
+          "attempts": 12,
+          "runs": 3,
+          "usage_source": "estimate",
+          "driver_version": [
+            "0.37.0"
+          ],
+          "errors": 0,
+          "driver_errors_per_100_calls": 0.0,
+          "success": {
+            "mean": 1.0,
+            "lo": 1.0,
+            "hi": 1.0
+          },
+          "tokens": {
+            "mean": 132375.25,
+            "lo": 113095.25,
+            "hi": 170842.5
+          },
+          "observation_tokens": {
+            "mean": 410.5,
+            "lo": 359,
+            "hi": 465.25
+          },
+          "wall_time": {
+            "mean": 3.707913580083319,
+            "lo": 2.030438109333337,
+            "hi": 6.157798182249962
+          },
+          "model_time": {
+            "mean": 0.008527527083401765,
+            "lo": 0.006536814833585444,
+            "hi": 0.01234919541667523
+          },
+          "driver_time": {
+            "mean": 3.6931743419999634,
+            "lo": 2.0184046504998796,
+            "hi": 6.13829655316666
+          },
+          "round_trips": {
+            "mean": 6,
+            "lo": 5,
+            "hi": 8
+          },
+          "steps": {
+            "mean": 7,
+            "lo": 6,
+            "hi": 9
+          },
+          "screenshots": {
+            "mean": 1,
+            "lo": 1,
+            "hi": 1
+          },
+          "semantic_share": {
+            "mean": 0.5357142857142857,
+            "lo": 0.23809523809523808,
+            "hi": 0.8333333333333334
+          },
+          "actions": {
+            "semantic": 21,
+            "synthetic": 27,
+            "unknown": 0
+          },
+          "tool_latency_ms": {
+            "click": {
+              "n": 33,
+              "p50": 342.3,
+              "p95": 1417.1
+            },
+            "get_window_state": {
+              "n": 12,
+              "p50": 32.8,
+              "p95": 41.7
+            },
+            "list_windows": {
+              "n": 12,
+              "p50": 13.4,
+              "p95": 20.4
+            },
+            "scroll": {
+              "n": 3,
+              "p50": 1436.7,
+              "p95": 1448.4
+            },
+            "type_text": {
+              "n": 12,
+              "p50": 952.0,
+              "p95": 1038.9
+            }
+          }
+        }
+      }
+    }
+  },
+  "gates": [
+    {
+      "suite": "local",
+      "model": "scripted-stub",
+      "gate": "success",
+      "status": "PASS",
+      "why": "A 100.0% vs B 100.0% (overlapping CIs)"
+    },
+    {
+      "suite": "local",
+      "model": "scripted-stub",
+      "gate": "tokens/task",
+      "status": "PASS",
+      "why": "A 171371 vs B 171371 (-0.0%)"
+    }
+  ],
+  "claims": [
+    {
+      "suite": "local",
+      "config": "A",
+      "model": "scripted-stub",
+      "allowed": false,
+      "why": "stub model with estimated tokens; success CI does not clear C's; success CI does not clear D's; more tokens/task than D"
+    }
+  ]
+}
