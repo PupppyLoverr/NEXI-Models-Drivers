@@ -10,4 +10,5 @@ DOVE_ONLY_FILES=(
   rust/crates/dove-grounder
   LICENSES
   ci
+  bench
 )

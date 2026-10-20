@@ -1,0 +1,8 @@
+{
+  "id": "C",
+  "label": "stock cua-driver, latest upstream release (its defaults)",
+  "command": ["${DOVE_BENCH_DRIVER_C}", "mcp"],
+  "observation": "tree",
+  "requires_env": ["DOVE_BENCH_DRIVER_C"],
+  "notes": "Build with bench/scripts/build-stock-cua-driver.sh (the `upstream` branch, unmodified) and point DOVE_BENCH_DRIVER_C at the result."
+}

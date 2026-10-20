@@ -198,6 +198,14 @@ same agent loop; W8.2 per-call token accounting (`DOVE_USAGE_TOKENS=1` adds inpu
 result's `_meta["ai.dove/token-usage"]`, in `cua-driver-core/src/mcp_result.rs`); W8.3 a results page generated per
 release tag.
 
+Status (2026-10-20): W8.1 and W8.3 are built in `bench/` (subsets pinned, configurations A–G, resumable runs,
+bootstrap CIs, gates, claim rule). W8.2 is not: the driver does not emit `ai.dove/token-usage` yet, so the harness
+estimates observation tokens from the results (it uses the driver's count once the patch lands). Measured on the way:
+the eager `tools/list` of dove-driver 0.37 is 66 tools in 230 KB (about 57k tokens on every model turn), the same as
+stock cua-driver, which makes W5 the largest token lever; and on Linux a background pixel click on a GTK entry fires
+AT-SPI `activate` without moving keyboard focus, so a following `type_text` lands in the previously focused field
+(the result says "not verified"; W2).
+
 ## W9. Local Grounder
 
 Turn an explicit sub-goal ("click Save", "type 'x' into the Email field") into one action with 0 LLM tokens, by
@@ -259,6 +267,7 @@ comparable across releases. Use each suite's own checker for success.
 | C | stock cua-driver, latest upstream release | its defaults |
 | D | dove-driver | screenshot-only: tree off, pixel actions only (the vision baseline) |
 | E | dove-driver | tree + set-of-marks screenshot (`vision: true`) |
+| G | dove-driver, this release | A plus the W9 local grounder (`act {goal}`) |
 
 Run each configuration with at least two models, one frontier and one small or cheap, because token savings matter
 most to the cheap one. Run every task 3 times and report the mean and a 95% bootstrap confidence interval.
@@ -278,7 +287,10 @@ most to the cheap one. Run every task 3 times and report the mean and a 95% boot
 ### Harness
 
 - Put the harness in `/bench/` in this repo. It adapts each suite's task runner to call the driver over MCP stdio.
-  Upstream's MIT `libs/cua-bench` and `ci-cua-driver-bench.yml` are the starting point.
+  Upstream's MIT `libs/cua-bench` and `ci-cua-driver-bench.yml` are the starting point. **Built (2026-10-20):**
+  see `bench/README.md`. Smoke-tested on Linux with a scripted stub model (`bench/results/smoke-linux-local.md`);
+  the VM suites and the paid models have not been run yet. The "#1" claim rule below (A or G against C and D) is
+  enforced in `bench/dovebench/report.py`.
 - VMs come from snapshots, with one fresh snapshot per task attempt. Record the driver version, OS build, model
   id and harness commit with every run.
 - Store trajectories (tool calls, results, timings, token usage) as JSONL, with screenshots only where the

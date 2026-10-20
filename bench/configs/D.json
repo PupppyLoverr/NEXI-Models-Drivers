@@ -1,0 +1,97 @@
+{
+  "id": "D",
+  "label": "dove-driver, screenshot-only (tree off, pixel actions only: the vision baseline)",
+  "command": [
+    "${DOVE_BENCH_DRIVER_A:-rust/target/release/dove-driver}",
+    "mcp"
+  ],
+  "env": {
+    "DOVE_USAGE_TOKENS": "1"
+  },
+  "observation": "screenshot",
+  "tools": {
+    "allow": [
+      "list_windows",
+      "get_window_state",
+      "get_desktop_state",
+      "zoom",
+      "click",
+      "double_click",
+      "right_click",
+      "type_text",
+      "press_key",
+      "hotkey",
+      "scroll",
+      "drag",
+      "launch_app",
+      "get_screen_size",
+      "get_cursor_position"
+    ]
+  },
+  "deny_args": {
+    "*": [
+      "element_token",
+      "element_index",
+      "nth",
+      "query",
+      "since",
+      "tree_format",
+      "include_screenshot",
+      "full_output"
+    ],
+    "click": [
+      "role",
+      "name",
+      "app",
+      "window"
+    ],
+    "double_click": [
+      "role",
+      "name",
+      "app",
+      "window"
+    ],
+    "right_click": [
+      "role",
+      "name",
+      "app",
+      "window"
+    ],
+    "type_text": [
+      "role",
+      "name",
+      "app",
+      "window"
+    ],
+    "press_key": [
+      "role",
+      "name",
+      "app",
+      "window"
+    ],
+    "hotkey": [
+      "role",
+      "name",
+      "app",
+      "window"
+    ],
+    "scroll": [
+      "role",
+      "name",
+      "app",
+      "window"
+    ],
+    "drag": [
+      "role",
+      "name",
+      "app",
+      "window"
+    ]
+  },
+  "force_args": {
+    "get_window_state": {
+      "include_accessibility_tree": false
+    }
+  },
+  "notes": "The harness, not the driver, removes the tree: get_window_state is forced to screenshot-only, element arguments are stripped from every schema and refused, and run_steps/set_value are not offered. On Linux a pixel click is still resolved to the accessible under the point by the driver; the route metric reports that as the driver does."
+}

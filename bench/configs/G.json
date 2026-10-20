@@ -1,0 +1,9 @@
+{
+  "id": "G",
+  "label": "dove-driver, this release, with the W9 local grounder (act {goal})",
+  "command": ["${DOVE_BENCH_DRIVER_A:-rust/target/release/dove-driver}", "mcp"],
+  "env": {"DOVE_USAGE_TOKENS": "1", "DOVE_GROUNDER": "1"},
+  "observation": "tree",
+  "requires_tools": ["act"],
+  "notes": "Needs the W9 driver patch (0003) that exposes `act`. DOVE_GROUNDER is the switch name the harness sets; align it with the patch when it lands. Until then every G attempt fails fast with a clear error and the report marks G unavailable."
+}

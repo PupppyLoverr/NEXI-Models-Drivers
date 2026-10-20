@@ -1,0 +1,7 @@
+{
+  "id": "A",
+  "label": "dove-driver, this release (tree-first defaults, run_steps)",
+  "command": ["${DOVE_BENCH_DRIVER_A:-rust/target/release/dove-driver}", "mcp"],
+  "env": {"DOVE_USAGE_TOKENS": "1"},
+  "observation": "tree"
+}
