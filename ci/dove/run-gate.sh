@@ -9,7 +9,8 @@
 #
 # Gates get these variables, set by the workflow:
 #   DOVE_CI_OS              windows | macos | linux-x11 | linux-sway
-#   DOVE_CI_DRIVER_BIN      absolute path of the built dove-driver
+#   DOVE_CI_DRIVER_BIN      absolute path of the built dove-driver (debug
+#                           profile; a gate that needs release builds it)
 #   DOVE_CI_ARTIFACTS       directory whose contents the job uploads
 #   DOVE_CI_GROUNDER_WEIGHTS  (grounder gate only) absolute path of the weights
 #
