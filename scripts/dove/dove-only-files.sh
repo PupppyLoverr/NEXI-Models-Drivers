@@ -4,6 +4,7 @@ DOVE_ONLY_FILES=(
   README.md
   NOTICE.md
   ROADMAP.md
+  NEXI_CUA_COMPARISON.md
   .gitignore
   scripts/dove
 )
