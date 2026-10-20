@@ -7,20 +7,30 @@ to source files, followed by the benchmark plan.
 
 Paths are relative to `rust/crates/` unless they start with `/`. "Upstream" means `trycua/cua` `libs/cua-driver`.
 
+## Rule: never behind upstream
+
+dove-driver must do everything upstream cua-driver does. `main` is always the latest upstream release plus Dove's
+changes: the rebrand transforms and the feature patches in `scripts/dove/patches/`, all applied by
+`scripts/dove/apply-dove-changes.sh`. `scripts/dove/parity-check.sh` enforces this, and
+`scripts/dove/sync-upstream.sh <tag>` takes each new upstream release (see NOTICE.md). Take every upstream release
+within a week. A Dove change that upstream would accept goes upstream as a PR, and is dropped from the patch queue
+once it lands.
+
 ## Where we start
 
-- Base: upstream `cua-driver-rs-v0.34.0` (`b0968e1`, 2026-10-05), with `cua-perception` removed (see NOTICE.md).
-- Already in 0.34.0: element tokens (`cua-driver-core/src/element_token.rs`), `get_window_state` with `query`,
+- Base: upstream `cua-driver-rs-v0.37.0` (`2d2f992`, 2026-10-20), with `cua-perception` removed (see NOTICE.md).
+  The first import was v0.34.0; R0.1 moved the base.
+- From upstream 0.35–0.37, now in the fork: `get_window_state since:<snapshot_id>` row diffs (CUA-1193), lean
+  default output (compact markdown, at most 250 nodes, `full_output: true` for the old shape), `run_steps` (formerly
+  `run_actions`) with find, wait and check steps (CUA-1194) and a nudge to batch, `run_script` (sandboxed QuickJS),
+  `browser_select`, `get_guide`, recovery hints on refusals and unverifiable results, and locked-screen reporting.
+  Code: `cua-driver-core/src/batch_tools.rs`, `batch_nudge.rs`, `step_pacing.rs`, `script_tool.rs`.
+- From 0.34.0 and earlier: element tokens (`cua-driver-core/src/element_token.rs`), `get_window_state` with `query`,
   `max_elements`, `max_depth`, `include_screenshot`, `max_image_dimension` and a walk budget
   (`cua-driver-contract/src/windows.rs`, `cua-driver-core/src/walk_budget.rs`), `verify_state`
   (`cua-driver-contract/src/verification.rs`, `cua-driver-core/src/expectation.rs`), action effects
   (`cua-driver-core/src/action_record.rs`), delivery modes (`cua-driver-core/src/delivery.rs`,
   `background_input.rs`) and the standard/bounded permission modes (`cua-driver-core/src/authorization.rs`).
-- **Not in 0.34.0, but upstream ships it in 0.35.0 (2026-10-12):** `get_window_state since:<snapshot_id>` row diffs
-  (CUA-1193), lean default output (compact markdown, at most 250 nodes, `full_output: true` for the old shape),
-  `run_actions`, renamed to `run_steps`, with find, wait and check steps (CUA-1194), and `run_script` (sandboxed
-  QuickJS). Upstream adds `cua-driver-core/src/batch_tools.rs`, `batch_nudge.rs`, `step_pacing.rs` and
-  `script_tool.rs` for these.
 - **Not upstream at all:** lazy tool disclosure (`describe_tools`, `DOVE_TOOL_DISCLOSURE=lazy`) and per-result token
   usage metadata (`ai.dove/token-usage`, `DOVE_USAGE_TOKENS=1`). Both exist only in the prebuilt
   `dove-driver 0.34.0` Windows binary, whose source was not found (see "Provenance" below).
@@ -30,8 +40,8 @@ Paths are relative to `rust/crates/` unless they start with `/`. "Upstream" mean
 
 | # | Work item | Files | Done when |
 |---|---|---|---|
-| R0.1 | **Move the base to upstream `cua-driver-rs-v0.35.0` or later** (`v0.36.0` is current). Import the tag on the `upstream` branch, merge it into `main`, and rerun the rebrand edits. This brings in `since` diffs, `run_steps`, lean output and `run_script`, so W1 and W3 do not port them by hand. | whole tree; the rebrand list in NOTICE.md | `main` builds and its tests pass on the new base |
-| R0.2 | **Finish the identity rename** so dove-driver never shares state with a stock `cua-driver` on the same machine. Rename the state dir to `~/.dove-driver(-local)`, the named pipes (`\\.\pipe\cua-driver*`), Unix sockets, Linux secret-service names, MCP `serverInfo.name`, the skill pack name and the cursor/browser profile dirs. Add `DOVE_DRIVER_*` env aliases while still reading `CUA_DRIVER_*`. | `cua-driver/src/bundle.rs`, `serve.rs`, `history_runtime.rs`, `skills.rs`, `telemetry.rs`, `version_check.rs`; `cua-driver-core/src/protocol.rs`, `mcp_wire.rs`, `policy.rs`, `browser/prepare.rs`; `cua-driver-sdk/src/lib.rs`, `embedded.rs`; `cua-driver-uia/src/main.rs`; `cursor-overlay/src/theme_artifact.rs`, `motion_defaults.rs`; `pip-preview/src/lib.rs`; `platform-linux/src/history.rs`, `session_bus.rs` | dove-driver and cua-driver run side by side with separate state, and an e2e test proves it |
+| R0.1 | **Done (2026-10-20):** base moved to `cua-driver-rs-v0.37.0` with `scripts/dove/sync-upstream.sh`. Remaining: run the full Windows test suite on the new base, and add a weekly CI job that runs `sync-upstream.sh` on the newest upstream tag and opens a PR. | `/scripts/dove/`, `/.github/workflows/` (new) | a new upstream release reaches `main` through a reviewed PR without hand edits |
+| R0.2 | **Finish the identity rename** (as transforms in `apply-dove-changes.sh`, so it survives syncs) so dove-driver never shares state with a stock `cua-driver` on the same machine. Rename the state dir to `~/.dove-driver(-local)`, the named pipes (`\\.\pipe\cua-driver*`), Unix sockets, Linux secret-service names, MCP `serverInfo.name`, the skill pack name and the cursor/browser profile dirs. Add `DOVE_DRIVER_*` env aliases while still reading `CUA_DRIVER_*`. | `cua-driver/src/bundle.rs`, `serve.rs`, `history_runtime.rs`, `skills.rs`, `telemetry.rs`, `version_check.rs`; `cua-driver-core/src/protocol.rs`, `mcp_wire.rs`, `policy.rs`, `browser/prepare.rs`; `cua-driver-sdk/src/lib.rs`, `embedded.rs`; `cua-driver-uia/src/main.rs`; `cursor-overlay/src/theme_artifact.rs`, `motion_defaults.rs`; `pip-preview/src/lib.rs`; `platform-linux/src/history.rs`, `session_bus.rs` | dove-driver and cua-driver run side by side with separate state, and an e2e test proves it |
 | R0.3 | **macOS identity.** `DoveDriver.app`, bundle id under Dove's Apple team, entitlements, TCC strings. This needs Dove's Developer ID. | `cua-driver/src/bundle.rs`, `/rust/scripts/CuaDriverBundle`, `/rust/scripts/CuaDriver.entitlements`, `platform-macos/src/tools/check_permissions.rs` | a signed, notarized app gets AX and Screen Recording grants under its own identity |
 | R0.4 | **Cut the upstream phone-home.** Telemetry posts to Cua's PostHog (`cua-driver/src/telemetry.rs`), the update check reads `trycua/cua` releases (`version_check.rs`), and `updater.rs` would replace dove-driver with stock cua-driver. Point telemetry at Dove's opt-in pipeline or turn it off. Read updates from Dove's release manifest, or turn updates off and let Dove's plugin manager own them. | `cua-driver/src/telemetry.rs`, `version_check.rs`, `updater.rs`, `check_update_tool.rs`; `cua-telemetry` | no network request leaves the driver unless Dove asks for one |
 | R0.5 | **Windows build prerequisite.** `regorus` turns on `msvc_spectre_libs` with `error`, so a build fails without the VS "MSVC Spectre-mitigated libs" component. Install it on dev machines and CI, and document it in README. | `/README.md`, CI images | a clean Windows box builds with the documented steps |
@@ -45,7 +55,7 @@ the surface has no tree, or when the session declares vision.
 
 | # | Work item | Files |
 |---|---|---|
-| W1.1 | Lean output by default: compact rows, a node cap, `full_output` opt-in. Comes with R0.1. Then tune pruning: drop unlabelled containers, collapse single-child chains, merge static text into its labelled parent. | `cua-driver-core/src/window_inspection.rs` (tree markdown), `walk_budget.rs`; `platform-windows/src/uia/snapshot.rs`; `platform-macos/src/ax/tree.rs`, `ax/snapshot.rs`; `platform-linux/src/atspi/snapshot.rs`, `snapshot_queries.rs` |
+| W1.1 | Lean output by default: compact rows, a node cap, `full_output` opt-in, already in the base. Next, tune pruning: drop unlabelled containers, collapse single-child chains, merge static text into its labelled parent. | `cua-driver-core/src/window_inspection.rs` (tree markdown), `walk_budget.rs`; `platform-windows/src/uia/snapshot.rs`; `platform-macos/src/ax/tree.rs`, `ax/snapshot.rs`; `platform-linux/src/atspi/snapshot.rs`, `snapshot_queries.rs` |
 | W1.2 | `since:"latest"` as well as `since:<snapshot_id>`: diff against the session's last snapshot of that window, and return `no change` when nothing changed. | `cua-driver-core/src/snapshot_store.rs`, `element_token.rs`, `session.rs`; `cua-driver-contract/src/windows.rs` |
 | W1.3 | Screenshot policy: window-scoped, downscaled, JPEG by default, returned only when (a) `include_screenshot: true`, (b) the tree is empty or below a node threshold (canvas, games, remote desktop), or (c) the session opened with `start_session {vision: true}`. Tokens stay valid when the tree is skipped. | `cua-driver-core/src/image_utils.rs` (`png_bytes_to_jpeg`, `resize_png_if_needed`), `capture_mode.rs`, `capture_scope.rs`, `session.rs`, `session_tools.rs`; `platform-windows/src/capture.rs`, `wgc.rs`; `platform-macos/src/capture.rs`; `platform-linux/src/capture.rs` |
 | W1.4 | Set-of-marks mode: draw each row's `[N]` on the screenshot at its element frame, so a vision model clicks by token instead of by pixel. | `cua-driver-core/src/image_utils.rs` (next to `crosshair_png_bytes`), `element_frame.rs`; a `marks: true` input in `cua-driver-contract/src/windows.rs` |
@@ -73,9 +83,9 @@ names its delivery route and effect.
 
 | # | Work item | Files |
 |---|---|---|
-| W3.1 | `run_steps` with early stop and an `observe` diff. Comes with R0.1 (`batch_tools.rs`). | `cua-driver-core/src/batch_tools.rs` (upstream 0.35+) |
+| W3.1 | `run_steps` with early stop and an `observe` diff: already in the base. Measure it in W8. | `cua-driver-core/src/batch_tools.rs` (from upstream) |
 | W3.2 | `wait_for {query, gone, timeout}` and assertion steps (`expect` reusing `verify_state` predicates) inside `run_steps`, with Playwright-style auto-wait before each action: target exists, enabled, on screen and stable. | `batch_tools.rs`, `cua-driver-core/src/expectation.rs` (`evaluate_predicates`), `element_query.rs` |
-| W3.3 | Decide `run_script` (QuickJS): keep it on for loops and branches, keep it off in `bounded` mode, and cover it with the W6 policy. | `cua-driver-core/src/script_tool.rs` (upstream 0.35+), `authorization.rs` |
+| W3.3 | Decide `run_script` (QuickJS): keep it on for loops and branches, keep it off in `bounded` mode, and cover it with the W6 policy. | `cua-driver-core/src/script_tool.rs` (from upstream), `authorization.rs` |
 
 **Done when:** a typical "open dialog, fill three fields, submit, check result" flow is one `run_steps` call,
 and W8 reports round trips per task.
@@ -87,7 +97,7 @@ and W8 reports round trips per task.
 | # | Work item | Files |
 |---|---|---|
 | W4.1 | Keep one daemon per user session, warm across MCP clients; the MCP stdio process proxies to it. Measure cold and warm start. | `cua-driver/src/serve.rs`, `proxy.rs`, `cua-driver-core/src/daemon.rs` |
-| W4.2 | Cache tree walkers per window and invalidate them on events: UIA `StructureChanged`, `PropertyChanged` and focus events, macOS `AXObserver` notifications, AT-SPI `object:children-changed` / `state-changed`. Re-walk only the dirty subtree. None of these subscriptions exist in 0.34.0. | `platform-windows/src/uia/mod.rs`, `uia/snapshot.rs`; `platform-macos/src/window_change_detector.rs`, `ax/`; `platform-linux/src/atspi/mod.rs`; `cua-driver-core/src/snapshot_store.rs` |
+| W4.2 | Cache tree walkers per window and invalidate them on events: UIA `StructureChanged`, `PropertyChanged` and focus events, macOS `AXObserver` notifications, AT-SPI `object:children-changed` / `state-changed`. Re-walk only the dirty subtree. Upstream (as of 0.37.0) subscribes to none of these. | `platform-windows/src/uia/mod.rs`, `uia/snapshot.rs`; `platform-macos/src/window_change_detector.rs`, `ax/`; `platform-linux/src/atspi/mod.rs`; `cua-driver-core/src/snapshot_store.rs` |
 | W4.3 | Use a UIA `CacheRequest` with only the properties the rows need, so one cross-process call replaces a call per property. | `platform-windows/src/uia/snapshot.rs` |
 | W4.4 | Snapshot several windows in parallel for `get_desktop_state` and multi-window flows. | `cua-driver-core/src/window_observation.rs`; per-platform `get_desktop_state` |
 | W4.5 | Latency harness: p50/p95 per tool per fixture app, run in CI, failing on a regression above 20%. Start from upstream's `ci-cua-driver-bench.yml` and `cua-driver-core/tests/recording_turn_latency.rs`. | `cua-driver-e2e/tests/` (new `latency_test.rs`), `/.github/workflows/` |
@@ -110,7 +120,7 @@ mode.
 | # | Work item | Files |
 |---|---|---|
 | W6.1 | Keep the `standard` / `bounded` permission modes. Dove sets the mode at launch. | `cua-driver-core/src/authorization.rs`, `session_authorization.rs`, `policy.rs` |
-| W6.2 | Never type into password or secure fields: UIA `IsPassword`, `AXSecureTextField`, AT-SPI `ROLE_PASSWORD_TEXT`, browser `input[type=password]`. Refuse with a typed error that tells the model to hand off. In 0.34.0 the only guard is on Linux, where `atspi/native.rs` hides a password field's text. No platform refuses typing into one. | `platform-windows/src/tools/impl_.rs`, `uia/snapshot.rs`; `platform-macos/src/tools/type_text.rs`, `set_value.rs`; `platform-linux/src/tools/impl_.rs`; `cua-driver-core/src/browser/` |
+| W6.2 | Never type into password or secure fields: UIA `IsPassword`, `AXSecureTextField`, AT-SPI `ROLE_PASSWORD_TEXT`, browser `input[type=password]`. Refuse with a typed error that tells the model to hand off. In upstream 0.37.0 the only guard is on Linux, where `atspi/native.rs` hides a password field's text. No platform refuses typing into one. | `platform-windows/src/tools/impl_.rs`, `uia/snapshot.rs`; `platform-macos/src/tools/type_text.rs`, `set_value.rs`; `platform-linux/src/tools/impl_.rs`; `cua-driver-core/src/browser/` |
 | W6.3 | Stop and hand off at UAC prompts (secure desktop, `consent.exe`), OS credential dialogs, and payment fields (`autocomplete=cc-*`, known payment frames). Report it as `handoff_required`. | `platform-windows/src/virtualdesk.rs`, `win32/`; `cua-driver-core/src/consent.rs`, `browser/` |
 | W6.4 | Per-app allow/deny list, set in Dove Settings and passed as a policy file. Denied apps do not appear in `list_windows` and cannot be targeted. | `cua-driver-core/src/policy.rs` (Rego via `regorus`), `window_target.rs`; `cua-driver/src/serve.rs` (`CUA_DRIVER_POLICY_FILE`) |
 
@@ -201,7 +211,7 @@ most to the cheap one. Run every task 3 times and report the mean and a 95% boot
 
 ## Sequencing
 
-1. R0.1 rebase, then R0.2 identity, R0.4 phone-home and R0.5 build prerequisite. Nothing ships before these.
+1. R0.2 identity (R0.1 is done), R0.4 phone-home and R0.5 build prerequisite. Nothing ships before these.
 2. W5 lazy disclosure and W1.2/W1.3 observation, because those give the token wins.
 3. W7 CI and W4.5 latency harness, so later work has a gate.
 4. W2 semantic actions, W3 waits and assertions, W6 safety.

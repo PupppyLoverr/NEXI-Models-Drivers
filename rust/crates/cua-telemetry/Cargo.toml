@@ -12,7 +12,7 @@ repository = "https://github.com/trycua/cua"
 publish = false
 
 [features]
-default = ["http"]
+default = []
 # The PostHog sender. Without it events are built, validated and logged
 # locally (`show-last`) but never leave the machine.
 http = ["dep:ureq"]

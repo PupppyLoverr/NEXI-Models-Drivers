@@ -26,11 +26,34 @@ build with (for example "MSVC v143 - VS 2022 C++ x64/x86 Spectre-mitigated libs 
 engine depends on `msvc_spectre_libs` with its `error` feature, so without the component the build stops in that
 crate's build script.
 
+## Test
+
+```bash
+cd rust
+cargo test -p cua-driver
+```
+
+`cua-telemetry` comes from upstream's `libs/cua` workspace, whose cargo config sets telemetry env vars for tests.
+Run its tests the same way, with its `http` sender on:
+
+```bash
+CUA_TELEMETRY=0 CUA_TELEMETRY_FORBID_NETWORK=1 CUA_TELEMETRY_SYNTHETIC=1 cargo test -p cua-telemetry --features http
+```
+
 ## Branches
 
-- `upstream`: unmodified imports of `libs/cua-driver`, one commit per upstream tag. To move the base, import a newer
-  tag here and merge it into `main`.
-- `main`: the Dove fork.
+- `upstream`: unmodified imports of `libs/cua-driver`, one commit per upstream tag.
+- `main`: `upstream` plus Dove's changes, and nothing else (checked by `scripts/dove/parity-check.sh`).
+
+To take a new upstream release:
+
+```bash
+scripts/dove/sync-upstream.sh cua-driver-rs-vX.Y.Z
+```
+
+It imports the tag onto `upstream`, stages a merge into `main`, reapplies Dove's changes
+(`scripts/dove/apply-dove-changes.sh`, including the feature patches in `scripts/dove/patches/`) and runs the parity
+check. Build, test, update the base in NOTICE.md, then commit.
 
 ## License
 

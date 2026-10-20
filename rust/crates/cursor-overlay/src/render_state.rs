@@ -35,14 +35,73 @@
 
 use crate::trajectory::{plan_move, MoveRequest, Pt, Trajectory};
 use crate::{
-    CompiledTheme, CursorAction, CursorConfig, CursorVisualState, DeliveryModifier, MotionConfig,
-    OverlayCommand, TargetModifier,
+    BadgeMode, CompiledTheme, CursorAction, CursorConfig, CursorVisualState, DeliveryModifier,
+    MotionConfig, OverlayCommand, SessionBadgeInput, TargetModifier,
 };
 use cua_driver_core::agent_cursor::AgentCursorVisibility;
 use std::sync::Arc;
 
 pub const SESSION_BADGE_HOLD_SECS: f64 = 2.0;
 pub const SESSION_BADGE_FADE_SECS: f64 = 0.4;
+
+/// Minimal badge chip timeline, in seconds of the cursor at rest: a short
+/// delay (so a cue that is about to move the cursor does not flash first), a
+/// quick fade in, a hold, and a fade out. About one second in all.
+pub const MINIMAL_CHIP_DELAY_SECS: f64 = 0.12;
+pub const MINIMAL_CHIP_FADE_IN_SECS: f64 = 0.08;
+pub const MINIMAL_CHIP_HOLD_SECS: f64 = 0.5;
+pub const MINIMAL_CHIP_FADE_OUT_SECS: f64 = 0.3;
+pub const MINIMAL_CHIP_SECS: f64 = MINIMAL_CHIP_DELAY_SECS
+    + MINIMAL_CHIP_FADE_IN_SECS
+    + MINIMAL_CHIP_HOLD_SECS
+    + MINIMAL_CHIP_FADE_OUT_SECS;
+/// How fast the minimal badge's session name fades in or out when another
+/// agent cursor appears or leaves.
+pub const MINIMAL_NAME_FADE_SECS: f64 = 0.2;
+/// An unarmed chip plays anyway after this long, in case its action's end
+/// never arrives.
+pub const MINIMAL_CHIP_ARM_TIMEOUT_SECS: f64 = 10.0;
+/// Text of the minimal chip for a foreground moment without a key combo.
+pub const FOREGROUND_CHIP_LABEL: &str = "foreground";
+
+/// The brief chip the minimal badge shows for one action.
+#[derive(Debug, Clone, PartialEq)]
+pub struct MinimalChip {
+    /// Formatted combo such as `⌘C`, when the action holds one.
+    pub key_combo: Option<String>,
+    /// The action brings something to the foreground.
+    pub foreground: bool,
+    /// Seconds played. The clock only runs once the action has ended and
+    /// the cursor is at rest.
+    pub secs: f64,
+    /// The action has ended. A real foreground click can hide the overlay
+    /// while it is delivered, so the chip plays after the action instead.
+    pub armed: bool,
+    /// Seconds waited unarmed, so a lost `EndAction` cannot pin the chip.
+    pub waiting_secs: f64,
+}
+
+impl MinimalChip {
+    pub fn alpha(&self) -> f32 {
+        let smooth = |t: f64| {
+            let t = t.clamp(0.0, 1.0);
+            t * t * (3.0 - 2.0 * t)
+        };
+        let t = self.secs;
+        let fade_in_end = MINIMAL_CHIP_DELAY_SECS + MINIMAL_CHIP_FADE_IN_SECS;
+        let hold_end = fade_in_end + MINIMAL_CHIP_HOLD_SECS;
+        let alpha = if t < MINIMAL_CHIP_DELAY_SECS {
+            0.0
+        } else if t < fade_in_end {
+            smooth((t - MINIMAL_CHIP_DELAY_SECS) / MINIMAL_CHIP_FADE_IN_SECS)
+        } else if t < hold_end {
+            1.0
+        } else {
+            1.0 - smooth((t - hold_end) / MINIMAL_CHIP_FADE_OUT_SECS)
+        };
+        alpha as f32
+    }
+}
 
 /// Position of a cursor that has never been placed. It lies far outside any
 /// compositor layout: layouts reach negative coordinates when a monitor sits
@@ -122,6 +181,17 @@ pub struct RenderStateCore {
     pub badge_modifiers: Option<(Option<DeliveryModifier>, Option<TargetModifier>)>,
     /// Elapsed chip fade time after the active semantic action clears.
     pub badge_modifier_fade_secs: Option<f64>,
+    /// Badge mode for this cursor; `None` follows the live `cursor.badges`
+    /// setting ([`crate::badge_mode::active`]).
+    pub badge_mode_override: Option<BadgeMode>,
+    /// Another agent cursor is revealed on this overlay too, so the minimal
+    /// badge names this one. The render map refreshes it on every tick.
+    pub peer_cursors_visible: bool,
+    /// Minimal badge: eased 0..1 presence of the session name while other
+    /// agent cursors are on screen.
+    pub minimal_name_presence: f32,
+    /// Minimal badge: the brief chip for a foreground moment or key combo.
+    pub minimal_chip: Option<MinimalChip>,
     /// Whether this surface can alpha-blend translucent effects (glow,
     /// trail). Platforms clear it where they cannot, such as X11 without a
     /// compositing manager.
@@ -177,6 +247,10 @@ impl RenderStateCore {
             session_badge_hovered: false,
             badge_modifiers: None,
             badge_modifier_fade_secs: None,
+            badge_mode_override: None,
+            peer_cursors_visible: false,
+            minimal_name_presence: 0.0,
+            minimal_chip: None,
             effects_capable: true,
         }
     }
@@ -248,106 +322,22 @@ impl RenderStateCore {
 
     /// Geometry of the motion effects to paint this frame.
     fn effect_frame(&self) -> EffectFrame {
-        let mut frame = EffectFrame::default();
         if self.reduced_motion() {
-            return frame;
+            return EffectFrame::default();
         }
-        if let Some(traj) = self.trajectory.as_ref() {
-            let t = self.motion_t;
-            let fx = traj.effects;
-            if fx.glow && self.effects_capable && t < traj.duration() {
-                let (vx, vy) = traj.velocity_at(t);
-                let speed = vx.hypot(vy);
-                let alpha = (speed * 0.00014).min(0.42);
-                if alpha > 0.02 {
-                    let off = (speed * 0.009).min(18.0);
-                    let (ux, uy) = (vx / speed, vy / speed);
-                    frame.glow = Some(Glow {
-                        x: self.pos.0 - ux * off,
-                        y: self.pos.1 - uy * off,
-                        r: 30.0 * (1.0 + (speed * 0.00024).min(0.44)),
-                        alpha,
-                    });
-                }
+        let mut frame = match self.trajectory.as_ref() {
+            Some(traj) => {
+                effects::motion_frame(traj, self.motion_t, self.pos, self.effects_capable)
             }
-            if fx.trail && self.effects_capable {
-                const STEPS: usize = 26;
-                // The trail follows the arrow's body (the anchor, which sits
-                // POINTER_ANCHOR_OFFSET behind the tip along the arrow's own
-                // axis), not the hotspot. It is painted under the artwork, so
-                // the body hides the head of the trail: it flows out from behind
-                // the arrow and the tip stays clean.
-                let anchor_at = |k: f64| {
-                    let s = traj.sample_at(t - TRAIL_SECS + TRAIL_SECS * k);
-                    crate::anchor_for_pointer(s.x, s.y, s.heading)
-                };
-                let pts: Vec<(f64, f64)> = (0..=STEPS)
-                    .map(|i| anchor_at(i as f64 / STEPS as f64))
-                    .collect();
-                let length: f64 = pts
-                    .windows(2)
-                    .map(|w| (w[1].0 - w[0].0).hypot(w[1].1 - w[0].1))
-                    .sum();
-                // A very short trail (move start, landing) fades out instead of
-                // showing a stub.
-                let fade = (length / TRAIL_FADE_LEN).min(1.0);
-                for (i, w) in pts.windows(2).enumerate() {
-                    let k = (i + 1) as f64 / STEPS as f64;
-                    if (w[1].0 - w[0].0).hypot(w[1].1 - w[0].1) > 0.3 {
-                        frame.trail.push(TrailSeg {
-                            a: w[0],
-                            b: w[1],
-                            width: 2.0 + 10.0 * k,
-                            alpha: 0.38 * k * k * fade,
-                        });
-                    }
-                }
-            }
-            if fx.magnet {
-                if let Some(snap) = traj.snap_t {
-                    let age = t - snap;
-                    if (0.0..MAGNET_SECS).contains(&age) {
-                        let rect = if traj.target_known {
-                            traj.target
-                        } else {
-                            let end = traj.end();
-                            [end.x - 12.0, end.y - 12.0, 24.0, 24.0]
-                        };
-                        frame.magnet = Some(Magnet {
-                            rect,
-                            glow: 1.0 - age / MAGNET_SECS,
-                        });
-                    }
-                }
-            }
-        }
+            None => EffectFrame::default(),
+        };
         if let Some(age) = self.click_age {
-            let fx = self.motion.resolved_effects();
-            if fx.ripple && age < RIPPLE_SECS {
-                let k = age / RIPPLE_SECS;
-                let ease_out = 1.0 - (1.0 - k).powi(3);
-                frame.ripple = Some(Ripple {
-                    x: self.click_point.0,
-                    y: self.click_point.1,
-                    r: 8.0 + 44.0 * ease_out,
-                    width: 4.0 * (1.0 - k) + 1.0,
-                    alpha: 0.75 * (1.0 - k),
-                });
-            }
-            if fx.squish {
-                // Quick in while pressed, springy out after the release.
-                const PRESS: f64 = 0.09;
-                frame.squish = if age < PRESS {
-                    SQUISH * (age / 0.05).min(1.0)
-                } else {
-                    let after = age - PRESS;
-                    SQUISH
-                        * ((after / 0.22).min(1.0) * std::f64::consts::PI * 1.5)
-                            .cos()
-                            .max(0.0)
-                        * (1.0 - after / 0.22).max(0.0)
-                };
-            }
+            effects::add_click(
+                &mut frame,
+                self.motion.resolved_effects(),
+                age,
+                self.click_point,
+            );
         }
         frame
     }
@@ -442,9 +432,30 @@ impl RenderStateCore {
         }
     }
 
+    /// The badge mode this cursor paints with now.
+    pub fn badge_mode(&self) -> BadgeMode {
+        self.badge_mode_override
+            .unwrap_or_else(crate::badge_mode::active)
+    }
+
+    /// Opacity of the session name.
     pub fn session_badge_alpha(&self) -> f32 {
         if self.session_label.is_none() {
             return 0.0;
+        }
+        match self.badge_mode() {
+            BadgeMode::Off => return 0.0,
+            BadgeMode::Minimal => {
+                // Text never shows while the cursor moves.
+                if self.is_moving() {
+                    return 0.0;
+                }
+                if self.session_badge_hovered {
+                    return 1.0;
+                }
+                return self.minimal_name_presence;
+            }
+            BadgeMode::Verbose => {}
         }
         if self.session_badge_hovered {
             return 1.0;
@@ -458,7 +469,18 @@ impl RenderStateCore {
         (1.0 - smooth) as f32
     }
 
+    /// Opacity of the badge chips.
     pub fn session_badge_chip_alpha(&self) -> f32 {
+        match self.badge_mode() {
+            BadgeMode::Off => return 0.0,
+            BadgeMode::Minimal => {
+                if self.is_moving() {
+                    return 0.0;
+                }
+                return self.minimal_chip.as_ref().map_or(0.0, MinimalChip::alpha);
+            }
+            BadgeMode::Verbose => {}
+        }
         if self.badge_modifiers.is_none() {
             return 0.0;
         }
@@ -476,11 +498,86 @@ impl RenderStateCore {
     }
 
     pub fn session_badge_needs_frame_tick(&self) -> bool {
-        self.is_revealed()
-            && ((self.session_label.is_some()
-                && self.session_badge_secs < SESSION_BADGE_HOLD_SECS + SESSION_BADGE_FADE_SECS)
-                || self.badge_modifier_fade_secs.is_some()
-                || self.visual.resolved_action != CursorAction::Idle)
+        if !self.is_revealed() {
+            return false;
+        }
+        let acting = self.visual.resolved_action != CursorAction::Idle;
+        match self.badge_mode() {
+            BadgeMode::Verbose => {
+                (self.session_label.is_some()
+                    && self.session_badge_secs < SESSION_BADGE_HOLD_SECS + SESSION_BADGE_FADE_SECS)
+                    || self.badge_modifier_fade_secs.is_some()
+                    || acting
+            }
+            BadgeMode::Minimal => {
+                self.minimal_chip.is_some()
+                    || self.minimal_name_presence != self.minimal_name_target()
+                    || acting
+            }
+            BadgeMode::Off => acting,
+        }
+    }
+
+    /// Where the minimal badge's session name is heading: shown at rest while
+    /// another agent cursor is on screen, hidden otherwise.
+    fn minimal_name_target(&self) -> f32 {
+        if self.session_label.is_some() && self.peer_cursors_visible && !self.is_moving() {
+            1.0
+        } else {
+            0.0
+        }
+    }
+
+    /// What the badge paints this frame, for both painting and hover
+    /// hit-testing. `cursor` is the badge anchor in the caller's pixels.
+    pub fn session_badge_input(
+        &self,
+        cursor: (f32, f32),
+        backing_scale: f32,
+        clip: Option<(f32, f32)>,
+    ) -> SessionBadgeInput<'_> {
+        let mut input = SessionBadgeInput {
+            label: None,
+            delivery: None,
+            target: None,
+            cursor,
+            backing_scale,
+            label_alpha: 0.0,
+            chip_alpha: 0.0,
+            clip,
+        };
+        match self.badge_mode() {
+            BadgeMode::Off => {}
+            BadgeMode::Verbose => {
+                let (delivery, target) = self.badge_modifiers.unwrap_or((None, None));
+                input.label = self.session_label.as_deref();
+                input.delivery = delivery;
+                input.target = target;
+                input.label_alpha = self.session_badge_alpha();
+                input.chip_alpha = self.session_badge_chip_alpha();
+            }
+            BadgeMode::Minimal => {
+                let chip_alpha = self.session_badge_chip_alpha();
+                match self.minimal_chip.as_ref().filter(|_| chip_alpha > 0.001) {
+                    // The chip briefly takes the badge over, then the name
+                    // (when shown at all) comes back.
+                    Some(chip) => {
+                        input.label = chip
+                            .key_combo
+                            .as_deref()
+                            .or(chip.foreground.then_some(FOREGROUND_CHIP_LABEL));
+                        input.delivery = chip.foreground.then_some(DeliveryModifier::Foreground);
+                        input.label_alpha = chip_alpha;
+                        input.chip_alpha = chip_alpha;
+                    }
+                    None => {
+                        input.label = self.session_label.as_deref();
+                        input.label_alpha = self.session_badge_alpha();
+                    }
+                }
+            }
+        }
+        input
     }
 
     /// Whether the platform overlay should keep a low-frequency hardware
@@ -488,7 +585,7 @@ impl RenderStateCore {
     /// from [`Self::session_badge_needs_frame_tick`]: a faded badge needs hover
     /// hit-testing, not continuous 60 fps repainting.
     pub fn session_badge_needs_hover_poll(&self) -> bool {
-        self.session_label.is_some() && self.is_revealed()
+        self.badge_mode() != BadgeMode::Off && self.session_label.is_some() && self.is_revealed()
     }
 
     /// Update hover state from a platform-native hardware pointer sample.
@@ -505,16 +602,11 @@ impl RenderStateCore {
                 if dx * dx + dy * dy <= HOVER_RADIUS * HOVER_RADIUS {
                     return true;
                 }
-                crate::session_badge_layout(crate::SessionBadgeInput {
-                    label: self.session_label.as_deref(),
-                    delivery: self.badge_modifiers.and_then(|modifiers| modifiers.0),
-                    target: self.badge_modifiers.and_then(|modifiers| modifiers.1),
-                    cursor: (self.pos.0 as f32, self.pos.1 as f32),
-                    backing_scale: 1.0,
-                    label_alpha: self.session_badge_alpha(),
-                    chip_alpha: self.session_badge_chip_alpha(),
-                    clip: None,
-                })
+                crate::session_badge_layout(self.session_badge_input(
+                    (self.pos.0 as f32, self.pos.1 as f32),
+                    1.0,
+                    None,
+                ))
                 .is_some_and(|layout| {
                     let rect = layout.rect;
                     x >= rect.x() as f64
@@ -566,7 +658,7 @@ impl RenderStateCore {
                 self.arrival_pending = false;
                 fire_arrival = true;
             }
-            if self.motion_t >= traj_linger(traj) {
+            if self.motion_t >= effects::linger(traj) {
                 if self.arrival_pending {
                     self.arrival_pending = false;
                     fire_arrival = true;
@@ -619,6 +711,7 @@ impl RenderStateCore {
             self.session_badge_secs = (self.session_badge_secs + dt)
                 .min(SESSION_BADGE_HOLD_SECS + SESSION_BADGE_FADE_SECS);
         }
+        self.tick_minimal_badge(dt);
         // The idle clock and fade curve are the shared agent cursor contract
         // (`cua_driver_core::agent_cursor`); this only feeds it frame deltas.
         let idle_hide_ms = self.motion.idle_hide_ms;
@@ -640,6 +733,35 @@ impl RenderStateCore {
         } else {
             self.idle_alpha = 1.0;
         }
+    }
+
+    /// Advance the minimal badge: the chip clock runs only at rest, and the
+    /// session name eases toward its target and drops at once on motion.
+    fn tick_minimal_badge(&mut self, dt: f64) {
+        let moving = self.is_moving();
+        if let Some(chip) = self.minimal_chip.as_mut() {
+            if !chip.armed {
+                // The tick that arms the chip does not play it.
+                chip.waiting_secs += dt.max(0.0);
+                chip.armed = chip.waiting_secs >= MINIMAL_CHIP_ARM_TIMEOUT_SECS;
+            } else if !moving {
+                chip.secs += dt.max(0.0);
+                if chip.secs >= MINIMAL_CHIP_SECS {
+                    self.minimal_chip = None;
+                }
+            }
+        }
+        let target = self.minimal_name_target();
+        self.minimal_name_presence = if moving {
+            0.0
+        } else {
+            let step = (dt.max(0.0) / MINIMAL_NAME_FADE_SECS) as f32;
+            if self.minimal_name_presence < target {
+                (self.minimal_name_presence + step).min(target)
+            } else {
+                (self.minimal_name_presence - step).max(target)
+            }
+        };
     }
 
     /// Handle the OverlayCommand variants that are identical across all
@@ -823,9 +945,40 @@ impl RenderStateCore {
                     None
                 };
                 self.badge_modifier_fade_secs = None;
+                // A new action replaces any chip still playing; only a
+                // foreground moment earns one of its own.
+                self.minimal_chip =
+                    (delivery == Some(DeliveryModifier::Foreground)).then_some(MinimalChip {
+                        key_combo: None,
+                        foreground: true,
+                        secs: 0.0,
+                        armed: false,
+                        waiting_secs: 0.0,
+                    });
+                true
+            }
+            OverlayCommand::ShowKeyCombo(keys) => {
+                let Some(combo) = crate::badge_mode::format_key_combo(&keys) else {
+                    return false;
+                };
+                // Joins the chip its own BeginAction just started.
+                let chip = self.minimal_chip.get_or_insert(MinimalChip {
+                    key_combo: None,
+                    foreground: false,
+                    secs: 0.0,
+                    armed: false,
+                    waiting_secs: 0.0,
+                });
+                chip.key_combo = Some(combo);
+                chip.secs = 0.0;
                 true
             }
             OverlayCommand::EndAction(action) => {
+                // The action is over: its chip plays from now.
+                if let Some(chip) = self.minimal_chip.as_mut().filter(|chip| !chip.armed) {
+                    chip.armed = true;
+                    chip.secs = 0.0;
+                }
                 self.visual.end(action);
                 true
             }
@@ -865,80 +1018,16 @@ impl RenderStateCore {
 }
 
 // ── Motion effects ───────────────────────────────────────────────────────
+//
+// The effect geometry (trail, glow, magnet, ripple, squish) comes from
+// `cua_cursor_motion::effects`; this module only paints it.
 
-/// Comet trail length.
-const TRAIL_SECS: f64 = 0.18;
-/// Trail path length (points) at which the trail reaches full strength.
-const TRAIL_FADE_LEN: f64 = 60.0;
-/// Magnet glow fade after lock-on.
-const MAGNET_SECS: f64 = 0.7;
-/// Magnet glow distance outside the target rect.
-const MAGNET_INFLATE: f64 = 6.0;
-/// Click ripple duration.
-const RIPPLE_SECS: f64 = 0.52;
-/// How long click effects (ripple, squish) keep the frame clock running.
-const CLICK_FX_SECS: f64 = 0.55;
-/// Click squish depth (fraction of the cursor size).
-const SQUISH: f64 = 0.12;
-
-/// When a finished trajectory can be dropped: after its last sample, its
-/// trail has caught up, and its magnet glow has faded.
-fn traj_linger(traj: &Trajectory) -> f64 {
-    let mut end = traj.duration();
-    if traj.effects.trail {
-        end += TRAIL_SECS;
-    }
-    if let (true, Some(snap)) = (traj.effects.magnet, traj.snap_t) {
-        end = end.max(snap + MAGNET_SECS);
-    }
-    end
-}
-
-#[derive(Debug, Clone, Copy)]
-struct Glow {
-    x: f64,
-    y: f64,
-    r: f64,
-    alpha: f64,
-}
-
-#[derive(Debug, Clone, Copy)]
-struct TrailSeg {
-    a: (f64, f64),
-    b: (f64, f64),
-    width: f64,
-    alpha: f64,
-}
-
-#[derive(Debug, Clone, Copy)]
-struct Magnet {
-    rect: [f64; 4],
-    glow: f64,
-}
-
-#[derive(Debug, Clone, Copy)]
-struct Ripple {
-    x: f64,
-    y: f64,
-    r: f64,
-    width: f64,
-    alpha: f64,
-}
-
-#[derive(Debug, Clone, Default)]
-struct EffectFrame {
-    glow: Option<Glow>,
-    trail: Vec<TrailSeg>,
-    magnet: Option<Magnet>,
-    ripple: Option<Ripple>,
-    /// Scale-down of the cursor artwork, 0 = none.
-    squish: f64,
-}
+use cua_cursor_motion::effects::{self, EffectFrame, CLICK_FX_SECS, MAGNET_INFLATE};
 
 /// Effect colour: the session tint lifted toward white.
 fn effect_rgb(tint: [u8; 4]) -> (u8, u8, u8) {
-    let lift = |c: u8| (f64::from(c) + (255.0 - f64::from(c)) * 0.45).round() as u8;
-    (lift(tint[0]), lift(tint[1]), lift(tint[2]))
+    let [r, g, b] = effects::effect_rgb([tint[0], tint[1], tint[2]]);
+    (r, g, b)
 }
 
 fn effect_paint(rgb: (u8, u8, u8), alpha: f64) -> tiny_skia::Paint<'static> {
@@ -1272,17 +1361,11 @@ pub fn paint_cursor(
     }
     paint_effects_over(pm, &effects, effect_rgb, f64::from(alpha_scale), &to_px, sf);
 
-    let (delivery, target) = core.badge_modifiers.unwrap_or((None, None));
-    if let Some(layout) = crate::session_badge_layout(crate::SessionBadgeInput {
-        label: core.session_label.as_deref(),
-        delivery,
-        target,
-        cursor: (px as f32, py as f32),
-        backing_scale: backing_scale.max(1.0),
-        label_alpha: core.session_badge_alpha(),
-        chip_alpha: core.session_badge_chip_alpha(),
-        clip: Some((pm.width() as f32, pm.height() as f32)),
-    }) {
+    if let Some(layout) = crate::session_badge_layout(core.session_badge_input(
+        (px as f32, py as f32),
+        backing_scale.max(1.0),
+        Some((pm.width() as f32, pm.height() as f32)),
+    )) {
         crate::paint_session_badge(
             pm,
             &layout,
@@ -1503,6 +1586,299 @@ mod session_badge_and_action_tests {
     use super::*;
     use crate::{CursorConfig, DeliveryModifier, TargetModifier};
 
+    /// The earlier badge, kept as `cursor.badges = verbose`.
+    fn verbose_core() -> RenderStateCore {
+        let mut core = RenderStateCore::new(CursorConfig::default());
+        core.badge_mode_override = Some(BadgeMode::Verbose);
+        core
+    }
+
+    fn minimal_core() -> RenderStateCore {
+        let mut core = RenderStateCore::new(CursorConfig::default());
+        core.badge_mode_override = Some(BadgeMode::Minimal);
+        core.motion.idle_hide_ms = 0.0;
+        core.apply_command_base(
+            OverlayCommand::SetSessionLabel("Research run".into()),
+            false,
+            false,
+        );
+        core
+    }
+
+    const FRAME: f64 = 1.0 / 60.0;
+
+    fn move_to(core: &mut RenderStateCore, x: f64, y: f64) {
+        core.apply_command_base(
+            OverlayCommand::MoveTo {
+                x,
+                y,
+                end_heading_radians: std::f64::consts::FRAC_PI_4,
+                target: None,
+            },
+            true,
+            true,
+        );
+    }
+
+    /// Tick until the move ends, checking the badge stays empty throughout.
+    fn settle_without_text(core: &mut RenderStateCore) {
+        for _ in 0..600 {
+            if !core.is_moving() {
+                return;
+            }
+            assert_eq!(core.session_badge_alpha(), 0.0, "no name while moving");
+            assert_eq!(core.session_badge_chip_alpha(), 0.0, "no chip while moving");
+            core.tick_motion(FRAME);
+        }
+        panic!("the move never ended");
+    }
+
+    fn shown(core: &RenderStateCore) -> Option<crate::SessionBadgeLayout> {
+        crate::session_badge_layout(core.session_badge_input(
+            (core.pos.0 as f32, core.pos.1 as f32),
+            1.0,
+            None,
+        ))
+    }
+
+    #[test]
+    fn minimal_is_the_default_badge_mode() {
+        let core = RenderStateCore::new(CursorConfig::default());
+        assert_eq!(core.badge_mode_override, None);
+        assert_eq!(BadgeMode::default(), BadgeMode::Minimal);
+    }
+
+    #[test]
+    fn minimal_badge_shows_nothing_for_routine_actions() {
+        let mut core = minimal_core();
+        move_to(&mut core, 300.0, 240.0);
+        settle_without_text(&mut core);
+        for _ in 0..30 {
+            core.tick_motion(FRAME);
+        }
+        assert!(core.is_revealed());
+        assert!(shown(&core).is_none(), "no session name at rest when alone");
+
+        for delivery in [None, Some(DeliveryModifier::Background)] {
+            core.apply_command_base(
+                OverlayCommand::BeginAction {
+                    action: CursorAction::Click,
+                    delivery,
+                    target: Some(TargetModifier::Ax),
+                },
+                false,
+                false,
+            );
+            for _ in 0..30 {
+                core.tick_motion(FRAME);
+                assert!(shown(&core).is_none(), "{delivery:?} earns no chip");
+            }
+            core.apply_command_base(OverlayCommand::EndAction(CursorAction::Click), false, false);
+        }
+        // A bare key press has no combo to show.
+        core.apply_command_base(
+            OverlayCommand::ShowKeyCombo(vec!["return".into()]),
+            false,
+            false,
+        );
+        core.tick_motion(0.3);
+        assert!(shown(&core).is_none());
+    }
+
+    #[test]
+    fn minimal_foreground_chip_waits_for_rest_then_fades_within_a_second() {
+        let mut core = minimal_core();
+        core.apply_command_base(
+            OverlayCommand::BeginAction {
+                action: CursorAction::Click,
+                delivery: Some(DeliveryModifier::Foreground),
+                target: Some(TargetModifier::Pixel),
+            },
+            false,
+            false,
+        );
+        move_to(&mut core, 300.0, 240.0);
+        settle_without_text(&mut core);
+        // A real foreground click may hide the overlay while it is delivered,
+        // so nothing plays until the action ends.
+        for _ in 0..60 {
+            core.tick_motion(FRAME);
+            assert_eq!(
+                core.session_badge_chip_alpha(),
+                0.0,
+                "waits for the action to end"
+            );
+        }
+        core.apply_command_base(OverlayCommand::EndAction(CursorAction::Click), false, false);
+
+        let mut peak: f32 = 0.0;
+        let mut visible_secs = 0.0;
+        let mut rest_secs = 0.0;
+        while core.minimal_chip.is_some() {
+            core.tick_motion(FRAME);
+            rest_secs += FRAME;
+            let alpha = core.session_badge_chip_alpha();
+            peak = peak.max(alpha);
+            if alpha > 0.0 {
+                visible_secs += FRAME;
+                let layout = shown(&core).expect("the chip paints");
+                assert_eq!(
+                    layout.label.as_ref().map(|label| label.text.as_str()),
+                    Some(FOREGROUND_CHIP_LABEL)
+                );
+                assert_eq!(
+                    layout.delivery_chip.map(|chip| chip.glyph),
+                    Some(crate::BadgeGlyph::Foreground)
+                );
+                assert!(layout.target_chip.is_none(), "no target chip");
+            }
+            if core.minimal_chip.is_some() {
+                assert!(
+                    core.session_badge_needs_frame_tick(),
+                    "the chip keeps frames coming"
+                );
+            }
+            assert!(rest_secs < 2.0, "the chip must end");
+        }
+        assert_eq!(peak, 1.0);
+        assert!(
+            (MINIMAL_CHIP_SECS - 0.05..=MINIMAL_CHIP_SECS + 0.05).contains(&rest_secs),
+            "{rest_secs}"
+        );
+        assert!(visible_secs <= 1.0, "{visible_secs}");
+        assert!(shown(&core).is_none(), "nothing lingers");
+    }
+
+    #[test]
+    fn minimal_key_combo_chip_shows_the_combo_and_keeps_foreground() {
+        let mut core = minimal_core();
+        move_to(&mut core, 300.0, 240.0);
+        settle_without_text(&mut core);
+        core.apply_command_base(
+            OverlayCommand::BeginAction {
+                action: CursorAction::Key,
+                delivery: Some(DeliveryModifier::Foreground),
+                target: None,
+            },
+            false,
+            false,
+        );
+        assert!(core.apply_command_base(
+            OverlayCommand::ShowKeyCombo(vec!["cmd".into(), "c".into()]),
+            false,
+            false,
+        ));
+        core.apply_command_base(OverlayCommand::EndAction(CursorAction::Key), false, false);
+        core.tick_motion(MINIMAL_CHIP_DELAY_SECS + MINIMAL_CHIP_FADE_IN_SECS + 0.1);
+        let layout = shown(&core).expect("the combo paints");
+        let expected = crate::badge_mode::format_key_combo(&["cmd".into(), "c".into()]);
+        assert_eq!(
+            layout.label.as_ref().map(|label| label.text.clone()),
+            expected
+        );
+        assert!(layout.delivery_chip.is_some(), "the foreground mark stays");
+        core.tick_motion(MINIMAL_CHIP_SECS);
+        assert!(shown(&core).is_none());
+    }
+
+    #[test]
+    fn minimal_name_shows_on_hover_and_with_peers_but_never_while_moving() {
+        let mut core = minimal_core();
+        move_to(&mut core, 300.0, 240.0);
+        settle_without_text(&mut core);
+        assert_eq!(core.session_badge_alpha(), 0.0);
+
+        // Hover reveals the name at once.
+        assert!(core.update_session_badge_hover(Some((core.pos.0, core.pos.1))));
+        assert_eq!(core.session_badge_alpha(), 1.0);
+        assert!(core.update_session_badge_hover(Some((900.0, 900.0))));
+        assert_eq!(core.session_badge_alpha(), 0.0);
+
+        // A second agent cursor on screen fades the name in quickly.
+        core.peer_cursors_visible = true;
+        assert!(core.session_badge_needs_frame_tick());
+        core.tick_motion(MINIMAL_NAME_FADE_SECS + FRAME);
+        assert_eq!(core.session_badge_alpha(), 1.0);
+        let layout = shown(&core).expect("the name paints");
+        assert_eq!(
+            layout.label.map(|label| label.text),
+            Some("Research run".to_owned())
+        );
+
+        // It drops the moment the cursor moves, and comes back at rest.
+        move_to(&mut core, 600.0, 400.0);
+        core.tick_motion(FRAME);
+        settle_without_text(&mut core);
+        core.tick_motion(MINIMAL_NAME_FADE_SECS + FRAME);
+        assert_eq!(core.session_badge_alpha(), 1.0);
+
+        core.peer_cursors_visible = false;
+        core.tick_motion(MINIMAL_NAME_FADE_SECS + FRAME);
+        assert_eq!(core.session_badge_alpha(), 0.0);
+    }
+
+    #[test]
+    fn minimal_chip_plays_even_if_its_action_never_ends() {
+        let mut core = minimal_core();
+        move_to(&mut core, 300.0, 240.0);
+        settle_without_text(&mut core);
+        core.apply_command_base(
+            OverlayCommand::BeginAction {
+                action: CursorAction::Key,
+                delivery: Some(DeliveryModifier::Foreground),
+                target: None,
+            },
+            false,
+            false,
+        );
+        core.tick_motion(MINIMAL_CHIP_ARM_TIMEOUT_SECS);
+        assert_eq!(core.session_badge_chip_alpha(), 0.0);
+        core.tick_motion(0.3);
+        assert!(core.session_badge_chip_alpha() > 0.0);
+        core.tick_motion(MINIMAL_CHIP_SECS);
+        assert!(core.minimal_chip.is_none());
+    }
+
+    #[test]
+    fn off_mode_paints_no_badge_at_all() {
+        let mut core = minimal_core();
+        core.badge_mode_override = Some(BadgeMode::Off);
+        move_to(&mut core, 300.0, 240.0);
+        settle_without_text(&mut core);
+        core.peer_cursors_visible = true;
+        core.apply_command_base(
+            OverlayCommand::BeginAction {
+                action: CursorAction::Key,
+                delivery: Some(DeliveryModifier::Foreground),
+                target: Some(TargetModifier::Desktop),
+            },
+            false,
+            false,
+        );
+        core.apply_command_base(
+            OverlayCommand::ShowKeyCombo(vec!["cmd".into(), "v".into()]),
+            false,
+            false,
+        );
+        assert!(!core.session_badge_needs_hover_poll());
+        for _ in 0..90 {
+            core.tick_motion(FRAME);
+            assert!(shown(&core).is_none());
+            assert!(!core.session_badge_is_visible());
+        }
+    }
+
+    #[test]
+    fn switching_modes_applies_to_a_cursor_already_on_screen() {
+        let mut core = minimal_core();
+        core.badge_mode_override = Some(BadgeMode::Verbose);
+        move_to(&mut core, 300.0, 240.0);
+        core.tick_motion(FRAME);
+        assert_eq!(core.session_badge_alpha(), 1.0, "verbose names on reveal");
+        core.badge_mode_override = Some(BadgeMode::Minimal);
+        assert_eq!(core.session_badge_alpha(), 0.0, "minimal drops it at once");
+    }
+
     #[test]
     fn idle_hide_zero_keeps_a_positioned_session_cursor_visible() {
         let mut core = RenderStateCore::new(CursorConfig::default());
@@ -1562,7 +1938,7 @@ mod session_badge_and_action_tests {
 
     #[test]
     fn session_badge_holds_then_fades_once() {
-        let mut core = RenderStateCore::new(CursorConfig::default());
+        let mut core = verbose_core();
         assert_eq!(core.session_badge_alpha(), 0.0);
         assert!(core.apply_command_base(
             OverlayCommand::SetSessionLabel("Research".into()),
@@ -1582,7 +1958,7 @@ mod session_badge_and_action_tests {
 
     #[test]
     fn repeated_session_label_metadata_does_not_restart_badge_timer() {
-        let mut core = RenderStateCore::new(CursorConfig::default());
+        let mut core = verbose_core();
         core.apply_command_base(
             OverlayCommand::SetSessionLabel("Research".into()),
             false,
@@ -1608,7 +1984,7 @@ mod session_badge_and_action_tests {
 
     #[test]
     fn revealing_hidden_cursor_restarts_badge_without_restarting_on_every_move() {
-        let mut core = RenderStateCore::new(CursorConfig::default());
+        let mut core = verbose_core();
         core.apply_command_base(
             OverlayCommand::SetSessionLabel("Research".into()),
             false,
@@ -1719,7 +2095,7 @@ mod session_badge_and_action_tests {
 
     #[test]
     fn modifiers_live_in_the_badge_then_fade_after_action_completion() {
-        let mut core = RenderStateCore::new(CursorConfig::default());
+        let mut core = verbose_core();
         core.pos = (200.0, 200.0);
         core.apply_command_base(
             OverlayCommand::BeginAction {
@@ -1755,7 +2131,7 @@ mod session_badge_and_action_tests {
 
     #[test]
     fn modifier_preemption_replaces_the_badge_context_without_cross_fading() {
-        let mut core = RenderStateCore::new(CursorConfig::default());
+        let mut core = verbose_core();
         core.apply_command_base(
             OverlayCommand::BeginAction {
                 action: CursorAction::Observe,
@@ -2146,5 +2522,455 @@ mod pointer_anchor_tests {
                 assert_hotspot_at(&core, backing_scale, 150.0, 110.0, "tracked drag");
             }
         }
+    }
+}
+
+/// Proof that moving the motion math into the `cua-cursor-motion` crate changed no
+/// behaviour. `tests/fixtures/motion_equivalence.json` was captured from the
+/// driver before the move (origin/main 79a4a4635) by this module's
+/// `capture()`: a SHA-256 over the bits of every sample of 1650 planned
+/// trajectories (6 styles x 3 timings x 8 knob sets x 11 moves, plus reduced
+/// motion) and of every effect frame of 24 scripted move-and-click runs, with
+/// a few readable spot samples, counts and per-case sums. On the capture
+/// platform it must stay bit-identical; elsewhere, within 1e-12 relative.
+#[cfg(test)]
+mod motion_equivalence_tests {
+    use super::*;
+    use crate::trajectory::{plan_move, MoveRequest, Pt};
+    use crate::{CursorConfig, MotionConfig, MotionEffects, MotionStyle, MotionTiming};
+    use serde_json::{json, Value};
+    use sha2::{Digest, Sha256};
+    use std::f64::consts::{FRAC_PI_4, PI};
+
+    /// A SHA-256 over the exact bits of every value, plus a count and two
+    /// sums (plain and position-weighted) that survive the last-bit
+    /// differences between platforms' math libraries.
+    struct Bits {
+        sha: Sha256,
+        n: u64,
+        s0: f64,
+        s1: f64,
+    }
+
+    impl Bits {
+        fn new() -> Self {
+            Self {
+                sha: Sha256::new(),
+                n: 0,
+                s0: 0.0,
+                s1: 0.0,
+            }
+        }
+        fn add(&mut self, v: f64) {
+            self.n += 1;
+            self.s0 += v;
+            self.s1 += v * (self.n % 1000) as f64;
+        }
+        fn f(&mut self, v: f64) {
+            self.sha.update(v.to_bits().to_le_bytes());
+            self.add(v);
+        }
+        fn opt(&mut self, v: Option<f64>) {
+            match v {
+                Some(v) => {
+                    self.sha.update([1]);
+                    self.add(1.0);
+                    self.f(v);
+                }
+                None => {
+                    self.sha.update([0]);
+                    self.add(0.0);
+                }
+            }
+        }
+        fn flag(&mut self, v: bool) {
+            self.sha.update([u8::from(v)]);
+            self.add(f64::from(u8::from(v)));
+        }
+        fn done(self) -> (String, Value) {
+            let sha = self
+                .sha
+                .finalize()
+                .iter()
+                .map(|b| format!("{b:02x}"))
+                .collect();
+            (sha, json!([self.n, self.s0, self.s1]))
+        }
+    }
+
+    type Move = ((f64, f64), f64, (f64, f64), f64, Option<[f64; 4]>);
+
+    fn moves() -> Vec<Move> {
+        vec![
+            (
+                (100.0, 100.0),
+                FRAC_PI_4,
+                (600.0, 420.0),
+                FRAC_PI_4,
+                Some([560.0, 400.0, 80.0, 40.0]),
+            ),
+            (
+                (600.0, 420.0),
+                FRAC_PI_4,
+                (120.0, 80.0),
+                FRAC_PI_4,
+                Some([100.0, 70.0, 40.0, 20.0]),
+            ),
+            (
+                (50.0, 700.0),
+                0.0,
+                (1240.0, 60.0),
+                FRAC_PI_4,
+                Some([1220.0, 50.0, 40.0, 20.0]),
+            ),
+            (
+                (300.0, 300.0),
+                FRAC_PI_4,
+                (310.0, 304.0),
+                FRAC_PI_4,
+                Some([305.0, 300.0, 10.0, 8.0]),
+            ),
+            ((800.0, 200.0), -PI / 2.0, (800.0, 640.0), FRAC_PI_4, None),
+            (
+                (10.0, 10.0),
+                FRAC_PI_4,
+                (10.0, 10.0),
+                FRAC_PI_4,
+                Some([0.0, 0.0, 20.0, 20.0]),
+            ),
+            ((0.0, 0.0), 3.0, (2400.0, 1300.0), 0.0, None),
+            ((900.0, 500.0), FRAC_PI_4, (897.0, 501.0), FRAC_PI_4, None),
+            (
+                (1400.0, 90.0),
+                2.2,
+                (40.0, 880.0),
+                -1.0,
+                Some([20.0, 860.0, 300.0, 200.0]),
+            ),
+            (
+                (200.0, 600.0),
+                FRAC_PI_4,
+                (700.0, 600.0),
+                FRAC_PI_4,
+                Some([f64::NAN, 0.0, 10.0, 10.0]),
+            ),
+            (
+                (640.0, 360.0),
+                FRAC_PI_4,
+                (660.0, 900.0),
+                FRAC_PI_4,
+                Some([655.0, 895.0, 12.0, 12.0]),
+            ),
+        ]
+    }
+
+    fn knobs() -> Vec<(&'static str, MotionConfig)> {
+        let d = MotionConfig::default();
+        vec![
+            ("default", d.clone()),
+            (
+                "straight",
+                MotionConfig {
+                    arc_size: 0.0,
+                    ..d.clone()
+                },
+            ),
+            (
+                "wide",
+                MotionConfig {
+                    arc_size: 0.6,
+                    arc_flow: -0.7,
+                    ..d.clone()
+                },
+            ),
+            (
+                "handles",
+                MotionConfig {
+                    start_handle: 0.1,
+                    end_handle: 0.8,
+                    arc_flow: 0.9,
+                    ..d.clone()
+                },
+            ),
+            (
+                "springy",
+                MotionConfig {
+                    spring: 0.35,
+                    turn_radius: 30.0,
+                    ..d.clone()
+                },
+            ),
+            (
+                "legacy_glide",
+                MotionConfig {
+                    glide_duration_ms: 300.0,
+                    ..d.clone()
+                },
+            ),
+            (
+                "long_glide",
+                MotionConfig {
+                    glide_duration_ms: 2500.0,
+                    ..d.clone()
+                },
+            ),
+            (
+                "speeds",
+                MotionConfig {
+                    peak_speed: 1500.0,
+                    min_start_speed: 100.0,
+                    min_end_speed: 50.0,
+                    ..d
+                },
+            ),
+        ]
+    }
+
+    fn trajectories() -> Value {
+        let mut cases = Vec::new();
+        for style in MotionStyle::ALL {
+            for timing in [
+                MotionTiming::Native,
+                MotionTiming::Fitts,
+                MotionTiming::Fixed,
+            ] {
+                for (knob, base) in knobs() {
+                    for (i, (from, fh, to, eh, target)) in moves().into_iter().enumerate() {
+                        for reduced in [false, true] {
+                            if reduced && (knob != "default" || timing != MotionTiming::Native) {
+                                continue;
+                            }
+                            let m = MotionConfig {
+                                style,
+                                timing,
+                                ..base.clone()
+                            };
+                            let req = MoveRequest {
+                                from: Pt::new(from.0, from.1),
+                                from_heading: fh,
+                                to: Pt::new(to.0, to.1),
+                                end_heading: eh,
+                                target,
+                                seed: format!("eq|{i}"),
+                                reduced_motion: reduced,
+                            };
+                            let traj = plan_move(&m, &req);
+                            let mut h = Bits::new();
+                            for s in &traj.samples {
+                                h.f(s.t);
+                                h.f(s.x);
+                                h.f(s.y);
+                                h.f(s.heading);
+                            }
+                            h.f(traj.arrival_t);
+                            h.opt(traj.snap_t);
+                            for v in traj.target {
+                                h.f(v);
+                            }
+                            h.flag(traj.target_known);
+                            let fx = traj.effects;
+                            for v in [fx.trail, fx.glow, fx.magnet, fx.ripple, fx.squish] {
+                                h.flag(v);
+                            }
+                            let spots: Vec<Value> = (0..=2)
+                                .map(|k| {
+                                    let s = traj.sample_at(traj.duration() * k as f64 / 2.0);
+                                    json!([s.t, s.x, s.y, s.heading])
+                                })
+                                .collect();
+                            let (sha, agg) = h.done();
+                            cases.push(json!({
+                                "style": style.as_str(),
+                                "timing": timing.as_str(),
+                                "knobs": knob,
+                                "move": i,
+                                "reduced": reduced,
+                                "samples": traj.samples.len(),
+                                "arrival_t": traj.arrival_t,
+                                "snap_t": traj.snap_t,
+                                "spots": spots,
+                                "sha256": sha,
+                                "agg": agg,
+                            }));
+                        }
+                    }
+                }
+            }
+        }
+        Value::Array(cases)
+    }
+
+    fn hash_frame(h: &mut Bits, core: &RenderStateCore) {
+        h.f(core.pos.0);
+        h.f(core.pos.1);
+        h.f(core.heading);
+        let frame = core.effect_frame();
+        h.flag(frame.glow.is_some());
+        if let Some(g) = frame.glow {
+            for v in [g.x, g.y, g.r, g.alpha] {
+                h.f(v);
+            }
+        }
+        h.f(frame.trail.len() as f64);
+        for seg in &frame.trail {
+            for v in [seg.a.0, seg.a.1, seg.b.0, seg.b.1, seg.width, seg.alpha] {
+                h.f(v);
+            }
+        }
+        h.flag(frame.magnet.is_some());
+        if let Some(m) = frame.magnet {
+            for v in m.rect {
+                h.f(v);
+            }
+            h.f(m.glow);
+        }
+        h.flag(frame.ripple.is_some());
+        if let Some(r) = frame.ripple {
+            for v in [r.x, r.y, r.r, r.width, r.alpha] {
+                h.f(v);
+            }
+        }
+        h.f(frame.squish);
+        h.opt(
+            core.effect_bounds()
+                .map(|b| b[0] + b[1] * 3.0 + b[2] * 7.0 + b[3] * 11.0),
+        );
+    }
+
+    fn effect_runs() -> Value {
+        let all_on = MotionEffects {
+            trail: Some(true),
+            glow: Some(true),
+            magnet: Some(true),
+            ripple: Some(true),
+            squish: Some(true),
+        };
+        let mut runs = Vec::new();
+        for style in MotionStyle::ALL {
+            for (fx_name, effects) in [("default", MotionEffects::default()), ("all_on", all_on)] {
+                for capable in [true, false] {
+                    let mut core = RenderStateCore::new(CursorConfig::default());
+                    // The fixture pins the pre-crate driver, which had native timing.
+                    core.motion = MotionConfig {
+                        style,
+                        effects,
+                        timing: MotionTiming::Native,
+                        ..MotionConfig::default()
+                    };
+                    core.effects_capable = capable;
+                    core.pos = (100.0, 100.0);
+                    let mut h = Bits::new();
+                    let mut arrivals = 0;
+                    let script: [(usize, OverlayCommand); 4] = [
+                        (
+                            0,
+                            OverlayCommand::MoveTo {
+                                x: 900.0,
+                                y: 500.0,
+                                end_heading_radians: FRAC_PI_4,
+                                target: Some([860.0, 480.0, 80.0, 40.0]),
+                            },
+                        ),
+                        (150, OverlayCommand::ClickPulse { x: 900.0, y: 500.0 }),
+                        (
+                            200,
+                            OverlayCommand::MoveTo {
+                                x: 140.0,
+                                y: 620.0,
+                                end_heading_radians: FRAC_PI_4,
+                                target: None,
+                            },
+                        ),
+                        (260, OverlayCommand::ClickPulse { x: 140.0, y: 620.0 }),
+                    ];
+                    let mut script = script.into_iter().peekable();
+                    for frame_no in 0..420 {
+                        while script.peek().is_some_and(|(at, _)| *at == frame_no) {
+                            let (_, cmd) = script.next().unwrap();
+                            core.apply_command_base(cmd, false, false);
+                        }
+                        if core.tick_motion(1.0 / 120.0) {
+                            arrivals += 1;
+                            h.f(frame_no as f64);
+                        }
+                        hash_frame(&mut h, &core);
+                    }
+                    let (sha, agg) = h.done();
+                    runs.push(json!({
+                        "style": style.as_str(),
+                        "effects": fx_name,
+                        "capable": capable,
+                        "arrivals": arrivals,
+                        "sha256": sha,
+                                "agg": agg,
+                    }));
+                }
+            }
+        }
+        Value::Array(runs)
+    }
+
+    fn capture() -> Value {
+        json!({ "trajectories": trajectories(), "effect_runs": effect_runs() })
+    }
+
+    /// Numbers within 1e-12 relative plus 1e-9 absolute (last-bit rounding
+    /// differences stay far below that; any real change does not); strings,
+    /// booleans and nulls exactly.
+    fn close(path: &str, was: &Value, is: &Value) {
+        match (was, is) {
+            (Value::Number(a), Value::Number(b)) => {
+                let (a, b) = (a.as_f64().unwrap(), b.as_f64().unwrap());
+                let tol = 1e-12 * a.abs().max(b.abs()) + 1e-9;
+                assert!((a - b).abs() <= tol, "{path}: {a} vs {b}");
+            }
+            (Value::Array(a), Value::Array(b)) => {
+                assert_eq!(a.len(), b.len(), "{path}: length");
+                for (i, (a, b)) in a.iter().zip(b).enumerate() {
+                    close(&format!("{path}[{i}]"), a, b);
+                }
+            }
+            (Value::Object(a), Value::Object(b)) => {
+                assert_eq!(a.len(), b.len(), "{path}: keys");
+                for (k, v) in a {
+                    if k != "sha256" {
+                        close(&format!("{path}.{k}"), v, &b[k]);
+                    }
+                }
+            }
+            _ => assert_eq!(was, is, "{path}"),
+        }
+    }
+
+    /// The motion did not change when its math moved into
+    /// `cua-cursor-motion`. On macOS arm64, where the fixture was captured,
+    /// every sample is bit-identical (the SHA-256s match). Other platforms'
+    /// math libraries round the last bit of `sin`, `exp` and friends
+    /// differently, so there the sample counts must match exactly and every
+    /// spot sample, timing and per-case sum within 1e-12 relative.
+    #[test]
+    fn motion_is_unchanged_from_the_pre_cua_cursor_motion_driver() {
+        let fixture: Value =
+            serde_json::from_str(include_str!("../tests/fixtures/motion_equivalence.json"))
+                .expect("fixture json");
+        // Parse both through the same JSON reader: serde_json's default float
+        // parsing is not round-trip exact.
+        let now: Value = serde_json::from_str(&capture().to_string()).unwrap();
+        let bit_exact = cfg!(all(target_os = "macos", target_arch = "aarch64"));
+        for kind in ["trajectories", "effect_runs"] {
+            let (was, is) = (
+                fixture[kind].as_array().unwrap(),
+                now[kind].as_array().unwrap(),
+            );
+            assert_eq!(was.len(), is.len(), "{kind} count");
+            for (i, (was, is)) in was.iter().zip(is).enumerate() {
+                close(&format!("{kind}[{i}]"), was, is);
+                if bit_exact {
+                    assert_eq!(was["sha256"], is["sha256"], "{kind}[{i}] bits changed");
+                }
+            }
+        }
+        assert_eq!(fixture["trajectories"].as_array().unwrap().len(), 1650);
+        assert_eq!(fixture["effect_runs"].as_array().unwrap().len(), 24);
     }
 }

@@ -26,13 +26,17 @@ sed -i -E 's#cua-telemetry = \{ path = "\.\./\.\./\.\./\.\./cua/crates/cua-telem
   crates/cua-driver/Cargo.toml
 sed -i 's/^version.workspace = true/version = "0.1.0"/; s/^edition.workspace = true/edition = "2024"/; s/^authors.workspace = true/authors = ["trycua"]/; s/^license.workspace = true/license = "MIT"/; s#^repository.workspace = true#repository = "https://github.com/trycua/cua"#; s/^serde.workspace = true/serde = { version = "1", features = ["derive"] }/; s/^serde_json.workspace = true/serde_json = "1"/; s/^sha2.workspace = true/sha2 = "0.10"/; s/^hex.workspace = true/hex = "0.4"/; s/^rand.workspace = true/rand = "0.9"/; s/^tempfile.workspace = true/tempfile = "3"/' \
   crates/cua-telemetry/Cargo.toml
+# Upstream links cua-telemetry into the driver with default-features = false. As a
+# workspace member its default `http` sender would be switched on by a whole-workspace
+# build, so default it off to keep upstream's driver build.
+sed -i 's/^default = \["http"\]$/default = []/' crates/cua-telemetry/Cargo.toml
 if grep -q '\.workspace = true' crates/cua-telemetry/Cargo.toml; then
   echo "cua-telemetry inherits workspace keys this script does not fill in:" >&2
   grep -n '\.workspace = true' crates/cua-telemetry/Cargo.toml >&2
   exit 1
 fi
 # Point every out-of-crate include_str!/include_bytes! at the copy in data/.
-grep -rlE 'include_(str|bytes)!\("\.\./\.\./' crates/cua-telemetry/src crates/cua-telemetry/tests 2>/dev/null |
+{ grep -rlE 'include_(str|bytes)!\("\.\./\.\./' crates/cua-telemetry/src crates/cua-telemetry/tests 2>/dev/null || true; } |
   xargs -r sed -i -E 's#include_(str|bytes)!\("\.\./(\.\./)+([^"]*/)?([^"/]+)"\)#include_\1!("../data/\4")#g'
 
 # 3. Executable identity: dove-driver and dove-driver-uia.
@@ -47,6 +51,23 @@ sed -i 's/eq_ignore_ascii_case("cua-driver-uia-local.exe")/eq_ignore_ascii_case(
   crates/cua-driver-uia/src/main.rs
 sed -i 's/"cua-driver.exe"/"dove-driver.exe"/; s/^        "cua-driver"$/        "dove-driver"/' \
   crates/cua-driver-testkit/src/paths.rs
-grep -rl 'CARGO_BIN_EXE_cua-driver\b' --include=*.rs crates | xargs -r sed -i 's/CARGO_BIN_EXE_cua-driver\b/CARGO_BIN_EXE_dove-driver/g'
+{ grep -rl 'CARGO_BIN_EXE_cua-driver\b' --include=*.rs crates || true; } | xargs -r sed -i 's/CARGO_BIN_EXE_cua-driver\b/CARGO_BIN_EXE_dove-driver/g'
+
+cd ..
+
+# 4. Dove features: one patch per feature in scripts/dove/patches/, applied in
+#    file-name order. A patch already applied is skipped; one that no longer
+#    applies stops the script so an upstream sync cannot drop it silently.
+patch_dir="$(dirname "${BASH_SOURCE[0]}")/patches"
+for patch in "$patch_dir"/*.patch; do
+  [ -e "$patch" ] || continue
+  if git apply --reverse --check "$patch" 2>/dev/null; then
+    continue
+  fi
+  if ! git apply --3way "$patch"; then
+    echo "patch no longer applies: $(basename "$patch")" >&2
+    exit 1
+  fi
+done
 
 echo "Dove changes applied"

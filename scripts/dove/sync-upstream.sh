@@ -13,7 +13,10 @@ set -euo pipefail
 tag="${1:?usage: sync-upstream.sh <cua-driver-rs-vX.Y.Z>}"
 repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
-here="$(dirname "$0")"
+# Run from a copy: the merge below replaces the working tree, scripts/dove included.
+here="$(mktemp -d)"
+trap 'rm -rf "$here"' EXIT
+cp -r "$repo_root/scripts/dove/." "$here/"
 source "$here/dove-only-files.sh"
 
 if [ "$(git rev-parse --abbrev-ref HEAD)" != main ] || [ -n "$(git status --porcelain)" ]; then
