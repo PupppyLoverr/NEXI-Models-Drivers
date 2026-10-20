@@ -95,12 +95,13 @@ pub async fn run_direct(driver: Arc<cua_driver_sdk::CuaDriver>) -> anyhow::Resul
             Ok(mut request) => {
                 let admission = protocol_session.validate(&request).and_then(|era| {
                     if request.method == "tools/call" {
-                        mcp_wire::validate_tool_call(
-                            &request,
-                            request.id.clone().unwrap_or_default(),
-                            era,
-                            &sdk.tools_list(),
-                        )?;
+                        cua_driver_core::tool_disclosure::Disclosure::from_env()
+                            .validate_tool_call(
+                                &request,
+                                request.id.clone().unwrap_or_default(),
+                                era,
+                                &sdk.tools_list(),
+                            )?;
                     }
                     Ok(era)
                 });
@@ -335,7 +336,7 @@ where
             }
             Ok(req) => {
                 let admission = protocol_session.validate(&req).and_then(|era| {
-                    mcp_wire::validate_tool_call(
+                    cua_driver_core::tool_disclosure::Disclosure::from_env().validate_tool_call(
                         &req,
                         req.id.clone().unwrap_or_default(),
                         era,
@@ -829,13 +830,9 @@ async fn handle_proxy_request(
         Ok(era) => era,
         Err(response) => return response,
     };
-    let disclosure = cua_driver_core::tool_disclosure::Disclosure::from_env();
-    let inventory = if disclosure.is_lazy() {
-        std::borrow::Cow::Owned(disclosure.advertised((**cached_tools_list).clone()))
-    } else {
-        std::borrow::Cow::Borrowed(&**cached_tools_list)
-    };
-    if let Err(response) = mcp_wire::validate_tool_call(&req, id.clone(), era, &inventory) {
+    if let Err(response) = cua_driver_core::tool_disclosure::Disclosure::from_env()
+        .validate_tool_call(&req, id.clone(), era, cached_tools_list)
+    {
         return response;
     }
     let method = req.method.clone();

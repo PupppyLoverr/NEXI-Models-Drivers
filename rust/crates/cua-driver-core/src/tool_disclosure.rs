@@ -87,7 +87,10 @@ impl Disclosure {
             })
             .unwrap_or_default();
         let mut listed: Vec<Value> = tools.iter().map(lazy_entry).collect();
-        if !tools.iter().any(|tool| tool_name(tool) == Some(DESCRIBE_TOOLS)) {
+        if !tools
+            .iter()
+            .any(|tool| tool_name(tool) == Some(DESCRIBE_TOOLS))
+        {
             listed.push(describe_tools_entry());
         }
         result.insert("tools".to_owned(), Value::Array(listed));
@@ -95,6 +98,28 @@ impl Disclosure {
         // full-detail metadata like the withheld schemas.
         result.remove("enforcement_adapters");
         Value::Object(result)
+    }
+
+    /// [`crate::mcp_wire::validate_tool_call`] against the tools the client
+    /// was shown: in lazy mode `describe_tools` is known even though the
+    /// registry's own list does not have it.
+    pub fn validate_tool_call(
+        self,
+        req: &crate::protocol::Request,
+        id: Value,
+        era: crate::mcp_wire::ProtocolEra,
+        full: &Value,
+    ) -> Result<(), crate::protocol::Response> {
+        let owns_call = self.is_lazy()
+            && req.method == "tools/call"
+            && req
+                .tool_call()
+                .is_ok_and(|call| call.name == DESCRIBE_TOOLS);
+        if owns_call {
+            let inventory = json!({"tools": [{"name": DESCRIBE_TOOLS}]});
+            return crate::mcp_wire::validate_tool_call(req, id, era, &inventory);
+        }
+        crate::mcp_wire::validate_tool_call(req, id, era, full)
     }
 
     /// Answer a `describe_tools` call here, at the MCP boundary, when lazy
@@ -123,13 +148,11 @@ impl Disclosure {
                 ),
             }));
         }
-        let structured = result
-            .as_object_mut()
-            .map(|result| {
-                result
-                    .entry("structuredContent")
-                    .or_insert_with(|| Value::Object(Map::new()))
-            });
+        let structured = result.as_object_mut().map(|result| {
+            result
+                .entry("structuredContent")
+                .or_insert_with(|| Value::Object(Map::new()))
+        });
         match structured {
             Some(Value::Object(structured)) => {
                 structured.entry("input_schema").or_insert(schema);
@@ -168,7 +191,10 @@ pub fn describe_tools_entry() -> Value {
 /// The `describe_tools` result: full entries for the requested tools, plus
 /// the names that matched no tool.
 pub fn describe_tools(full: &Value, args: &Value) -> Value {
-    let tools = full["tools"].as_array().map(Vec::as_slice).unwrap_or_default();
+    let tools = full["tools"]
+        .as_array()
+        .map(Vec::as_slice)
+        .unwrap_or_default();
     let requested: Option<Vec<&str>> = match args.get("names") {
         None | Some(Value::Null) => None,
         Some(Value::Array(names)) => {
@@ -232,6 +258,25 @@ pub fn instructions_line() -> &'static str {
     "Most tools are listed by name only: call `describe_tools({names:[...]})` for their argument schemas before first use."
 }
 
+/// The lazy note added to the served SKILL.md, after the line that opens
+/// its "Efficient loop" section.
+pub fn skill_note() -> &'static str {
+    "\nThis server lists most tools by name only. `list_windows`, `get_window_state`, `run_steps` and `verify_state` carry full schemas; call `describe_tools({names:[...]})` for any other tool's arguments before first use. Every listed tool can be called, and a call with bad arguments returns that tool's schema in the error.\n"
+}
+
+/// SKILL.md as served in lazy mode: [`skill_note`] after the first line of
+/// the "Efficient loop" section, or at the end if upstream moved it.
+pub fn lazy_skill(skill: &str) -> String {
+    let anchor = skill
+        .find("## Efficient loop\n\n")
+        .and_then(|start| {
+            let body = start + "## Efficient loop\n\n".len();
+            skill[body..].find('\n').map(|end| body + end + 1)
+        })
+        .unwrap_or(skill.len());
+    format!("{}{}{}", &skill[..anchor], skill_note(), &skill[anchor..])
+}
+
 fn lazy_entry(tool: &Value) -> Value {
     let name = tool_name(tool).unwrap_or_default();
     if FULL_SCHEMA_TOOLS.contains(&name) || name == DESCRIBE_TOOLS {
@@ -284,10 +329,13 @@ fn is_bad_arguments(result: &Value) -> bool {
     if result.get("isError").and_then(Value::as_bool) != Some(true) {
         return false;
     }
-    let code = result
-        .pointer("/structuredContent/code")
-        .and_then(Value::as_str);
-    if code.is_some_and(|code| BAD_ARGUMENT_CODES.contains(&code)) {
+    // Tools report the code at the top of structuredContent; the dispatch
+    // seam's refusals nest it under `refusal`.
+    let bad_code = ["/structuredContent/code", "/structuredContent/refusal/code"]
+        .iter()
+        .filter_map(|pointer| result.pointer(pointer).and_then(Value::as_str))
+        .any(|code| BAD_ARGUMENT_CODES.contains(&code));
+    if bad_code {
         return true;
     }
     let text = result
@@ -360,9 +408,18 @@ mod tests {
         let names: Vec<&str> = tools.iter().filter_map(tool_name).collect();
         assert_eq!(
             names,
-            ["list_windows", "get_window_state", "click", "type_text", DESCRIBE_TOOLS]
+            [
+                "list_windows",
+                "get_window_state",
+                "click",
+                "type_text",
+                DESCRIBE_TOOLS
+            ]
         );
-        assert_eq!(tools[0]["inputSchema"], full_list()["tools"][0]["inputSchema"]);
+        assert_eq!(
+            tools[0]["inputSchema"],
+            full_list()["tools"][0]["inputSchema"]
+        );
         assert!(tools[0].get("outputSchema").is_none());
         assert_eq!(tools[2]["inputSchema"], json!({"type": "object"}));
         assert_eq!(tools[2]["description"], "Do click in the background.");
@@ -381,7 +438,10 @@ mod tests {
         assert_eq!(result["structuredContent"]["tools"][0], full["tools"][2]);
         assert_eq!(result["structuredContent"]["unknown"], json!(["nope"]));
         let all = describe_tools(&full, &json!({}));
-        assert_eq!(all["structuredContent"]["tools"].as_array().unwrap().len(), 4);
+        assert_eq!(
+            all["structuredContent"]["tools"].as_array().unwrap().len(),
+            4
+        );
         let bad = describe_tools(&full, &json!({"names": "click"}));
         assert_eq!(bad["isError"], true);
         assert_eq!(bad["structuredContent"]["code"], "invalid_arguments");
@@ -415,6 +475,21 @@ mod tests {
             full["tools"][3]["inputSchema"]
         );
 
+        let mut refusal = json!({
+            "isError": true,
+            "content": [{"type": "text", "text": "click: unknown argument bogus; accepted: pid"}],
+            "structuredContent": {
+                "status": "refused",
+                "refusal": {"code": "invalid_arguments", "message": "click: unknown argument bogus"}
+            }
+        });
+        Disclosure::Lazy.annotate_result(&full, "click", &mut refusal);
+        assert_eq!(
+            refusal["structuredContent"]["input_schema"],
+            full["tools"][2]["inputSchema"]
+        );
+        assert_eq!(refusal["structuredContent"]["status"], "refused");
+
         let mut other = json!({
             "isError": true,
             "content": [{"type": "text", "text": "element_token is stale"}],
@@ -428,7 +503,10 @@ mod tests {
     #[test]
     fn one_line_descriptions_are_short() {
         assert_eq!(one_line("Short."), "Short.");
-        assert_eq!(one_line("List apps with flags:\n\n- a"), "List apps with flags");
+        assert_eq!(
+            one_line("List apps with flags:\n\n- a"),
+            "List apps with flags"
+        );
         let long = one_line(&"word ".repeat(60));
         assert!(long.chars().count() <= SHORT_DESCRIPTION_CHARS);
         assert!(long.ends_with("..."));

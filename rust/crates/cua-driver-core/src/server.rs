@@ -890,12 +890,11 @@ async fn handle_request_inner(
         Err(response) => return response,
     };
     if req.method == "tools/call" {
-        let disclosure = crate::tool_disclosure::Disclosure::from_env();
-        if let Err(response) = crate::mcp_wire::validate_tool_call(
+        if let Err(response) = crate::tool_disclosure::Disclosure::from_env().validate_tool_call(
             &req,
             id.clone(),
             era,
-            &disclosure.advertised(provider.tools_list()),
+            &provider.tools_list(),
         ) {
             return response;
         }

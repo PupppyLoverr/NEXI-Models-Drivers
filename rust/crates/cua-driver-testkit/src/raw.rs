@@ -52,12 +52,12 @@ impl RawDriver {
     /// skips rather than fails, unless `CUA_TEST_REQUIRE_DRIVER_BIN=1` makes a
     /// missing binary panic.
     pub fn spawn() -> Option<Self> {
-        Self::spawn_daemon_backed(driver_binary(), false, &[])
+        Self::spawn_daemon_backed(driver_binary(), false, &[], &[])
     }
 
     /// Spawn through the exact binary selected by the caller.
     pub fn spawn_with_binary(bin: impl Into<PathBuf>) -> Option<Self> {
-        Self::spawn_daemon_backed(bin.into(), false, &[])
+        Self::spawn_daemon_backed(bin.into(), false, &[], &[])
     }
 
     /// Spawn the daemon-backed driver with an explicit test environment.
@@ -78,7 +78,7 @@ impl RawDriver {
     /// host enabled. Cursor protocol tests use this deliberately; ordinary
     /// protocol tests keep the no-overlay daemon so they remain headless.
     pub fn spawn_with_overlay() -> Option<Self> {
-        Self::spawn_daemon_backed(driver_binary(), true, &[])
+        Self::spawn_daemon_backed(driver_binary(), true, &[], &[])
     }
 
     /// Spawn an overlay-enabled daemon with explicit trusted launch settings.

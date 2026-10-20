@@ -2,20 +2,24 @@ W5 lazy tool disclosure (Dove fork). git apply ignores this preamble.
 
 DOVE_TOOL_DISCLOSURE=lazy (also CUA_DRIVER_TOOL_DISCLOSURE, which
 DOVE_DRIVER_TOOL_DISCLOSURE aliases to) shrinks the MCP tools/list. These
-tools keep their full input schema: list_windows, get_window_state, run_steps,
-verify_state, act (if registered) and describe_tools. Every other tool is
-listed with a one-line description and {"type":"object"}. describe_tools
-{names} returns the full entries. Withheld tools still run, and in lazy mode a
-bad-arguments error carries the tool's input schema. Unset, behaviour is
-upstream's. Applied on the core dispatcher (direct stdio and the daemon's HTTP
-transport) and on the mcp proxy, which reads its own environment.
+tools keep their full entry (description, input schema, annotations):
+list_windows, get_window_state, run_steps, verify_state, act (if registered)
+and describe_tools. Every other tool is listed with a one-line description and
+{"type":"object"}. describe_tools {names} returns the full entries. Withheld
+tools still run, and in lazy mode a bad-arguments error carries the tool's
+input schema. The initialize instructions and the served SKILL.md resource
+gain one note on describe_tools. Unset, behaviour is upstream's. Applied on the
+core dispatcher (direct stdio and the daemon's HTTP transport) and on the mcp
+proxy, which reads its own environment; the stdio adapters' per-request tool
+check admits describe_tools only in lazy mode.
 
-Size (user decision 2026-10-20, option A): the eager list is 225,763 bytes for
-63 tools (0.37.0, Windows). The lazy limit is the measured size plus a small
-margin (LAZY_TOOLS_LIST_LIMIT_BYTES in tool_disclosure_test.rs), about 20 KB,
-not the 3 KB first planned. Every tool stays listed so clients such as Claude
-Code, which only call listed tools, can call all 63. Bare name-only entries for
-the 59 withheld tools already take 3.4 KB.
+Size (user decision 2026-10-20, option A): on Linux the eager list is 229,910
+bytes for 66 tools and the lazy list 31,789 bytes; the test limit
+(LAZY_TOOLS_LIST_LIMIT_BYTES in tool_disclosure_test.rs) is 33 KB. About 22 KB
+of that is the five full entries, mostly the long descriptions of
+get_window_state and run_steps; the 62 withheld tools take 9 KB. Every tool
+stays listed so clients such as Claude Code, which only call listed tools, can
+call all of them, so the 3 KB first planned is out of reach.
 
 diff --git a/rust/crates/cua-driver-core/src/lib.rs b/rust/crates/cua-driver-core/src/lib.rs
 index f341320..b1809e9 100644
@@ -29,6 +33,113 @@ index f341320..b1809e9 100644
  pub mod tool_schema;
  pub mod video;
  pub mod video_ffmpeg;
+diff --git a/rust/crates/cua-driver-core/src/mcp_skills.rs b/rust/crates/cua-driver-core/src/mcp_skills.rs
+index 0224502..96766ba 100644
+--- a/rust/crates/cua-driver-core/src/mcp_skills.rs
++++ b/rust/crates/cua-driver-core/src/mcp_skills.rs
+@@ -104,13 +104,44 @@ fn parse_frontmatter(source: &str) -> Result<Value, String> {
+ }
+ 
+ fn pack() -> &'static Pack {
++    pack_for(crate::tool_disclosure::Disclosure::from_env())
++}
++
++/// Dove fork (W5): the files this transport serves. In lazy tool disclosure
++/// mode SKILL.md gains a note on `describe_tools`; otherwise they are FILES.
++fn served_files(
++    disclosure: crate::tool_disclosure::Disclosure,
++) -> &'static [(&'static str, &'static str)] {
++    static LAZY: OnceLock<Vec<(&'static str, &'static str)>> = OnceLock::new();
++    if !disclosure.is_lazy() {
++        return FILES;
++    }
++    LAZY.get_or_init(|| {
++        FILES
++            .iter()
++            .map(|(name, text)| match *name {
++                "SKILL.md" => (*name, &*crate::tool_disclosure::lazy_skill(text).leak()),
++                _ => (*name, *text),
++            })
++            .collect()
++    })
++}
++
++fn pack_for(disclosure: crate::tool_disclosure::Disclosure) -> &'static Pack {
+     static PACK: OnceLock<Pack> = OnceLock::new();
+-    PACK.get_or_init(|| {
++    static LAZY_PACK: OnceLock<Pack> = OnceLock::new();
++    let files = served_files(disclosure);
++    let cell = if disclosure.is_lazy() {
++        &LAZY_PACK
++    } else {
++        &PACK
++    };
++    cell.get_or_init(|| {
+         let frontmatter = parse_frontmatter(include_str!("../../../Skills/cua-driver/SKILL.md"))
+             .expect("embedded canonical skill must have valid JSON-compatible frontmatter");
+-        let mut manifest = Vec::with_capacity(FILES.len());
+-        let mut resources = Vec::with_capacity(FILES.len());
+-        for (name, text) in FILES {
++        let mut manifest = Vec::with_capacity(files.len());
++        let mut resources = Vec::with_capacity(files.len());
++        for (name, text) in files {
+             let uri = format!("{URI_PREFIX}{name}");
+             manifest.push(json!({
+                 "uri": uri,
+@@ -178,7 +209,7 @@ fn result(request: &Request) -> Result<Value, &'static str> {
+         "resources/read" => {
+             let uri = required_uri(params)?;
+             let name = uri.strip_prefix(URI_PREFIX).ok_or("unknown resource URI")?;
+-            let (_, text) = FILES
++            let (_, text) = served_files(crate::tool_disclosure::Disclosure::from_env())
+                 .iter()
+                 .find(|(file, _)| *file == name)
+                 .ok_or("unknown resource URI")?;
+@@ -286,6 +317,44 @@ mod tests {
+         }
+     }
+ 
++    #[test]
++    fn lazy_disclosure_serves_a_skill_that_points_at_describe_tools() {
++        use crate::tool_disclosure::Disclosure;
++        assert_eq!(served_files(Disclosure::Eager), FILES);
++        let lazy = served_files(Disclosure::Lazy);
++        assert_eq!(lazy.len(), FILES.len());
++        for ((name, text), (lazy_name, lazy_text)) in FILES.iter().zip(lazy) {
++            assert_eq!(name, lazy_name);
++            if *name == "SKILL.md" {
++                assert!(lazy_text.contains("`describe_tools({names:[...]})`"));
++                let note = lazy_text
++                    .find(crate::tool_disclosure::skill_note())
++                    .unwrap();
++                let loop_start = lazy_text.find("## Efficient loop").unwrap();
++                assert!(loop_start < note && note < lazy_text.find("\n1. ").unwrap());
++                assert_eq!(
++                    lazy_text.replace(crate::tool_disclosure::skill_note(), ""),
++                    *text
++                );
++            } else {
++                assert_eq!(text, lazy_text);
++            }
++        }
++        let skill = &pack_for(Disclosure::Lazy).entry["resources"]
++            .as_array()
++            .unwrap()
++            .iter()
++            .find(|resource| resource["uri"] == SKILL_URI)
++            .unwrap()
++            .clone();
++        let lazy_skill = lazy.iter().find(|(name, _)| *name == "SKILL.md").unwrap().1;
++        assert_eq!(skill["size"], lazy_skill.len());
++        assert_eq!(
++            skill["digest"],
++            format!("sha256:{:x}", Sha256::digest(lazy_skill.as_bytes()))
++        );
++    }
++
+     #[test]
+     fn full_frontmatter_preserves_nested_metadata_and_scalar_types() {
+         let source = include_str!("../../../Skills/cua-driver/SKILL.md");
 diff --git a/rust/crates/cua-driver-core/src/protocol.rs b/rust/crates/cua-driver-core/src/protocol.rs
 index e837bfd..e774304 100644
 --- a/rust/crates/cua-driver-core/src/protocol.rs
@@ -92,27 +203,26 @@ index e837bfd..e774304 100644
      #[test]
      fn instructions_route_structured_and_visual_verification_to_the_right_owner() {
 diff --git a/rust/crates/cua-driver-core/src/server.rs b/rust/crates/cua-driver-core/src/server.rs
-index 7c85f09..1e4d050 100644
+index 7c85f09..78dbdb6 100644
 --- a/rust/crates/cua-driver-core/src/server.rs
 +++ b/rust/crates/cua-driver-core/src/server.rs
-@@ -890,9 +890,13 @@ async fn handle_request_inner(
+@@ -890,9 +890,12 @@ async fn handle_request_inner(
          Err(response) => return response,
      };
      if req.method == "tools/call" {
 -        if let Err(response) =
 -            crate::mcp_wire::validate_tool_call(&req, id.clone(), era, &provider.tools_list())
 -        {
-+        let disclosure = crate::tool_disclosure::Disclosure::from_env();
-+        if let Err(response) = crate::mcp_wire::validate_tool_call(
++        if let Err(response) = crate::tool_disclosure::Disclosure::from_env().validate_tool_call(
 +            &req,
 +            id.clone(),
 +            era,
-+            &disclosure.advertised(provider.tools_list()),
++            &provider.tools_list(),
 +        ) {
              return response;
          }
      }
-@@ -918,12 +922,24 @@ async fn dispatch_request(
+@@ -918,12 +921,24 @@ async fn dispatch_request(
              Response::ok(id, initialize_result())
          }
  
@@ -138,7 +248,7 @@ index 7c85f09..1e4d050 100644
                  if let Err(error) = authorize_tool_call(&call.name, &call.args) {
                      return Response::ok(
                          id,
-@@ -973,7 +989,11 @@ async fn dispatch_request(
+@@ -973,7 +988,11 @@ async fn dispatch_request(
                      Ok(result) => result,
                      Err(error) => tool_error_result(error, serde_json::json!({"exit_code": 1})),
                  };
@@ -153,10 +263,10 @@ index 7c85f09..1e4d050 100644
  
 diff --git a/rust/crates/cua-driver-core/src/tool_disclosure.rs b/rust/crates/cua-driver-core/src/tool_disclosure.rs
 new file mode 100644
-index 0000000..bd390a7
+index 0000000..fbf020e
 --- /dev/null
 +++ b/rust/crates/cua-driver-core/src/tool_disclosure.rs
-@@ -0,0 +1,436 @@
+@@ -0,0 +1,514 @@
 +//! Dove fork: lazy tool disclosure (ROADMAP W5).
 +//!
 +//! With `DOVE_TOOL_DISCLOSURE=lazy` (or `CUA_DRIVER_TOOL_DISCLOSURE=lazy`,
@@ -246,7 +356,10 @@ index 0000000..bd390a7
 +            })
 +            .unwrap_or_default();
 +        let mut listed: Vec<Value> = tools.iter().map(lazy_entry).collect();
-+        if !tools.iter().any(|tool| tool_name(tool) == Some(DESCRIBE_TOOLS)) {
++        if !tools
++            .iter()
++            .any(|tool| tool_name(tool) == Some(DESCRIBE_TOOLS))
++        {
 +            listed.push(describe_tools_entry());
 +        }
 +        result.insert("tools".to_owned(), Value::Array(listed));
@@ -254,6 +367,28 @@ index 0000000..bd390a7
 +        // full-detail metadata like the withheld schemas.
 +        result.remove("enforcement_adapters");
 +        Value::Object(result)
++    }
++
++    /// [`crate::mcp_wire::validate_tool_call`] against the tools the client
++    /// was shown: in lazy mode `describe_tools` is known even though the
++    /// registry's own list does not have it.
++    pub fn validate_tool_call(
++        self,
++        req: &crate::protocol::Request,
++        id: Value,
++        era: crate::mcp_wire::ProtocolEra,
++        full: &Value,
++    ) -> Result<(), crate::protocol::Response> {
++        let owns_call = self.is_lazy()
++            && req.method == "tools/call"
++            && req
++                .tool_call()
++                .is_ok_and(|call| call.name == DESCRIBE_TOOLS);
++        if owns_call {
++            let inventory = json!({"tools": [{"name": DESCRIBE_TOOLS}]});
++            return crate::mcp_wire::validate_tool_call(req, id, era, &inventory);
++        }
++        crate::mcp_wire::validate_tool_call(req, id, era, full)
 +    }
 +
 +    /// Answer a `describe_tools` call here, at the MCP boundary, when lazy
@@ -282,13 +417,11 @@ index 0000000..bd390a7
 +                ),
 +            }));
 +        }
-+        let structured = result
-+            .as_object_mut()
-+            .map(|result| {
-+                result
-+                    .entry("structuredContent")
-+                    .or_insert_with(|| Value::Object(Map::new()))
-+            });
++        let structured = result.as_object_mut().map(|result| {
++            result
++                .entry("structuredContent")
++                .or_insert_with(|| Value::Object(Map::new()))
++        });
 +        match structured {
 +            Some(Value::Object(structured)) => {
 +                structured.entry("input_schema").or_insert(schema);
@@ -327,7 +460,10 @@ index 0000000..bd390a7
 +/// The `describe_tools` result: full entries for the requested tools, plus
 +/// the names that matched no tool.
 +pub fn describe_tools(full: &Value, args: &Value) -> Value {
-+    let tools = full["tools"].as_array().map(Vec::as_slice).unwrap_or_default();
++    let tools = full["tools"]
++        .as_array()
++        .map(Vec::as_slice)
++        .unwrap_or_default();
 +    let requested: Option<Vec<&str>> = match args.get("names") {
 +        None | Some(Value::Null) => None,
 +        Some(Value::Array(names)) => {
@@ -391,6 +527,25 @@ index 0000000..bd390a7
 +    "Most tools are listed by name only: call `describe_tools({names:[...]})` for their argument schemas before first use."
 +}
 +
++/// The lazy note added to the served SKILL.md, after the line that opens
++/// its "Efficient loop" section.
++pub fn skill_note() -> &'static str {
++    "\nThis server lists most tools by name only. `list_windows`, `get_window_state`, `run_steps` and `verify_state` carry full schemas; call `describe_tools({names:[...]})` for any other tool's arguments before first use. Every listed tool can be called, and a call with bad arguments returns that tool's schema in the error.\n"
++}
++
++/// SKILL.md as served in lazy mode: [`skill_note`] after the first line of
++/// the "Efficient loop" section, or at the end if upstream moved it.
++pub fn lazy_skill(skill: &str) -> String {
++    let anchor = skill
++        .find("## Efficient loop\n\n")
++        .and_then(|start| {
++            let body = start + "## Efficient loop\n\n".len();
++            skill[body..].find('\n').map(|end| body + end + 1)
++        })
++        .unwrap_or(skill.len());
++    format!("{}{}{}", &skill[..anchor], skill_note(), &skill[anchor..])
++}
++
 +fn lazy_entry(tool: &Value) -> Value {
 +    let name = tool_name(tool).unwrap_or_default();
 +    if FULL_SCHEMA_TOOLS.contains(&name) || name == DESCRIBE_TOOLS {
@@ -443,10 +598,13 @@ index 0000000..bd390a7
 +    if result.get("isError").and_then(Value::as_bool) != Some(true) {
 +        return false;
 +    }
-+    let code = result
-+        .pointer("/structuredContent/code")
-+        .and_then(Value::as_str);
-+    if code.is_some_and(|code| BAD_ARGUMENT_CODES.contains(&code)) {
++    // Tools report the code at the top of structuredContent; the dispatch
++    // seam's refusals nest it under `refusal`.
++    let bad_code = ["/structuredContent/code", "/structuredContent/refusal/code"]
++        .iter()
++        .filter_map(|pointer| result.pointer(pointer).and_then(Value::as_str))
++        .any(|code| BAD_ARGUMENT_CODES.contains(&code));
++    if bad_code {
 +        return true;
 +    }
 +    let text = result
@@ -519,9 +677,18 @@ index 0000000..bd390a7
 +        let names: Vec<&str> = tools.iter().filter_map(tool_name).collect();
 +        assert_eq!(
 +            names,
-+            ["list_windows", "get_window_state", "click", "type_text", DESCRIBE_TOOLS]
++            [
++                "list_windows",
++                "get_window_state",
++                "click",
++                "type_text",
++                DESCRIBE_TOOLS
++            ]
 +        );
-+        assert_eq!(tools[0]["inputSchema"], full_list()["tools"][0]["inputSchema"]);
++        assert_eq!(
++            tools[0]["inputSchema"],
++            full_list()["tools"][0]["inputSchema"]
++        );
 +        assert!(tools[0].get("outputSchema").is_none());
 +        assert_eq!(tools[2]["inputSchema"], json!({"type": "object"}));
 +        assert_eq!(tools[2]["description"], "Do click in the background.");
@@ -540,7 +707,10 @@ index 0000000..bd390a7
 +        assert_eq!(result["structuredContent"]["tools"][0], full["tools"][2]);
 +        assert_eq!(result["structuredContent"]["unknown"], json!(["nope"]));
 +        let all = describe_tools(&full, &json!({}));
-+        assert_eq!(all["structuredContent"]["tools"].as_array().unwrap().len(), 4);
++        assert_eq!(
++            all["structuredContent"]["tools"].as_array().unwrap().len(),
++            4
++        );
 +        let bad = describe_tools(&full, &json!({"names": "click"}));
 +        assert_eq!(bad["isError"], true);
 +        assert_eq!(bad["structuredContent"]["code"], "invalid_arguments");
@@ -574,6 +744,21 @@ index 0000000..bd390a7
 +            full["tools"][3]["inputSchema"]
 +        );
 +
++        let mut refusal = json!({
++            "isError": true,
++            "content": [{"type": "text", "text": "click: unknown argument bogus; accepted: pid"}],
++            "structuredContent": {
++                "status": "refused",
++                "refusal": {"code": "invalid_arguments", "message": "click: unknown argument bogus"}
++            }
++        });
++        Disclosure::Lazy.annotate_result(&full, "click", &mut refusal);
++        assert_eq!(
++            refusal["structuredContent"]["input_schema"],
++            full["tools"][2]["inputSchema"]
++        );
++        assert_eq!(refusal["structuredContent"]["status"], "refused");
++
 +        let mut other = json!({
 +            "isError": true,
 +            "content": [{"type": "text", "text": "element_token is stale"}],
@@ -587,17 +772,35 @@ index 0000000..bd390a7
 +    #[test]
 +    fn one_line_descriptions_are_short() {
 +        assert_eq!(one_line("Short."), "Short.");
-+        assert_eq!(one_line("List apps with flags:\n\n- a"), "List apps with flags");
++        assert_eq!(
++            one_line("List apps with flags:\n\n- a"),
++            "List apps with flags"
++        );
 +        let long = one_line(&"word ".repeat(60));
 +        assert!(long.chars().count() <= SHORT_DESCRIPTION_CHARS);
 +        assert!(long.ends_with("..."));
 +    }
 +}
 diff --git a/rust/crates/cua-driver-testkit/src/raw.rs b/rust/crates/cua-driver-testkit/src/raw.rs
-index be8c76c..31ef6cd 100644
+index be8c76c..08f1282 100644
 --- a/rust/crates/cua-driver-testkit/src/raw.rs
 +++ b/rust/crates/cua-driver-testkit/src/raw.rs
-@@ -65,7 +65,13 @@ impl RawDriver {
+@@ -52,12 +52,12 @@ impl RawDriver {
+     /// skips rather than fails, unless `CUA_TEST_REQUIRE_DRIVER_BIN=1` makes a
+     /// missing binary panic.
+     pub fn spawn() -> Option<Self> {
+-        Self::spawn_daemon_backed(driver_binary(), false, &[])
++        Self::spawn_daemon_backed(driver_binary(), false, &[], &[])
+     }
+ 
+     /// Spawn through the exact binary selected by the caller.
+     pub fn spawn_with_binary(bin: impl Into<PathBuf>) -> Option<Self> {
+-        Self::spawn_daemon_backed(bin.into(), false, &[])
++        Self::spawn_daemon_backed(bin.into(), false, &[], &[])
+     }
+ 
+     /// Spawn the daemon-backed driver with an explicit test environment.
+@@ -65,25 +65,32 @@ impl RawDriver {
      /// Permission-mode tests use this to model a trusted host's launch-time
      /// configuration without mutating the test process environment.
      pub fn spawn_with_env(env: &[(&str, &str)]) -> Option<Self> {
@@ -612,7 +815,12 @@ index be8c76c..31ef6cd 100644
      }
  
      /// Spawn a daemon-backed raw driver with the certified platform overlay
-@@ -77,13 +83,14 @@ impl RawDriver {
+     /// host enabled. Cursor protocol tests use this deliberately; ordinary
+     /// protocol tests keep the no-overlay daemon so they remain headless.
+     pub fn spawn_with_overlay() -> Option<Self> {
+-        Self::spawn_daemon_backed(driver_binary(), true, &[])
++        Self::spawn_daemon_backed(driver_binary(), true, &[], &[])
+     }
  
      /// Spawn an overlay-enabled daemon with explicit trusted launch settings.
      pub fn spawn_with_overlay_and_env(env: &[(&str, &str)]) -> Option<Self> {
@@ -673,25 +881,50 @@ index be8c76c..31ef6cd 100644
              .stdout(Stdio::piped())
              .stderr(Stdio::null());
 diff --git a/rust/crates/cua-driver/src/proxy.rs b/rust/crates/cua-driver/src/proxy.rs
-index 02b4498..2461544 100644
+index 02b4498..9ca3fb0 100644
 --- a/rust/crates/cua-driver/src/proxy.rs
 +++ b/rust/crates/cua-driver/src/proxy.rs
-@@ -829,7 +829,13 @@ async fn handle_proxy_request(
+@@ -95,12 +95,13 @@ pub async fn run_direct(driver: Arc<cua_driver_sdk::CuaDriver>) -> anyhow::Resul
+             Ok(mut request) => {
+                 let admission = protocol_session.validate(&request).and_then(|era| {
+                     if request.method == "tools/call" {
+-                        mcp_wire::validate_tool_call(
+-                            &request,
+-                            request.id.clone().unwrap_or_default(),
+-                            era,
+-                            &sdk.tools_list(),
+-                        )?;
++                        cua_driver_core::tool_disclosure::Disclosure::from_env()
++                            .validate_tool_call(
++                                &request,
++                                request.id.clone().unwrap_or_default(),
++                                era,
++                                &sdk.tools_list(),
++                            )?;
+                     }
+                     Ok(era)
+                 });
+@@ -335,7 +336,7 @@ where
+             }
+             Ok(req) => {
+                 let admission = protocol_session.validate(&req).and_then(|era| {
+-                    mcp_wire::validate_tool_call(
++                    cua_driver_core::tool_disclosure::Disclosure::from_env().validate_tool_call(
+                         &req,
+                         req.id.clone().unwrap_or_default(),
+                         era,
+@@ -829,7 +830,9 @@ async fn handle_proxy_request(
          Ok(era) => era,
          Err(response) => return response,
      };
 -    if let Err(response) = mcp_wire::validate_tool_call(&req, id.clone(), era, cached_tools_list) {
-+    let disclosure = cua_driver_core::tool_disclosure::Disclosure::from_env();
-+    let inventory = if disclosure.is_lazy() {
-+        std::borrow::Cow::Owned(disclosure.advertised((**cached_tools_list).clone()))
-+    } else {
-+        std::borrow::Cow::Borrowed(&**cached_tools_list)
-+    };
-+    if let Err(response) = mcp_wire::validate_tool_call(&req, id.clone(), era, &inventory) {
++    if let Err(response) = cua_driver_core::tool_disclosure::Disclosure::from_env()
++        .validate_tool_call(&req, id.clone(), era, cached_tools_list)
++    {
          return response;
      }
      let method = req.method.clone();
-@@ -864,11 +870,21 @@ async fn handle_proxy_tool_request(
+@@ -864,11 +867,21 @@ async fn handle_proxy_tool_request(
              Response::ok(id, initialize_result())
          }
  
@@ -714,7 +947,7 @@ index 02b4498..2461544 100644
                  if let Err(error) = authorize_tool_call(&call.name, &call.args) {
                      return proxy_tool_result_response(
                          id,
-@@ -882,7 +898,7 @@ async fn handle_proxy_tool_request(
+@@ -882,7 +895,7 @@ async fn handle_proxy_tool_request(
                          ),
                      );
                  }
@@ -723,7 +956,7 @@ index 02b4498..2461544 100644
                      id,
                      call.name.clone(),
                      call.args,
-@@ -891,7 +907,13 @@ async fn handle_proxy_tool_request(
+@@ -891,7 +904,13 @@ async fn handle_proxy_tool_request(
                      daemon_observes_tool_calls,
                      proxy_output_schema(cached_tools_list, &call.name).cloned(),
                  )
@@ -740,10 +973,10 @@ index 02b4498..2461544 100644
  
 diff --git a/rust/crates/cua-driver/tests/tool_disclosure_test.rs b/rust/crates/cua-driver/tests/tool_disclosure_test.rs
 new file mode 100644
-index 0000000..8c64974
+index 0000000..db168c4
 --- /dev/null
 +++ b/rust/crates/cua-driver/tests/tool_disclosure_test.rs
-@@ -0,0 +1,228 @@
+@@ -0,0 +1,328 @@
 +//! Dove fork (ROADMAP W5): lazy tool disclosure over real MCP transports.
 +//!
 +//! `DOVE_TOOL_DISCLOSURE=lazy` shrinks `tools/list` to full schemas for the
@@ -754,17 +987,23 @@ index 0000000..8c64974
 +
 +#![cfg(any(target_os = "linux", target_os = "windows"))]
 +
++use cua_driver_core::mcp_wire::{
++    CLIENT_CAPABILITIES_KEY, MODERN_PROTOCOL_VERSION, PROTOCOL_VERSION_KEY,
++};
 +use cua_driver_core::tool_disclosure::{DESCRIBE_TOOLS, FULL_SCHEMA_TOOLS};
 +use cua_driver_testkit::RawDriver;
 +use serde_json::{json, Value};
 +
 +/// Ceiling for the lazy `tools/list` result, serialized compactly: the
-+/// measured lazy size plus a small margin. Every tool stays listed (with a
-+/// one-line description) so clients such as Claude Code, which only call
-+/// listed tools, can still call all of them; that rules out the 3 KB first
-+/// planned, since 59 bare `{name, inputSchema:{"type":"object"}}` entries
-+/// alone are 3.4 KB. The eager list is about 226 KB.
-+const LAZY_TOOLS_LIST_LIMIT_BYTES: usize = 24 * 1024;
++/// measured lazy size plus a small margin. Measured on Linux (66 tools):
++/// 31,789 bytes lazy against 229,910 eager. About 22 KB of the lazy list is
++/// the full entries of `list_windows`, `get_window_state`, `run_steps`,
++/// `verify_state` and `describe_tools`; the other 62 tools take 9 KB. Every
++/// tool stays listed (with a one-line description) so clients such as
++/// Claude Code, which only call listed tools, can still call all of them;
++/// that rules out the 3 KB first planned, since 59 bare
++/// `{name, inputSchema:{"type":"object"}}` entries alone are 3.4 KB.
++const LAZY_TOOLS_LIST_LIMIT_BYTES: usize = 33 * 1024;
 +
 +fn tools_list(driver: &mut RawDriver) -> Value {
 +    driver.send(&json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}));
@@ -779,6 +1018,32 @@ index 0000000..8c64974
 +        "params":{"name":name,"arguments":arguments}
 +    }));
 +    driver.recv()["result"].take()
++}
++
++/// A per-request (modern) MCP call, which the stdio adapters check against
++/// the tool inventory before dispatch. Returns the whole response.
++fn modern_call(driver: &mut RawDriver, id: u64, name: &str, arguments: Value) -> Value {
++    driver.send(&json!({
++        "jsonrpc":"2.0","id":id,"method":"tools/call",
++        "params":{
++            "name":name,"arguments":arguments,
++            "_meta":{PROTOCOL_VERSION_KEY: MODERN_PROTOCOL_VERSION, CLIENT_CAPABILITIES_KEY: {}}
++        }
++    }));
++    driver.recv()
++}
++
++fn skill_text(driver: &mut RawDriver) -> String {
++    driver.send(&json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}));
++    driver.recv();
++    driver.send(&json!({
++        "jsonrpc":"2.0","id":2,"method":"resources/read",
++        "params":{"uri":"skill://cua-driver/SKILL.md"}
++    }));
++    driver.recv()["result"]["contents"][0]["text"]
++        .as_str()
++        .expect("SKILL.md text")
++        .to_owned()
 +}
 +
 +fn names(list: &Value) -> Vec<String> {
@@ -950,7 +1215,9 @@ index 0000000..8c64974
 +    };
 +    driver.send(&json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}));
 +    let response = driver.recv();
-+    let instructions = response["result"]["instructions"].as_str().unwrap_or_default();
++    let instructions = response["result"]["instructions"]
++        .as_str()
++        .unwrap_or_default();
 +    assert!(instructions.contains("describe_tools"), "{instructions}");
 +}
 +
@@ -962,7 +1229,10 @@ index 0000000..8c64974
 +    };
 +    let lazy = tools_list(&mut driver);
 +    assert!(compact_len(&lazy) <= LAZY_TOOLS_LIST_LIMIT_BYTES);
-+    assert_eq!(entry(&lazy, "click")["inputSchema"], json!({"type": "object"}));
++    assert_eq!(
++        entry(&lazy, "click")["inputSchema"],
++        json!({"type": "object"})
++    );
 +
 +    let result = call(&mut driver, 3, DESCRIBE_TOOLS, json!({"names": ["click"]}));
 +    assert_eq!(result["isError"], false, "{result}");
@@ -970,5 +1240,68 @@ index 0000000..8c64974
 +
 +    let bad = call(&mut driver, 4, "get_config", json!({"no_such_argument": 1}));
 +    assert_eq!(bad["isError"], true, "{bad}");
-+    assert!(bad["structuredContent"]["input_schema"].is_object(), "{bad}");
++    assert!(
++        bad["structuredContent"]["input_schema"].is_object(),
++        "{bad}"
++    );
++}
++
++fn assert_modern_describe_tools_is_admitted(driver: &mut RawDriver) {
++    let response = modern_call(driver, 3, DESCRIBE_TOOLS, json!({"names": ["click"]}));
++    assert!(response.get("error").is_none(), "{response}");
++    assert_eq!(response["result"]["isError"], false, "{response}");
++    assert_eq!(
++        response["result"]["structuredContent"]["tools"][0]["name"], "click",
++        "{response}"
++    );
++    // Names the client was never shown are still refused.
++    let unknown = modern_call(driver, 4, "no_such_tool", json!({}));
++    assert_eq!(unknown["error"]["code"], -32602, "{unknown}");
++}
++
++#[test]
++fn modern_requests_admit_describe_tools_in_direct_mode() {
++    let Some(mut driver) = RawDriver::spawn_direct_with_env(&[("DOVE_TOOL_DISCLOSURE", "lazy")])
++    else {
++        return;
++    };
++    assert_modern_describe_tools_is_admitted(&mut driver);
++}
++
++#[test]
++fn modern_requests_admit_describe_tools_through_the_proxy() {
++    let Some(mut driver) = RawDriver::spawn_with_proxy_env(&[("DOVE_TOOL_DISCLOSURE", "lazy")])
++    else {
++        return;
++    };
++    assert_modern_describe_tools_is_admitted(&mut driver);
++}
++
++#[test]
++fn modern_requests_do_not_know_describe_tools_by_default() {
++    let Some(mut driver) = RawDriver::spawn_direct() else {
++        return;
++    };
++    let response = modern_call(&mut driver, 3, DESCRIBE_TOOLS, json!({}));
++    assert_eq!(response["error"]["code"], -32602, "{response}");
++}
++
++#[test]
++fn served_skill_describes_the_lazy_flow_only_in_lazy_mode() {
++    let Some(mut eager) = RawDriver::spawn_direct() else {
++        return;
++    };
++    let eager = skill_text(&mut eager);
++    assert!(!eager.contains("describe_tools"));
++    let Some(mut lazy) = RawDriver::spawn_direct_with_env(&[("DOVE_TOOL_DISCLOSURE", "lazy")])
++    else {
++        return;
++    };
++    let lazy = skill_text(&mut lazy);
++    assert!(lazy.contains("`describe_tools({names:[...]})`"), "{lazy}");
++    let Some(mut proxied) = RawDriver::spawn_with_proxy_env(&[("DOVE_TOOL_DISCLOSURE", "lazy")])
++    else {
++        return;
++    };
++    assert_eq!(skill_text(&mut proxied), lazy);
 +}
