@@ -1,20 +1,31 @@
 """Drive dove-driver over MCP stdio for the W3 live test.
 
 usage: python -I w3live.py <dove-driver.exe> <isolated-home> <out.json>
-Starts the throwaway WinForms app (w3form.ps1 next to this file), finds its
-window, runs the scenarios as run_steps calls, and writes every result.
+Starts the throwaway test app (w3form.ps1 on Windows, w3form_gtk.py
+elsewhere, both next to this file), finds its window, runs the scenarios as
+run_steps calls, and writes every result. On Linux run it inside a session
+with a display, a window manager and the AT-SPI bus (run-linux.sh does that).
 """
 import json, os, subprocess, sys, time
 
 exe, home, out_path = sys.argv[1], sys.argv[2], sys.argv[3]
 here = os.path.dirname(os.path.abspath(__file__))
 
+windows = os.name == "nt"
 env = dict(os.environ)
 for key in ("USERPROFILE", "HOME"):
     env[key] = home
-env["LOCALAPPDATA"] = os.path.join(home, "AppData", "Local")
-env["APPDATA"] = os.path.join(home, "AppData", "Roaming")
-for d in (env["LOCALAPPDATA"], env["APPDATA"]):
+if windows:
+    env["LOCALAPPDATA"] = os.path.join(home, "AppData", "Local")
+    env["APPDATA"] = os.path.join(home, "AppData", "Roaming")
+    dirs = (env["LOCALAPPDATA"], env["APPDATA"])
+else:
+    env["XDG_CONFIG_HOME"] = os.path.join(home, ".config")
+    env["XDG_DATA_HOME"] = os.path.join(home, ".local", "share")
+    env["XDG_STATE_HOME"] = os.path.join(home, ".local", "state")
+    env["XDG_CACHE_HOME"] = os.path.join(home, ".cache")
+    dirs = (env["XDG_CONFIG_HOME"], env["XDG_DATA_HOME"], env["XDG_STATE_HOME"], env["XDG_CACHE_HOME"])
+for d in dirs:
     os.makedirs(d, exist_ok=True)
 
 
@@ -55,9 +66,13 @@ def text_of(result):
     return "\n".join(c.get("text", "") for c in result.get("content", []) if c.get("type") == "text")
 
 
-form = subprocess.Popen(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File",
-                         os.path.join(here, "w3form.ps1"), "-ExitAfterSeconds", "240"],
-                        creationflags=subprocess.CREATE_NO_WINDOW)
+if windows:
+    form = subprocess.Popen(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File",
+                             os.path.join(here, "w3form.ps1"), "-ExitAfterSeconds", "240"],
+                            creationflags=subprocess.CREATE_NO_WINDOW)
+else:
+    form = subprocess.Popen([os.environ.get("W3_PYTHON", "python3"),
+                             os.path.join(here, "w3form_gtk.py"), "240"])
 results = {"calls": []}
 mcp = Mcp()
 try:

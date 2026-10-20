@@ -235,9 +235,10 @@ impl Tool for RunStepsTool {
                             "properties": {
                                 "tool": { "type": "string", "enum": BATCHABLE_TOOLS, "description": "Action tool to run." },
                                 "args": { "type": "object", "description": "Arguments for that tool, as in a direct call, optionally with role/name/nth/app/window to name the target instead of pid/window_id/element_token." },
-                                "wait_for": { "type": "object", "description": "Check that must hold before the action: {role?, name?, text?, gone?, app?, window?, timeout_ms?}. Default timeout 5000 ms." },
-                                "expect": { "type": "array", "maxItems": 4, "items": {"type": "object"}, "description": "Up to 4 checks that must hold after the action: {role?, name?, text?, gone?, value?, value_contains?, enabled?, selected?, app?, window?, timeout_ms?}. Default timeout 2000 ms." },
-                                "timeout_ms": { "type": "integer", "minimum": 0, "maximum": 10000, "description": "How long a named target may take to appear. Default 3000." }
+                                "wait_for": { "type": ["object", "string"], "description": "Check that must hold before the action: {role?, name?, text?, gone?, app?, window?, timeout_ms?}. Default timeout 5000 ms. `query` means text, `timeout` means timeout_ms, and a bare string is {text}." },
+                                "expect": { "type": ["array", "object", "string"], "maxItems": 4, "items": {"type": ["object", "string"]}, "description": "Up to 4 checks that must hold after the action: {role?, name?, text?, gone?, value?, value_contains?, enabled?, selected?, app?, window?, timeout_ms?}. Default timeout 2000 ms. `query`, `timeout` and bare strings as in wait_for; an entry may also be a verify_state predicate ({element:{selector,...}} or {window:{...}})." },
+                                "timeout_ms": { "type": "integer", "minimum": 0, "maximum": 10000, "description": "How long a named target may take to appear and, with auto-wait, become actionable. Default 3000." },
+                                "auto_wait": { "type": "boolean", "description": "This step's auto-wait; overrides run_steps' own." }
                             },
                             "additionalProperties": true
                         }
@@ -775,12 +776,21 @@ impl Plan {
             (None, None) => None,
         };
         if let Some(mut args) = observe {
+            let explicit = args.get("pid").is_some() && args.get("window_id").is_some();
             let filled = fill_observed_window(&mut args, last_window.as_ref());
-            let result = if filled {
-                registry.invoke(OBSERVE_TOOL, args).await
+            let mut result = if filled {
+                registry.invoke(OBSERVE_TOOL, args.clone()).await
             } else {
                 ToolResult::error("no window to observe: no step resolved one")
             };
+            if result.is_error == Some(true) && filled && !explicit {
+                if let Some((retry, note)) =
+                    waits::observe_after_close(&locator, &args, last_window.as_ref()).await
+                {
+                    lines.push(note);
+                    result = registry.invoke(OBSERVE_TOOL, retry).await;
+                }
+            }
             let ok = result.is_error != Some(true);
             let mut report = json!({ "ok": ok, "tool": OBSERVE_TOOL });
             if ok {
@@ -1127,18 +1137,21 @@ async fn run_step(
         report["expect"] = Value::Array(checked);
     }
     if let Some(verify) = &step.waits.verify {
-        if let Err((code, message)) = waits::run_verify(
+        match waits::run_verify(
             registry,
             locator,
             verify,
             &fallback,
+            step_has_no_action,
             last_window,
             &mut report,
-            &mut notes,
         )
         .await
         {
-            return failure(index, label, Phase::Expect, code, message, report);
+            Ok(note) => notes.push(note),
+            Err((code, message)) => {
+                return failure(index, label, Phase::Expect, code, message, report)
+            }
         }
     }
     report["ok"] = json!(true);

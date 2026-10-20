@@ -1,5 +1,5 @@
 diff --git a/rust/crates/cua-driver-core/src/batch_tools.rs b/rust/crates/cua-driver-core/src/batch_tools.rs
-index 286d429..51a60b9 100644
+index 286d429..cb2a7d5 100644
 --- a/rust/crates/cua-driver-core/src/batch_tools.rs
 +++ b/rust/crates/cua-driver-core/src/batch_tools.rs
 @@ -21,6 +21,7 @@ use crate::{
@@ -20,7 +20,21 @@ index 286d429..51a60b9 100644
              input_schema: json!({
                  "type": "object",
                  "required": ["steps"],
-@@ -271,6 +273,10 @@ impl Tool for RunStepsTool {
+@@ -233,9 +235,10 @@ impl Tool for RunStepsTool {
+                             "properties": {
+                                 "tool": { "type": "string", "enum": BATCHABLE_TOOLS, "description": "Action tool to run." },
+                                 "args": { "type": "object", "description": "Arguments for that tool, as in a direct call, optionally with role/name/nth/app/window to name the target instead of pid/window_id/element_token." },
+-                                "wait_for": { "type": "object", "description": "Check that must hold before the action: {role?, name?, text?, gone?, app?, window?, timeout_ms?}. Default timeout 5000 ms." },
+-                                "expect": { "type": "array", "maxItems": 4, "items": {"type": "object"}, "description": "Up to 4 checks that must hold after the action: {role?, name?, text?, gone?, value?, value_contains?, enabled?, selected?, app?, window?, timeout_ms?}. Default timeout 2000 ms." },
+-                                "timeout_ms": { "type": "integer", "minimum": 0, "maximum": 10000, "description": "How long a named target may take to appear. Default 3000." }
++                                "wait_for": { "type": ["object", "string"], "description": "Check that must hold before the action: {role?, name?, text?, gone?, app?, window?, timeout_ms?}. Default timeout 5000 ms. `query` means text, `timeout` means timeout_ms, and a bare string is {text}." },
++                                "expect": { "type": ["array", "object", "string"], "maxItems": 4, "items": {"type": ["object", "string"]}, "description": "Up to 4 checks that must hold after the action: {role?, name?, text?, gone?, value?, value_contains?, enabled?, selected?, app?, window?, timeout_ms?}. Default timeout 2000 ms. `query`, `timeout` and bare strings as in wait_for; an entry may also be a verify_state predicate ({element:{selector,...}} or {window:{...}})." },
++                                "timeout_ms": { "type": "integer", "minimum": 0, "maximum": 10000, "description": "How long a named target may take to appear and, with auto-wait, become actionable. Default 3000." },
++                                "auto_wait": { "type": "boolean", "description": "This step's auto-wait; overrides run_steps' own." }
+                             },
+                             "additionalProperties": true
+                         }
+@@ -271,6 +274,10 @@ impl Tool for RunStepsTool {
                          "type": "boolean",
                          "description": "When a step is refused because its target ignores background input (Electron, LibreOffice and other toolkits), retry it once with delivery_mode:\"foreground\": the window is activated and the pointer may move. Default false."
                      },
@@ -31,7 +45,7 @@ index 286d429..51a60b9 100644
                      "observe": {
                          "type": "object",
                          "description": "Optional end-of-batch observation: arguments for ONE get_window_state call. `pid` and `window_id` default to those of the last step that names both. Defaults to since=\"latest\" (only what changed since your last read of that window with the same query/max_elements/max_depth; a full read when there is none), include_screenshot=false and max_elements=250; pass include_screenshot=true to see the window, or since=null for a full read. Omit to read nothing. {} observes the last window."
-@@ -322,6 +328,7 @@ struct Step {
+@@ -322,6 +329,7 @@ struct Step {
      /// A read-only tool placed between actions. It cannot change what later
      /// steps do, so it is skipped (with a note) instead of failing the batch.
      skipped_read: Option<&'static str>,
@@ -39,7 +53,7 @@ index 286d429..51a60b9 100644
  }
  
  impl Step {
-@@ -448,6 +455,7 @@ impl Plan {
+@@ -448,6 +456,7 @@ impl Plan {
              .map(str::to_owned);
  
          let default_window = batch_window(object)?;
@@ -47,7 +61,7 @@ index 286d429..51a60b9 100644
          let default_delivery = match object.get("delivery_mode") {
              None | Some(Value::Null) => None,
              Some(Value::String(mode)) if matches!(mode.as_str(), "background" | "foreground") => {
-@@ -535,10 +543,12 @@ impl Plan {
+@@ -535,10 +544,12 @@ impl Plan {
                      wait_for: None,
                      expect: Vec::new(),
                      skipped_read: Some(tool),
@@ -60,7 +74,31 @@ index 286d429..51a60b9 100644
              if let (Some(mode), Some(action)) = (&default_delivery, step.action.as_mut()) {
                  if accepts(registry, action.tool, "delivery_mode") {
                      if let Some(object) = action.args.as_object_mut() {
-@@ -917,7 +927,17 @@ async fn run_step(
+@@ -765,12 +776,21 @@ impl Plan {
+             (None, None) => None,
+         };
+         if let Some(mut args) = observe {
++            let explicit = args.get("pid").is_some() && args.get("window_id").is_some();
+             let filled = fill_observed_window(&mut args, last_window.as_ref());
+-            let result = if filled {
+-                registry.invoke(OBSERVE_TOOL, args).await
++            let mut result = if filled {
++                registry.invoke(OBSERVE_TOOL, args.clone()).await
+             } else {
+                 ToolResult::error("no window to observe: no step resolved one")
+             };
++            if result.is_error == Some(true) && filled && !explicit {
++                if let Some((retry, note)) =
++                    waits::observe_after_close(&locator, &args, last_window.as_ref()).await
++                {
++                    lines.push(note);
++                    result = registry.invoke(OBSERVE_TOOL, retry).await;
++                }
++            }
+             let ok = result.is_error != Some(true);
+             let mut report = json!({ "ok": ok, "tool": OBSERVE_TOOL });
+             if ok {
+@@ -917,7 +937,17 @@ async fn run_step(
                  action: Some(tool),
                  ..element
              };
@@ -79,29 +117,32 @@ index 286d429..51a60b9 100644
                  Ok(found) => {
                      let object = args.as_object_mut().expect("object");
                      object.insert("pid".into(), json!(found.window.pid));
-@@ -1106,6 +1126,21 @@ async fn run_step(
+@@ -1106,6 +1136,24 @@ async fn run_step(
          notes.push(format!("{} check(s) held", checked.len()));
          report["expect"] = Value::Array(checked);
      }
 +    if let Some(verify) = &step.waits.verify {
-+        if let Err((code, message)) = waits::run_verify(
++        match waits::run_verify(
 +            registry,
 +            locator,
 +            verify,
 +            &fallback,
++            step_has_no_action,
 +            last_window,
 +            &mut report,
-+            &mut notes,
 +        )
 +        .await
 +        {
-+            return failure(index, label, Phase::Expect, code, message, report);
++            Ok(note) => notes.push(note),
++            Err((code, message)) => {
++                return failure(index, label, Phase::Expect, code, message, report)
++            }
 +        }
 +    }
      report["ok"] = json!(true);
      if report.get("message").is_none() {
          report["message"] = json!(notes.join("; "));
-@@ -1527,6 +1562,9 @@ fn parse_step(
+@@ -1527,6 +1575,9 @@ fn parse_step(
      session: Option<&str>,
      inherits_window: bool,
  ) -> Result<Step, PlanError> {
@@ -111,7 +152,7 @@ index 286d429..51a60b9 100644
      let object = raw.as_object().ok_or_else(|| {
          PlanError::step(index, "must be an object: {tool, args} or {<tool>: args}")
      })?;
-@@ -1631,7 +1669,7 @@ fn parse_step(
+@@ -1631,7 +1682,7 @@ fn parse_step(
  
      let action = match name {
          None => {
@@ -120,7 +161,7 @@ index 286d429..51a60b9 100644
                  return Err(PlanError::step(
                      index,
                      "empty step: give an action ({tool, args} or {<tool>: args}) or a wait_for/expect check",
-@@ -1654,6 +1692,7 @@ fn parse_step(
+@@ -1654,6 +1705,7 @@ fn parse_step(
          wait_for,
          expect,
          skipped_read: None,
@@ -128,12 +169,39 @@ index 286d429..51a60b9 100644
      })
  }
  
+diff --git a/rust/crates/cua-driver-core/src/batch_tools/flow_tests.rs b/rust/crates/cua-driver-core/src/batch_tools/flow_tests.rs
+index 48154f5..92258a6 100644
+--- a/rust/crates/cua-driver-core/src/batch_tools/flow_tests.rs
++++ b/rust/crates/cua-driver-core/src/batch_tools/flow_tests.rs
+@@ -501,10 +501,12 @@ async fn a_check_only_step_names_the_window_to_observe() {
+ #[tokio::test]
+ async fn the_end_observation_diffs_against_the_batch_start() {
+     let harness = Harness::new();
++    // auto_wait off: this counts the lookup reads, and auto-wait's
++    // stability read is counted in batch_tools/waits_flow_tests.rs.
+     let result = harness
+         .run(json!({"steps": [
+             {"set_value": {"app": "Demo", "role": "textfield", "name": "Email", "value": "a@b.c"}}
+-        ], "observe": true}))
++        ], "observe": true, "auto_wait": false}))
+         .await;
+     assert_ne!(result.is_error, Some(true), "{}", text(&result));
+     let reads = harness.calls("get_window_state");
+@@ -521,7 +523,7 @@ async fn the_end_observation_diffs_against_the_batch_start() {
+     // Without observe there is no baseline read.
+     let before = harness.calls("get_window_state").len();
+     harness
+-        .run(json!({"steps": [{"click": {"app": "Demo", "role": "button", "name": "Next"}}]}))
++        .run(json!({"steps": [{"click": {"app": "Demo", "role": "button", "name": "Next"}}], "auto_wait": false}))
+         .await;
+     assert_eq!(harness.calls("get_window_state").len(), before + 1);
+ }
 diff --git a/rust/crates/cua-driver-core/src/batch_tools/waits.rs b/rust/crates/cua-driver-core/src/batch_tools/waits.rs
 new file mode 100644
-index 0000000..cbc5fe5
+index 0000000..361b284
 --- /dev/null
 +++ b/rust/crates/cua-driver-core/src/batch_tools/waits.rs
-@@ -0,0 +1,725 @@
+@@ -0,0 +1,905 @@
 +//! Dove additions to `run_steps` waits and checks (ROADMAP W3.2).
 +//!
 +//! Upstream `run_steps` already has `wait_for` and `expect` checks by
@@ -151,7 +219,12 @@ index 0000000..cbc5fe5
 +//! - Playwright-style auto-wait before an action on a named target: the
 +//!   element exists, is enabled, is on screen (has area) and kept the same
 +//!   frame across two reads, within the step's find timeout. On timeout the
-+//!   step says which of these did not hold.
++//!   step says which of these did not hold. A control that the tree shows
++//!   only as a row without an index marked `(disabled)` (AT-SPI does this)
++//!   is waited on as disabled, not reported as missing;
++//! - when the end `observe` would read the window the batch last acted in
++//!   and that window closed (the last step submitted its dialog), the app's
++//!   frontmost window is read instead, so the end diff still shows the result.
 +//!
 +//! Everything here is reached from a handful of call sites in
 +//! `batch_tools.rs`, so the patch that carries it stacks with others.
@@ -167,8 +240,11 @@ index 0000000..cbc5fe5
 +pub(crate) const AUTO_WAIT_KEY: &str = "auto_wait";
 +/// Most verify_state predicates one step may carry (verify_state's own cap).
 +const MAX_VERIFY_PREDICATES: usize = 8;
-+/// Pause between two actionability reads.
++/// Pause before reading a blocked target again.
 +const ACTIONABILITY_POLL: Duration = Duration::from_millis(100);
++/// Pause before the second read that proves an actionable target is steady:
++/// about two display frames, as Playwright waits two animation frames.
++const STABILITY_GAP: Duration = Duration::from_millis(40);
 +/// Actions that need an enabled target. Hover and scroll do not.
 +const NEEDS_ENABLED: &[&str] = &[
 +    "click",
@@ -394,7 +470,8 @@ index 0000000..cbc5fe5
 +                        .to_owned(),
 +                );
 +            }
-+            let blank = |value: &Option<String>| value.as_deref().is_some_and(|v| v.trim().is_empty());
++            let blank =
++                |value: &Option<String>| value.as_deref().is_some_and(|v| v.trim().is_empty());
 +            if (element.selector.role.is_none() && element.selector.label_contains.is_none())
 +                || blank(&element.selector.role)
 +                || blank(&element.selector.label_contains)
@@ -436,7 +513,42 @@ index 0000000..cbc5fe5
 +    let mut held_by: Option<Blocker> = None;
 +    loop {
 +        let remaining = deadline.saturating_duration_since(Instant::now());
-+        let found = locator.find(window, element, remaining).await?;
++        let found = match locator.find(window, element, remaining).await {
++            Ok(found) => found,
++            Err(miss) => {
++                // AT-SPI shows a disabled control as a row without an index,
++                // so the lookup misses it; wait on it as disabled instead.
++                let Some(row) = disabled_row(locator, &miss, element).await else {
++                    return Err(miss);
++                };
++                reads += 1;
++                held_by = Some(Blocker::Disabled);
++                if Instant::now() + ACTIONABILITY_POLL > deadline {
++                    let waited = started.elapsed().as_millis() as u64;
++                    report["auto_wait"] = json!({
++                        "waited_ms": waited,
++                        "reads": reads,
++                        "blocked_by": Blocker::Disabled.code(),
++                    });
++                    let window = miss.window.expect("disabled_row needs the window");
++                    return Err(Miss {
++                        code: "not_actionable",
++                        message: format!(
++                            "{} in {} is shown as `{row}` and did not become actionable within \
++                             {} ms: {}; it has no element index while disabled.",
++                            element.describe(),
++                            window.describe(),
++                            timeout.as_millis(),
++                            Blocker::Disabled.explain()
++                        ),
++                        window: Some(window),
++                    });
++                }
++                previous = None;
++                tokio::time::sleep(ACTIONABILITY_POLL).await;
++                continue;
++            }
++        };
 +        reads += 1;
 +        let sample = Sample::of(&found);
 +        let blocker = sample.blocker(NEEDS_ENABLED.contains(&tool), previous.as_ref());
@@ -455,8 +567,13 @@ index 0000000..cbc5fe5
 +        if !matches!(blocker, Blocker::Unproven) {
 +            held_by = Some(blocker.clone());
 +        }
++        let pause = if matches!(blocker, Blocker::Unproven) {
++            STABILITY_GAP
++        } else {
++            ACTIONABILITY_POLL
++        };
 +        // Stability always gets its second read, even with timeout 0.
-+        if reads >= 2 && Instant::now() + ACTIONABILITY_POLL > deadline {
++        if reads >= 2 && Instant::now() + pause > deadline {
 +            let blocker = held_by.unwrap_or(blocker);
 +            let waited = started.elapsed().as_millis() as u64;
 +            report["auto_wait"] = json!({
@@ -478,8 +595,49 @@ index 0000000..cbc5fe5
 +            });
 +        }
 +        previous = Some(sample);
-+        tokio::time::sleep(ACTIONABILITY_POLL).await;
++        tokio::time::sleep(pause).await;
 +    }
++}
++
++/// After a lookup missed `element`, the row of its window that shows it as a
++/// disabled control without an element index, such as AT-SPI's
++/// `push button = "Submit" (disabled)`.
++async fn disabled_row(locator: &Locator<'_>, miss: &Miss, element: &ElementSpec) -> Option<String> {
++    if !matches!(miss.code, "not_found" | "not_addressable") || element.name.is_none() {
++        return None;
++    }
++    let read = locator.read(miss.window.as_ref()?).await.ok()?;
++    read.markdown.lines().find_map(|line| {
++        disabled_row_matches(line, element).then(|| line.trim().trim_start_matches("- ").to_owned())
++    })
++}
++
++fn disabled_row_matches(line: &str, element: &ElementSpec) -> bool {
++    let Some(rest) = line.trim().strip_prefix("- ") else {
++        return false;
++    };
++    let Some(rest) = rest.strip_suffix("(disabled)") else {
++        return false;
++    };
++    if rest.starts_with('[') {
++        return false;
++    }
++    let Some((role, quoted)) = rest.split_once('"') else {
++        return false;
++    };
++    let role = role.trim().trim_end_matches('=').trim();
++    let Some((label, _)) = quoted.split_once('"') else {
++        return false;
++    };
++    let role_ok = element
++        .role
++        .as_deref()
++        .is_none_or(|wanted| locate::role_family(wanted) == locate::role_family(role));
++    let name_ok = element.name.as_deref().is_some_and(|name| {
++        let (label, name) = (label.trim().to_lowercase(), name.trim().to_lowercase());
++        !name.is_empty() && label.contains(&name)
++    });
++    role_ok && name_ok
 +}
 +
 +/// What one read showed of the target.
@@ -596,19 +754,56 @@ index 0000000..cbc5fe5
 +    }
 +}
 +
++/// When the end read of the window the batch last used failed because that
++/// window has closed (the last step submitted the dialog it acted in), the
++/// observation arguments for the app's frontmost window instead, with a note.
++pub(crate) async fn observe_after_close(
++    locator: &Locator<'_>,
++    args: &Value,
++    last: Option<&Window>,
++) -> Option<(Value, String)> {
++    let closed = last?;
++    let windows = locator
++        .listed_windows(&WindowSpec {
++            pid: Some(closed.pid),
++            ..Default::default()
++        })
++        .await
++        .ok()?;
++    if windows
++        .iter()
++        .any(|window| window.window_id == closed.window_id)
++    {
++        return None;
++    }
++    let open = windows.into_iter().next()?;
++    let mut retry = args.clone();
++    retry["pid"] = json!(open.pid);
++    retry["window_id"] = json!(open.window_id);
++    Some((
++        retry,
++        format!(
++            "window {} closed during the batch; observing {} instead",
++            closed.window_id,
++            open.describe()
++        ),
++    ))
++}
++
 +/// Run a step's verify_state predicates on the step's window, through the
 +/// registry, so they get the same session and approval checks as a direct
-+/// verify_state call. Adds `verify` to the report; Err carries the failure
-+/// code and message.
++/// verify_state call. Adds `verify` to the report; Ok carries a note for the
++/// step line, Err the failure code and message. Like upstream's `expect`, the window becomes the one
++/// observed at the end after a failure, or after a step that only checks.
 +pub(crate) async fn run_verify(
 +    registry: &ToolRegistry,
 +    locator: &Locator<'_>,
 +    verify: &Verify,
 +    window: &WindowSpec,
++    step_has_no_action: bool,
 +    last_window: &mut Option<Window>,
 +    report: &mut Value,
-+    notes: &mut Vec<String>,
-+) -> Result<(), (&'static str, String)> {
++) -> Result<String, (&'static str, String)> {
 +    let resolved = if window.is_empty() {
 +        last_window.clone().ok_or((
 +            "no_window",
@@ -665,13 +860,15 @@ index 0000000..cbc5fe5
 +        "predicates": predicates,
 +    });
 +    if status == "satisfied" {
-+        notes.push(format!(
++        if last_window.is_none() || step_has_no_action {
++            *last_window = Some(resolved);
++        }
++        return Ok(format!(
 +            "{} verify_state predicate(s) satisfied",
 +            verify.predicates.len()
 +        ));
-+        *last_window = Some(resolved);
-+        return Ok(());
 +    }
++    *last_window = Some(resolved.clone());
 +    let failed: Vec<String> = predicates
 +        .iter()
 +        .filter(|outcome| outcome.get("status").and_then(Value::as_str) != Some("satisfied"))
@@ -684,7 +881,10 @@ index 0000000..cbc5fe5
 +                .unwrap_or_default();
 +            let mut line = format!(
 +                "{what} is {}",
-+                outcome.get("status").and_then(Value::as_str).unwrap_or("unknown")
++                outcome
++                    .get("status")
++                    .and_then(Value::as_str)
++                    .unwrap_or("unknown")
 +            );
 +            if let Some(reason) = outcome.get("unknown_reason").and_then(Value::as_str) {
 +                line.push_str(&format!(" ({reason})"));
@@ -706,7 +906,10 @@ index 0000000..cbc5fe5
 +        format!(
 +            "verify_state {status} in {} after {} ms: {}",
 +            resolved.describe(),
-+            output.get("elapsed_ms").and_then(Value::as_u64).unwrap_or(0),
++            output
++                .get("elapsed_ms")
++                .and_then(Value::as_u64)
++                .unwrap_or(0),
 +            failed.join("; ")
 +        ),
 +    ))
@@ -741,15 +944,14 @@ index 0000000..cbc5fe5
 +
 +    #[test]
 +    fn an_alias_and_its_key_together_are_refused() {
++        let error =
++            normalize_step(&json!({"wait_for": {"query": "a", "text": "b"}}), None).unwrap_err();
++        assert!(error.contains("`query` or `text`"), "{error}");
 +        let error = normalize_step(
-+            &json!({"wait_for": {"query": "a", "text": "b"}}),
++            &json!({"expect": [{"name": "x", "timeout": 1, "timeout_ms": 2}]}),
 +            None,
 +        )
 +        .unwrap_err();
-+        assert!(error.contains("`query` or `text`"), "{error}");
-+        let error =
-+            normalize_step(&json!({"expect": [{"name": "x", "timeout": 1, "timeout_ms": 2}]}), None)
-+                .unwrap_err();
 +        assert!(error.starts_with("expect 1:"), "{error}");
 +    }
 +
@@ -778,8 +980,7 @@ index 0000000..cbc5fe5
 +
 +    #[test]
 +    fn a_step_of_only_verify_predicates_drops_expect() {
-+        let (step, waits) =
-+            normalized(json!({"expect": {"window": {"exists": false}}}));
++        let (step, waits) = normalized(json!({"expect": {"window": {"exists": false}}}));
 +        assert!(step.get("expect").is_none());
 +        assert_eq!(
 +            waits.verify.unwrap().timeout_ms,
@@ -790,19 +991,62 @@ index 0000000..cbc5fe5
 +    #[test]
 +    fn malformed_verify_predicates_are_refused_before_running() {
 +        for (raw, needle) in [
-+            (json!({"element": {"selector": {}}}), "non-empty `role` or `label_contains`"),
++            (
++                json!({"element": {"selector": {}}}),
++                "non-empty `role` or `label_contains`",
++            ),
 +            (
 +                json!({"element": {"selector": {"role": "button"}, "exists": false}}),
 +                "exists=false",
 +            ),
-+            (json!({"element": {"selector": {"role": "x"}, "colour": "red"}}), "not a verify_state predicate"),
++            (
++                json!({"element": {"selector": {"role": "x"}, "colour": "red"}}),
++                "not a verify_state predicate",
++            ),
 +            (json!({"window": {}}), "`exists` or `bounds`"),
-+            (json!({"window": {"exists": true}, "stable_samples": 9}), "stable_samples"),
-+            (json!({"window": {"exists": true}, "timeout_ms": 0, "stable_samples": 2}), "stable_samples 1"),
++            (
++                json!({"window": {"exists": true}, "stable_samples": 9}),
++                "stable_samples",
++            ),
++            (
++                json!({"window": {"exists": true}, "timeout_ms": 0, "stable_samples": 2}),
++                "stable_samples 1",
++            ),
 +        ] {
 +            let error = normalize_step(&json!({"expect": raw}), None).unwrap_err();
 +            assert!(error.contains(needle), "{raw}: {error}");
 +        }
++    }
++
++    #[test]
++    fn a_disabled_row_without_an_index_is_recognised() {
++        let submit = ElementSpec {
++            role: Some("button".into()),
++            name: Some("Submit".into()),
++            ..Default::default()
++        };
++        assert!(disabled_row_matches(
++            "    - push button = \"Submit\" (disabled)",
++            &submit
++        ));
++        assert!(disabled_row_matches(
++            "- button \"Submit form\" (disabled)",
++            &submit
++        ));
++        // An indexed row, an enabled row, another role or name: no.
++        assert!(!disabled_row_matches(
++            "- [3] push button \"Submit\" (disabled)",
++            &submit
++        ));
++        assert!(!disabled_row_matches("- push button = \"Submit\"", &submit));
++        assert!(!disabled_row_matches(
++            "- check box = \"Submit\" (disabled)",
++            &submit
++        ));
++        assert!(!disabled_row_matches(
++            "- push button = \"Close\" (disabled)",
++            &submit
++        ));
 +    }
 +
 +    #[test]
@@ -814,7 +1058,8 @@ index 0000000..cbc5fe5
 +    }
 +
 +    fn found(frame: Value, enabled: Option<bool>) -> Found {
-+        let mut element = json!({"role": "AXButton", "label": "Go", "element_token": "s1:1", "frame": frame});
++        let mut element =
++            json!({"role": "AXButton", "label": "Go", "element_token": "s1:1", "frame": frame});
 +        if let Some(enabled) = enabled {
 +            element["enabled"] = json!(enabled);
 +        }
@@ -839,7 +1084,10 @@ index 0000000..cbc5fe5
 +        assert_eq!(second.blocker(true, Some(&first)), None);
 +
 +        let disabled = Sample::of(&found(frame.clone(), Some(false)));
-+        assert_eq!(disabled.blocker(true, Some(&first)), Some(Blocker::Disabled));
++        assert_eq!(
++            disabled.blocker(true, Some(&first)),
++            Some(Blocker::Disabled)
++        );
 +        // Hover and scroll do not need an enabled target.
 +        assert_eq!(disabled.blocker(false, Some(&first)), None);
 +
@@ -861,10 +1109,10 @@ index 0000000..cbc5fe5
 +}
 diff --git a/rust/crates/cua-driver-core/src/batch_tools/waits_flow_tests.rs b/rust/crates/cua-driver-core/src/batch_tools/waits_flow_tests.rs
 new file mode 100644
-index 0000000..fb1cf24
+index 0000000..baa5363
 --- /dev/null
 +++ b/rust/crates/cua-driver-core/src/batch_tools/waits_flow_tests.rs
-@@ -0,0 +1,552 @@
+@@ -0,0 +1,654 @@
 +//! `run_steps` auto-wait, query waits and verify_state expects against a
 +//! fake form app: a main window whose button opens a details dialog that
 +//! appears late, with fields that enable late and a Submit button that is
@@ -894,6 +1142,8 @@ index 0000000..fb1cf24
 +    submit_moves: u32,
 +    /// Reads left during which the "Slide" button moves.
 +    slide_moves: u32,
++    /// Show disabled controls the AT-SPI way: a row without an index.
++    passive_disabled: bool,
 +    fields: [String; 3],
 +    result: Option<String>,
 +    snapshot: u32,
@@ -1009,6 +1259,11 @@ index 0000000..fb1cf24
 +            })),
 +            "get_window_state" => {
 +                let window_id = args["window_id"].as_u64().unwrap_or(7);
++                if window_id == 8 && !ui.dialog_shown() {
++                    return ToolResult::error(
++                        "Window target pid 42, window_id 8 is stale or no longer running",
++                    );
++                }
 +                // verify_state reads without refreshing the action tokens.
 +                let observation_only = args.get("_observation_only").is_some();
 +                ui.reads += 1;
@@ -1020,6 +1275,13 @@ index 0000000..fb1cf24
 +                let mut tokens = Vec::new();
 +                for (offset, row) in rows.iter().enumerate() {
 +                    let index = offset + 1;
++                    if ui.passive_disabled && !row.enabled {
++                        markdown.push_str(&format!(
++                            "  - {} = \"{}\" (disabled)\n",
++                            row.role, row.label
++                        ));
++                        continue;
++                    }
 +                    let token = format!("s{snapshot:08x}:{index}");
 +                    markdown.push_str(&format!("  - [{index}] {} \"{}\"\n", row.role, row.label));
 +                    let (x, y, w, h) = row.frame;
@@ -1027,6 +1289,7 @@ index 0000000..fb1cf24
 +                        "element_index": index,
 +                        "element_token": token,
 +                        "role": row.role,
++                        "depth": 1,
 +                        "label": row.label,
 +                        "enabled": row.enabled,
 +                        "frame": {"x": x, "y": y, "w": w, "h": h},
@@ -1118,11 +1381,11 @@ index 0000000..fb1cf24
 +            ui: ui.clone(),
 +        };
 +        let mut registry = ToolRegistry::new();
-+        for name in super::super::BATCHABLE_TOOLS
-+            .iter()
-+            .copied()
-+            .chain(["get_window_state", "list_windows", "list_apps"])
-+        {
++        for name in super::super::BATCHABLE_TOOLS.iter().copied().chain([
++            "get_window_state",
++            "list_windows",
++            "list_apps",
++        ]) {
 +            registry.register(Box::new(fake(name)));
 +        }
 +        // The real verify_state, observing the same fake app.
@@ -1175,7 +1438,7 @@ index 0000000..fb1cf24
 +async fn open_fill_submit_check_is_one_call() {
 +    let harness = Harness::new(Ui {
 +        dialog_delay: 2,
-+        fields_delay: 2,
++        fields_delay: 5,
 +        submit_moves: 2,
 +        ..Default::default()
 +    });
@@ -1202,8 +1465,7 @@ index 0000000..fb1cf24
 +    // The first field had to wait for the dialog and then for its fields
 +    // to enable; Submit was disabled until Phone was filled, then slid in.
 +    assert_eq!(
-+        structured["steps"][1]["auto_wait"]["waited_for"],
-+        "it was enabled",
++        structured["steps"][1]["auto_wait"]["waited_for"], "it was enabled",
 +        "{report}"
 +    );
 +    assert_eq!(structured["steps"][3]["verify"]["status"], "satisfied");
@@ -1214,10 +1476,41 @@ index 0000000..fb1cf24
 +    );
 +    assert_eq!(harness.calls("click").len(), 2, "no click was refused");
 +    assert_eq!(harness.calls("set_value").len(), 3);
-+    // The observe diff still runs at the end.
-+    assert_eq!(structured["observation"]["ok"], true);
++    // The observe diff still runs at the end. Submit closed the dialog the
++    // batch last acted in, so the main window is read instead.
++    assert_eq!(structured["observation"]["ok"], true, "{report}");
++    assert!(
++        report.contains("window 8 closed during the batch; observing Forms window 7"),
++        "{report}"
++    );
 +    let observed = harness.calls("get_window_state").last().unwrap().clone();
 +    assert_eq!(observed["since"], "latest");
++    assert_eq!(observed["window_id"], 7);
++}
++
++/// The cost of auto-wait on a target that is ready: one more read of the
++/// window than with auto_wait off, and no note in the report.
++#[tokio::test]
++async fn a_ready_target_costs_one_extra_read() {
++    let harness = Harness::new(Ui::default());
++    let step = json!({"click": {"app": "Forms", "role": "button", "name": "Open details"}});
++    let result = harness.run(json!({"steps": [step.clone()]})).await;
++    assert_ne!(result.is_error, Some(true), "{}", text(&result));
++    let structured = result.structured_content.unwrap();
++    assert!(structured["steps"][0].get("auto_wait").is_none());
++    assert!(!text_of_steps(&structured).contains("auto-waited"));
++    let with_auto_wait = harness.calls("get_window_state").len();
++    assert_eq!(with_auto_wait, 2);
++
++    let harness = Harness::new(Ui::default());
++    harness
++        .run(json!({"auto_wait": false, "steps": [step]}))
++        .await;
++    assert_eq!(harness.calls("get_window_state").len(), 1);
++}
++
++fn text_of_steps(structured: &Value) -> String {
++    structured["steps"].to_string()
 +}
 +
 +#[tokio::test]
@@ -1236,11 +1529,56 @@ index 0000000..fb1cf24
 +    assert_eq!(structured["failed_step"], 0);
 +    assert_eq!(structured["steps"][0]["phase"], "find");
 +    assert_eq!(structured["steps"][0]["code"], "not_actionable");
-+    assert_eq!(structured["steps"][0]["auto_wait"]["blocked_by"], "disabled");
++    assert_eq!(
++        structured["steps"][0]["auto_wait"]["blocked_by"],
++        "disabled"
++    );
 +    assert!(report.contains("disabled (enabled=false)"), "{report}");
 +    assert!(report.contains("\"auto_wait\":false"), "{report}");
-+    assert!(harness.calls("click").is_empty(), "early stop: nothing clicked");
++    assert!(
++        harness.calls("click").is_empty(),
++        "early stop: nothing clicked"
++    );
 +    assert!(started.elapsed() >= std::time::Duration::from_millis(300));
++}
++
++/// Linux AT-SPI lists a disabled button as `push button = "Export"
++/// (disabled)` with no index: auto-wait waits on it and says it is disabled.
++#[tokio::test]
++async fn a_disabled_row_without_an_index_times_out_as_disabled() {
++    let harness = Harness::new(Ui {
++        passive_disabled: true,
++        ..Default::default()
++    });
++    let result = harness
++        .run(json!({"steps": [
++            {"click": {"app": "Forms", "role": "button", "name": "Export"}, "timeout_ms": 400}
++        ]}))
++        .await;
++    let report = text(&result);
++    let structured = result.structured_content.clone().unwrap();
++    assert_eq!(structured["steps"][0]["code"], "not_actionable", "{report}");
++    assert_eq!(
++        structured["steps"][0]["auto_wait"]["blocked_by"],
++        "disabled"
++    );
++    assert!(
++        report.contains("`Button = \"Export\" (disabled)`"),
++        "{report}"
++    );
++    assert!(harness.calls("click").is_empty());
++
++    // With auto_wait off the upstream lookup takes the row for a control
++    // with no accessibility actions and fails at once.
++    let result = harness
++        .run(json!({"auto_wait": false, "steps": [
++            {"click": {"app": "Forms", "role": "button", "name": "Export"}, "timeout_ms": 0}
++        ]}))
++        .await;
++    assert_eq!(
++        result.structured_content.unwrap()["steps"][0]["code"],
++        "not_addressable"
++    );
 +}
 +
 +#[tokio::test]
@@ -1301,7 +1639,10 @@ index 0000000..fb1cf24
 +        .await;
 +    let report = text(&result);
 +    let structured = result.structured_content.clone().unwrap();
-+    assert_eq!(structured["steps"][0]["auto_wait"]["blocked_by"], "not_stable");
++    assert_eq!(
++        structured["steps"][0]["auto_wait"]["blocked_by"],
++        "not_stable"
++    );
 +    assert!(report.contains("kept moving (frame"), "{report}");
 +
 +    let result = harness
@@ -1309,7 +1650,10 @@ index 0000000..fb1cf24
 +        .await;
 +    let report = text(&result);
 +    let structured = result.structured_content.clone().unwrap();
-+    assert_eq!(structured["steps"][0]["auto_wait"]["blocked_by"], "not_visible");
++    assert_eq!(
++        structured["steps"][0]["auto_wait"]["blocked_by"],
++        "not_visible"
++    );
 +    assert!(report.contains("no on-screen area"), "{report}");
 +    assert!(harness.calls("click").is_empty());
 +}
@@ -1332,7 +1676,10 @@ index 0000000..fb1cf24
 +    let report = text(&result);
 +    assert_ne!(result.is_error, Some(true), "{report}");
 +    assert_eq!(result.structured_content.unwrap()["executed"], 4);
-+    assert!(report.contains("with text \"Fill in all fields\""), "{report}");
++    assert!(
++        report.contains("with text \"Fill in all fields\""),
++        "{report}"
++    );
 +
 +    // A wait that never holds fails in phase wait_for and stops the batch.
 +    let result = harness
@@ -1408,7 +1755,10 @@ index 0000000..fb1cf24
 +            .run(json!({"steps": [{"click": {"app": "Forms", "name": "Open details"}}, step]}))
 +            .await;
 +        let message = text(&result);
-+        assert!(message.contains("rejected before running anything"), "{message}");
++        assert!(
++            message.contains("rejected before running anything"),
++            "{message}"
++        );
 +        assert!(message.contains(needle), "{needle}: {message}");
 +    }
 +    let result = harness

@@ -15,7 +15,12 @@
 //! - Playwright-style auto-wait before an action on a named target: the
 //!   element exists, is enabled, is on screen (has area) and kept the same
 //!   frame across two reads, within the step's find timeout. On timeout the
-//!   step says which of these did not hold.
+//!   step says which of these did not hold. A control that the tree shows
+//!   only as a row without an index marked `(disabled)` (AT-SPI does this)
+//!   is waited on as disabled, not reported as missing;
+//! - when the end `observe` would read the window the batch last acted in
+//!   and that window closed (the last step submitted its dialog), the app's
+//!   frontmost window is read instead, so the end diff still shows the result.
 //!
 //! Everything here is reached from a handful of call sites in
 //! `batch_tools.rs`, so the patch that carries it stacks with others.
@@ -31,8 +36,11 @@ use crate::tool::ToolRegistry;
 pub(crate) const AUTO_WAIT_KEY: &str = "auto_wait";
 /// Most verify_state predicates one step may carry (verify_state's own cap).
 const MAX_VERIFY_PREDICATES: usize = 8;
-/// Pause between two actionability reads.
+/// Pause before reading a blocked target again.
 const ACTIONABILITY_POLL: Duration = Duration::from_millis(100);
+/// Pause before the second read that proves an actionable target is steady:
+/// about two display frames, as Playwright waits two animation frames.
+const STABILITY_GAP: Duration = Duration::from_millis(40);
 /// Actions that need an enabled target. Hover and scroll do not.
 const NEEDS_ENABLED: &[&str] = &[
     "click",
@@ -258,7 +266,8 @@ fn verify_predicate(item: Value) -> Result<(Value, Option<u64>, Option<u64>), St
                         .to_owned(),
                 );
             }
-            let blank = |value: &Option<String>| value.as_deref().is_some_and(|v| v.trim().is_empty());
+            let blank =
+                |value: &Option<String>| value.as_deref().is_some_and(|v| v.trim().is_empty());
             if (element.selector.role.is_none() && element.selector.label_contains.is_none())
                 || blank(&element.selector.role)
                 || blank(&element.selector.label_contains)
@@ -300,7 +309,42 @@ pub(crate) async fn find_for_action(
     let mut held_by: Option<Blocker> = None;
     loop {
         let remaining = deadline.saturating_duration_since(Instant::now());
-        let found = locator.find(window, element, remaining).await?;
+        let found = match locator.find(window, element, remaining).await {
+            Ok(found) => found,
+            Err(miss) => {
+                // AT-SPI shows a disabled control as a row without an index,
+                // so the lookup misses it; wait on it as disabled instead.
+                let Some(row) = disabled_row(locator, &miss, element).await else {
+                    return Err(miss);
+                };
+                reads += 1;
+                held_by = Some(Blocker::Disabled);
+                if Instant::now() + ACTIONABILITY_POLL > deadline {
+                    let waited = started.elapsed().as_millis() as u64;
+                    report["auto_wait"] = json!({
+                        "waited_ms": waited,
+                        "reads": reads,
+                        "blocked_by": Blocker::Disabled.code(),
+                    });
+                    let window = miss.window.expect("disabled_row needs the window");
+                    return Err(Miss {
+                        code: "not_actionable",
+                        message: format!(
+                            "{} in {} is shown as `{row}` and did not become actionable within \
+                             {} ms: {}; it has no element index while disabled.",
+                            element.describe(),
+                            window.describe(),
+                            timeout.as_millis(),
+                            Blocker::Disabled.explain()
+                        ),
+                        window: Some(window),
+                    });
+                }
+                previous = None;
+                tokio::time::sleep(ACTIONABILITY_POLL).await;
+                continue;
+            }
+        };
         reads += 1;
         let sample = Sample::of(&found);
         let blocker = sample.blocker(NEEDS_ENABLED.contains(&tool), previous.as_ref());
@@ -319,8 +363,13 @@ pub(crate) async fn find_for_action(
         if !matches!(blocker, Blocker::Unproven) {
             held_by = Some(blocker.clone());
         }
+        let pause = if matches!(blocker, Blocker::Unproven) {
+            STABILITY_GAP
+        } else {
+            ACTIONABILITY_POLL
+        };
         // Stability always gets its second read, even with timeout 0.
-        if reads >= 2 && Instant::now() + ACTIONABILITY_POLL > deadline {
+        if reads >= 2 && Instant::now() + pause > deadline {
             let blocker = held_by.unwrap_or(blocker);
             let waited = started.elapsed().as_millis() as u64;
             report["auto_wait"] = json!({
@@ -342,8 +391,49 @@ pub(crate) async fn find_for_action(
             });
         }
         previous = Some(sample);
-        tokio::time::sleep(ACTIONABILITY_POLL).await;
+        tokio::time::sleep(pause).await;
     }
+}
+
+/// After a lookup missed `element`, the row of its window that shows it as a
+/// disabled control without an element index, such as AT-SPI's
+/// `push button = "Submit" (disabled)`.
+async fn disabled_row(locator: &Locator<'_>, miss: &Miss, element: &ElementSpec) -> Option<String> {
+    if !matches!(miss.code, "not_found" | "not_addressable") || element.name.is_none() {
+        return None;
+    }
+    let read = locator.read(miss.window.as_ref()?).await.ok()?;
+    read.markdown.lines().find_map(|line| {
+        disabled_row_matches(line, element).then(|| line.trim().trim_start_matches("- ").to_owned())
+    })
+}
+
+fn disabled_row_matches(line: &str, element: &ElementSpec) -> bool {
+    let Some(rest) = line.trim().strip_prefix("- ") else {
+        return false;
+    };
+    let Some(rest) = rest.strip_suffix("(disabled)") else {
+        return false;
+    };
+    if rest.starts_with('[') {
+        return false;
+    }
+    let Some((role, quoted)) = rest.split_once('"') else {
+        return false;
+    };
+    let role = role.trim().trim_end_matches('=').trim();
+    let Some((label, _)) = quoted.split_once('"') else {
+        return false;
+    };
+    let role_ok = element
+        .role
+        .as_deref()
+        .is_none_or(|wanted| locate::role_family(wanted) == locate::role_family(role));
+    let name_ok = element.name.as_deref().is_some_and(|name| {
+        let (label, name) = (label.trim().to_lowercase(), name.trim().to_lowercase());
+        !name.is_empty() && label.contains(&name)
+    });
+    role_ok && name_ok
 }
 
 /// What one read showed of the target.
@@ -460,19 +550,56 @@ impl Blocker {
     }
 }
 
+/// When the end read of the window the batch last used failed because that
+/// window has closed (the last step submitted the dialog it acted in), the
+/// observation arguments for the app's frontmost window instead, with a note.
+pub(crate) async fn observe_after_close(
+    locator: &Locator<'_>,
+    args: &Value,
+    last: Option<&Window>,
+) -> Option<(Value, String)> {
+    let closed = last?;
+    let windows = locator
+        .listed_windows(&WindowSpec {
+            pid: Some(closed.pid),
+            ..Default::default()
+        })
+        .await
+        .ok()?;
+    if windows
+        .iter()
+        .any(|window| window.window_id == closed.window_id)
+    {
+        return None;
+    }
+    let open = windows.into_iter().next()?;
+    let mut retry = args.clone();
+    retry["pid"] = json!(open.pid);
+    retry["window_id"] = json!(open.window_id);
+    Some((
+        retry,
+        format!(
+            "window {} closed during the batch; observing {} instead",
+            closed.window_id,
+            open.describe()
+        ),
+    ))
+}
+
 /// Run a step's verify_state predicates on the step's window, through the
 /// registry, so they get the same session and approval checks as a direct
-/// verify_state call. Adds `verify` to the report; Err carries the failure
-/// code and message.
+/// verify_state call. Adds `verify` to the report; Ok carries a note for the
+/// step line, Err the failure code and message. Like upstream's `expect`, the window becomes the one
+/// observed at the end after a failure, or after a step that only checks.
 pub(crate) async fn run_verify(
     registry: &ToolRegistry,
     locator: &Locator<'_>,
     verify: &Verify,
     window: &WindowSpec,
+    step_has_no_action: bool,
     last_window: &mut Option<Window>,
     report: &mut Value,
-    notes: &mut Vec<String>,
-) -> Result<(), (&'static str, String)> {
+) -> Result<String, (&'static str, String)> {
     let resolved = if window.is_empty() {
         last_window.clone().ok_or((
             "no_window",
@@ -529,13 +656,15 @@ pub(crate) async fn run_verify(
         "predicates": predicates,
     });
     if status == "satisfied" {
-        notes.push(format!(
+        if last_window.is_none() || step_has_no_action {
+            *last_window = Some(resolved);
+        }
+        return Ok(format!(
             "{} verify_state predicate(s) satisfied",
             verify.predicates.len()
         ));
-        *last_window = Some(resolved);
-        return Ok(());
     }
+    *last_window = Some(resolved.clone());
     let failed: Vec<String> = predicates
         .iter()
         .filter(|outcome| outcome.get("status").and_then(Value::as_str) != Some("satisfied"))
@@ -548,7 +677,10 @@ pub(crate) async fn run_verify(
                 .unwrap_or_default();
             let mut line = format!(
                 "{what} is {}",
-                outcome.get("status").and_then(Value::as_str).unwrap_or("unknown")
+                outcome
+                    .get("status")
+                    .and_then(Value::as_str)
+                    .unwrap_or("unknown")
             );
             if let Some(reason) = outcome.get("unknown_reason").and_then(Value::as_str) {
                 line.push_str(&format!(" ({reason})"));
@@ -570,7 +702,10 @@ pub(crate) async fn run_verify(
         format!(
             "verify_state {status} in {} after {} ms: {}",
             resolved.describe(),
-            output.get("elapsed_ms").and_then(Value::as_u64).unwrap_or(0),
+            output
+                .get("elapsed_ms")
+                .and_then(Value::as_u64)
+                .unwrap_or(0),
             failed.join("; ")
         ),
     ))
@@ -605,15 +740,14 @@ mod tests {
 
     #[test]
     fn an_alias_and_its_key_together_are_refused() {
+        let error =
+            normalize_step(&json!({"wait_for": {"query": "a", "text": "b"}}), None).unwrap_err();
+        assert!(error.contains("`query` or `text`"), "{error}");
         let error = normalize_step(
-            &json!({"wait_for": {"query": "a", "text": "b"}}),
+            &json!({"expect": [{"name": "x", "timeout": 1, "timeout_ms": 2}]}),
             None,
         )
         .unwrap_err();
-        assert!(error.contains("`query` or `text`"), "{error}");
-        let error =
-            normalize_step(&json!({"expect": [{"name": "x", "timeout": 1, "timeout_ms": 2}]}), None)
-                .unwrap_err();
         assert!(error.starts_with("expect 1:"), "{error}");
     }
 
@@ -642,8 +776,7 @@ mod tests {
 
     #[test]
     fn a_step_of_only_verify_predicates_drops_expect() {
-        let (step, waits) =
-            normalized(json!({"expect": {"window": {"exists": false}}}));
+        let (step, waits) = normalized(json!({"expect": {"window": {"exists": false}}}));
         assert!(step.get("expect").is_none());
         assert_eq!(
             waits.verify.unwrap().timeout_ms,
@@ -654,19 +787,62 @@ mod tests {
     #[test]
     fn malformed_verify_predicates_are_refused_before_running() {
         for (raw, needle) in [
-            (json!({"element": {"selector": {}}}), "non-empty `role` or `label_contains`"),
+            (
+                json!({"element": {"selector": {}}}),
+                "non-empty `role` or `label_contains`",
+            ),
             (
                 json!({"element": {"selector": {"role": "button"}, "exists": false}}),
                 "exists=false",
             ),
-            (json!({"element": {"selector": {"role": "x"}, "colour": "red"}}), "not a verify_state predicate"),
+            (
+                json!({"element": {"selector": {"role": "x"}, "colour": "red"}}),
+                "not a verify_state predicate",
+            ),
             (json!({"window": {}}), "`exists` or `bounds`"),
-            (json!({"window": {"exists": true}, "stable_samples": 9}), "stable_samples"),
-            (json!({"window": {"exists": true}, "timeout_ms": 0, "stable_samples": 2}), "stable_samples 1"),
+            (
+                json!({"window": {"exists": true}, "stable_samples": 9}),
+                "stable_samples",
+            ),
+            (
+                json!({"window": {"exists": true}, "timeout_ms": 0, "stable_samples": 2}),
+                "stable_samples 1",
+            ),
         ] {
             let error = normalize_step(&json!({"expect": raw}), None).unwrap_err();
             assert!(error.contains(needle), "{raw}: {error}");
         }
+    }
+
+    #[test]
+    fn a_disabled_row_without_an_index_is_recognised() {
+        let submit = ElementSpec {
+            role: Some("button".into()),
+            name: Some("Submit".into()),
+            ..Default::default()
+        };
+        assert!(disabled_row_matches(
+            "    - push button = \"Submit\" (disabled)",
+            &submit
+        ));
+        assert!(disabled_row_matches(
+            "- button \"Submit form\" (disabled)",
+            &submit
+        ));
+        // An indexed row, an enabled row, another role or name: no.
+        assert!(!disabled_row_matches(
+            "- [3] push button \"Submit\" (disabled)",
+            &submit
+        ));
+        assert!(!disabled_row_matches("- push button = \"Submit\"", &submit));
+        assert!(!disabled_row_matches(
+            "- check box = \"Submit\" (disabled)",
+            &submit
+        ));
+        assert!(!disabled_row_matches(
+            "- push button = \"Close\" (disabled)",
+            &submit
+        ));
     }
 
     #[test]
@@ -678,7 +854,8 @@ mod tests {
     }
 
     fn found(frame: Value, enabled: Option<bool>) -> Found {
-        let mut element = json!({"role": "AXButton", "label": "Go", "element_token": "s1:1", "frame": frame});
+        let mut element =
+            json!({"role": "AXButton", "label": "Go", "element_token": "s1:1", "frame": frame});
         if let Some(enabled) = enabled {
             element["enabled"] = json!(enabled);
         }
@@ -703,7 +880,10 @@ mod tests {
         assert_eq!(second.blocker(true, Some(&first)), None);
 
         let disabled = Sample::of(&found(frame.clone(), Some(false)));
-        assert_eq!(disabled.blocker(true, Some(&first)), Some(Blocker::Disabled));
+        assert_eq!(
+            disabled.blocker(true, Some(&first)),
+            Some(Blocker::Disabled)
+        );
         // Hover and scroll do not need an enabled target.
         assert_eq!(disabled.blocker(false, Some(&first)), None);
 

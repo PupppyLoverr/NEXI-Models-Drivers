@@ -27,6 +27,8 @@ struct Ui {
     submit_moves: u32,
     /// Reads left during which the "Slide" button moves.
     slide_moves: u32,
+    /// Show disabled controls the AT-SPI way: a row without an index.
+    passive_disabled: bool,
     fields: [String; 3],
     result: Option<String>,
     snapshot: u32,
@@ -142,6 +144,11 @@ impl Tool for Fake {
             })),
             "get_window_state" => {
                 let window_id = args["window_id"].as_u64().unwrap_or(7);
+                if window_id == 8 && !ui.dialog_shown() {
+                    return ToolResult::error(
+                        "Window target pid 42, window_id 8 is stale or no longer running",
+                    );
+                }
                 // verify_state reads without refreshing the action tokens.
                 let observation_only = args.get("_observation_only").is_some();
                 ui.reads += 1;
@@ -153,6 +160,13 @@ impl Tool for Fake {
                 let mut tokens = Vec::new();
                 for (offset, row) in rows.iter().enumerate() {
                     let index = offset + 1;
+                    if ui.passive_disabled && !row.enabled {
+                        markdown.push_str(&format!(
+                            "  - {} = \"{}\" (disabled)\n",
+                            row.role, row.label
+                        ));
+                        continue;
+                    }
                     let token = format!("s{snapshot:08x}:{index}");
                     markdown.push_str(&format!("  - [{index}] {} \"{}\"\n", row.role, row.label));
                     let (x, y, w, h) = row.frame;
@@ -160,6 +174,7 @@ impl Tool for Fake {
                         "element_index": index,
                         "element_token": token,
                         "role": row.role,
+                        "depth": 1,
                         "label": row.label,
                         "enabled": row.enabled,
                         "frame": {"x": x, "y": y, "w": w, "h": h},
@@ -251,11 +266,11 @@ impl Harness {
             ui: ui.clone(),
         };
         let mut registry = ToolRegistry::new();
-        for name in super::super::BATCHABLE_TOOLS
-            .iter()
-            .copied()
-            .chain(["get_window_state", "list_windows", "list_apps"])
-        {
+        for name in super::super::BATCHABLE_TOOLS.iter().copied().chain([
+            "get_window_state",
+            "list_windows",
+            "list_apps",
+        ]) {
             registry.register(Box::new(fake(name)));
         }
         // The real verify_state, observing the same fake app.
@@ -308,7 +323,7 @@ fn text(result: &ToolResult) -> String {
 async fn open_fill_submit_check_is_one_call() {
     let harness = Harness::new(Ui {
         dialog_delay: 2,
-        fields_delay: 2,
+        fields_delay: 5,
         submit_moves: 2,
         ..Default::default()
     });
@@ -335,8 +350,7 @@ async fn open_fill_submit_check_is_one_call() {
     // The first field had to wait for the dialog and then for its fields
     // to enable; Submit was disabled until Phone was filled, then slid in.
     assert_eq!(
-        structured["steps"][1]["auto_wait"]["waited_for"],
-        "it was enabled",
+        structured["steps"][1]["auto_wait"]["waited_for"], "it was enabled",
         "{report}"
     );
     assert_eq!(structured["steps"][3]["verify"]["status"], "satisfied");
@@ -347,10 +361,41 @@ async fn open_fill_submit_check_is_one_call() {
     );
     assert_eq!(harness.calls("click").len(), 2, "no click was refused");
     assert_eq!(harness.calls("set_value").len(), 3);
-    // The observe diff still runs at the end.
-    assert_eq!(structured["observation"]["ok"], true);
+    // The observe diff still runs at the end. Submit closed the dialog the
+    // batch last acted in, so the main window is read instead.
+    assert_eq!(structured["observation"]["ok"], true, "{report}");
+    assert!(
+        report.contains("window 8 closed during the batch; observing Forms window 7"),
+        "{report}"
+    );
     let observed = harness.calls("get_window_state").last().unwrap().clone();
     assert_eq!(observed["since"], "latest");
+    assert_eq!(observed["window_id"], 7);
+}
+
+/// The cost of auto-wait on a target that is ready: one more read of the
+/// window than with auto_wait off, and no note in the report.
+#[tokio::test]
+async fn a_ready_target_costs_one_extra_read() {
+    let harness = Harness::new(Ui::default());
+    let step = json!({"click": {"app": "Forms", "role": "button", "name": "Open details"}});
+    let result = harness.run(json!({"steps": [step.clone()]})).await;
+    assert_ne!(result.is_error, Some(true), "{}", text(&result));
+    let structured = result.structured_content.unwrap();
+    assert!(structured["steps"][0].get("auto_wait").is_none());
+    assert!(!text_of_steps(&structured).contains("auto-waited"));
+    let with_auto_wait = harness.calls("get_window_state").len();
+    assert_eq!(with_auto_wait, 2);
+
+    let harness = Harness::new(Ui::default());
+    harness
+        .run(json!({"auto_wait": false, "steps": [step]}))
+        .await;
+    assert_eq!(harness.calls("get_window_state").len(), 1);
+}
+
+fn text_of_steps(structured: &Value) -> String {
+    structured["steps"].to_string()
 }
 
 #[tokio::test]
@@ -369,11 +414,56 @@ async fn a_disabled_target_times_out_saying_why() {
     assert_eq!(structured["failed_step"], 0);
     assert_eq!(structured["steps"][0]["phase"], "find");
     assert_eq!(structured["steps"][0]["code"], "not_actionable");
-    assert_eq!(structured["steps"][0]["auto_wait"]["blocked_by"], "disabled");
+    assert_eq!(
+        structured["steps"][0]["auto_wait"]["blocked_by"],
+        "disabled"
+    );
     assert!(report.contains("disabled (enabled=false)"), "{report}");
     assert!(report.contains("\"auto_wait\":false"), "{report}");
-    assert!(harness.calls("click").is_empty(), "early stop: nothing clicked");
+    assert!(
+        harness.calls("click").is_empty(),
+        "early stop: nothing clicked"
+    );
     assert!(started.elapsed() >= std::time::Duration::from_millis(300));
+}
+
+/// Linux AT-SPI lists a disabled button as `push button = "Export"
+/// (disabled)` with no index: auto-wait waits on it and says it is disabled.
+#[tokio::test]
+async fn a_disabled_row_without_an_index_times_out_as_disabled() {
+    let harness = Harness::new(Ui {
+        passive_disabled: true,
+        ..Default::default()
+    });
+    let result = harness
+        .run(json!({"steps": [
+            {"click": {"app": "Forms", "role": "button", "name": "Export"}, "timeout_ms": 400}
+        ]}))
+        .await;
+    let report = text(&result);
+    let structured = result.structured_content.clone().unwrap();
+    assert_eq!(structured["steps"][0]["code"], "not_actionable", "{report}");
+    assert_eq!(
+        structured["steps"][0]["auto_wait"]["blocked_by"],
+        "disabled"
+    );
+    assert!(
+        report.contains("`Button = \"Export\" (disabled)`"),
+        "{report}"
+    );
+    assert!(harness.calls("click").is_empty());
+
+    // With auto_wait off the upstream lookup takes the row for a control
+    // with no accessibility actions and fails at once.
+    let result = harness
+        .run(json!({"auto_wait": false, "steps": [
+            {"click": {"app": "Forms", "role": "button", "name": "Export"}, "timeout_ms": 0}
+        ]}))
+        .await;
+    assert_eq!(
+        result.structured_content.unwrap()["steps"][0]["code"],
+        "not_addressable"
+    );
 }
 
 #[tokio::test]
@@ -434,7 +524,10 @@ async fn a_target_that_keeps_moving_or_has_no_area_fails_with_the_reason() {
         .await;
     let report = text(&result);
     let structured = result.structured_content.clone().unwrap();
-    assert_eq!(structured["steps"][0]["auto_wait"]["blocked_by"], "not_stable");
+    assert_eq!(
+        structured["steps"][0]["auto_wait"]["blocked_by"],
+        "not_stable"
+    );
     assert!(report.contains("kept moving (frame"), "{report}");
 
     let result = harness
@@ -442,7 +535,10 @@ async fn a_target_that_keeps_moving_or_has_no_area_fails_with_the_reason() {
         .await;
     let report = text(&result);
     let structured = result.structured_content.clone().unwrap();
-    assert_eq!(structured["steps"][0]["auto_wait"]["blocked_by"], "not_visible");
+    assert_eq!(
+        structured["steps"][0]["auto_wait"]["blocked_by"],
+        "not_visible"
+    );
     assert!(report.contains("no on-screen area"), "{report}");
     assert!(harness.calls("click").is_empty());
 }
@@ -465,7 +561,10 @@ async fn wait_for_query_gone_and_timeout() {
     let report = text(&result);
     assert_ne!(result.is_error, Some(true), "{report}");
     assert_eq!(result.structured_content.unwrap()["executed"], 4);
-    assert!(report.contains("with text \"Fill in all fields\""), "{report}");
+    assert!(
+        report.contains("with text \"Fill in all fields\""),
+        "{report}"
+    );
 
     // A wait that never holds fails in phase wait_for and stops the batch.
     let result = harness
@@ -541,7 +640,10 @@ async fn malformed_waits_are_rejected_before_anything_runs() {
             .run(json!({"steps": [{"click": {"app": "Forms", "name": "Open details"}}, step]}))
             .await;
         let message = text(&result);
-        assert!(message.contains("rejected before running anything"), "{message}");
+        assert!(
+            message.contains("rejected before running anything"),
+            "{message}"
+        );
         assert!(message.contains(needle), "{needle}: {message}");
     }
     let result = harness
