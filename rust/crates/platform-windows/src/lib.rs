@@ -110,6 +110,10 @@ mod browser_setup_ui;
 #[cfg(target_os = "windows")]
 pub mod uia;
 
+// Dove (W2 + W6): action effect probe and safety target inspector.
+#[cfg(target_os = "windows")]
+mod dove_actions;
+
 #[cfg(target_os = "windows")]
 pub mod msaa;
 

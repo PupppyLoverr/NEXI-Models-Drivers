@@ -58,6 +58,28 @@ Feature patches (`scripts/dove/patches/`, applied by the same script):
     (or `DOVE_DRIVER_TELEMETRY_URL`), which has no default; Cua's PostHog endpoint is removed;
   - the update check (startup banner, `check_for_update`, `dove-driver update`) never queries trycua releases, and
     the updater never runs Cua's install script. Dove's plugin manager owns installs and updates.
+- `0007-actions-and-safety.patch` (ROADMAP W2 and W6):
+  - every action result names its exact mechanism as `via` (for example `uia_invoke`) and a `change` of
+    `changed`, `unchanged` or `unverifiable`. On Windows the change comes from a before/after comparison of the
+    target element's value and the target window's UIA tree and top-level windows; a click, key or scroll that
+    changed the window is `effect: confirmed` with `window_change` evidence, and a `set_value` that reads back the
+    requested value is `confirmed` with `value_readback` evidence. `set_value` also sets check boxes, radio
+    buttons, list items and UIA combo boxes through Toggle, SelectionItem and ExpandCollapse;
+  - text is never typed into a password or payment-card field (UIA `IsPassword`, `AXSecureTextField`, AT-SPI
+    `password text`, `input[type=password]`, `autocomplete="cc-*"`), and no action targets a UAC prompt, the secure
+    desktop or an OS credential dialog. Such calls are refused with `code: "handoff_required"` in every mode;
+  - the confirm and block classes of nexi-cua (see below) are checked against the target element and the call's
+    optional `intent`. Blocked: refused. Confirm: refused with a `confirm_token` in `standard` mode, refused in
+    `bounded` mode, run in `unrestricted` mode. `DOVE_DRIVER_SAFETY_CLASSES=off` turns the classes off.
+
+## Third-party code
+
+- `rust/crates/cua-driver-core/src/dove_safety.rs` ports the confirm and block classes of `nexi_cua/safety.py` from
+  [PupppyLoverr/NEXI-Models-Drivers](https://github.com/PupppyLoverr/NEXI-Models-Drivers) (`nexi-cua/`), licensed
+  under the Apache License 2.0 (https://www.apache.org/licenses/LICENSE-2.0). Changes: the Python regular
+  expressions are rewritten as Rust word and phrase matching, `exfiltrat`, `keylog`, `phish` and `ransom` also match
+  their inflections, and the classes are applied to the target element and an `intent` argument rather than to
+  nexi-cua's `Action` record.
 
 Still upstream's: internal crate names (`cua-driver-core` and the rest), `CUA_DRIVER_*` variable names (now with
 `DOVE_DRIVER_*` aliases), protocol identifiers (history schema URNs, the policy `server` name, telemetry event

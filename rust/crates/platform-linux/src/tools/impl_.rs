@@ -14469,6 +14469,10 @@ pub fn build_registry_with_provider(
 ) -> ToolRegistry {
     let mut r = ToolRegistry::new_with_protected_consent_provider(provider);
     let state = ToolState::new_with_capture_service(r.capture_service());
+    // Dove (W6): what a guarded action targets, for the safety layer.
+    cua_driver_core::dove_safety::register_target_inspector(
+        crate::dove_safety_target::target_inspector(state.snapshots.clone()),
+    );
     if crate::wayland::is_wayland() && crate::wayland::hyprland::is_session() {
         let recording_state = Arc::downgrade(&state);
         r.recording

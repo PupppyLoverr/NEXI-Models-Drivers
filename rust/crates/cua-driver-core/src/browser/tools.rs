@@ -1864,6 +1864,26 @@ impl Tool for BrowserTypeTool {
             )
             .to_tool_result();
         }
+        // Dove (W6): never type into a password or payment-card field.
+        if let Ok(answer) = conn
+            .call(
+                Some(cdp),
+                "Runtime.callFunctionOn",
+                json!({
+                    "objectId": object_id,
+                    "functionDeclaration": crate::dove_safety::BROWSER_SECURE_FIELD_CHECK,
+                    "returnByValue": true,
+                }),
+            )
+            .await
+        {
+            if let Some(kind) = answer["result"]["value"]
+                .as_str()
+                .and_then(crate::dove_safety::browser_secure_kind)
+            {
+                return crate::dove_safety::handoff_refusal(kind, "browser_type");
+            }
+        }
 
         // Give the recording a visual target before text delivery. Keep this
         // best-effort: editability/input semantics never depend on the overlay.
