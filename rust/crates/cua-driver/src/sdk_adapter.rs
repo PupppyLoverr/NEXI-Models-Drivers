@@ -469,6 +469,10 @@ impl ToolProvider for SdkAdapter {
         self.tools_list()
     }
 
+    fn has_tool(&self, name: &str) -> bool {
+        cua_driver_core::mcp_wire::inventory_has_tool(&self.tools_list, name)
+    }
+
     async fn invoke_tool(&self, name: &str, arguments: Value) -> Result<Value, String> {
         self.invoke_raw(name, arguments).await
     }

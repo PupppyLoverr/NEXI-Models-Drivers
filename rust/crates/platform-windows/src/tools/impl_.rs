@@ -1269,6 +1269,7 @@ impl Tool for GetWindowStateTool {
     }
 
     async fn invoke(&self, args: Value) -> ToolResult {
+        let mut perf = cua_driver_core::perf::StageTimer::new("get_window_state");
         let display_only = match cua_driver_core::window_state_view::display_only(&args) {
             Ok(display_only) => display_only,
             Err(refusal) => return refusal,
@@ -1313,6 +1314,7 @@ impl Tool for GetWindowStateTool {
         // the lookup we already did, plus the owning process's executable
         // name. Names the surface on the capture-only path, where no UIA tree
         // identifies it.
+        perf.mark("lookup");
         let win_geom = Some((
             window.title.clone(),
             window.x,
@@ -1320,15 +1322,23 @@ impl Tool for GetWindowStateTool {
             window.width,
             window.height,
         ));
+        // One process's image name, instead of a Toolhelp snapshot of every
+        // process (Dove W4). The snapshot stays as the fallback for processes
+        // this one cannot open.
         let app_name = tokio::task::spawn_blocking(move || {
-            crate::win32::list_processes()
-                .into_iter()
-                .find(|p| p.pid == pid)
-                .map(|p| p.name)
+            crate::history::process_executable_path(pid)
+                .and_then(|path| path.file_name().map(|n| n.to_string_lossy().into_owned()))
+                .or_else(|| {
+                    crate::win32::list_processes()
+                        .into_iter()
+                        .find(|p| p.pid == pid)
+                        .map(|p| p.name)
+                })
         })
         .await
         .ok()
         .flatten();
+        perf.mark("app_name");
         use cua_driver_core::tool_args::ArgsExt;
         // The canonical per-call value overrides all configured limits,
         // including `0` for native resolution. The legacy field retains its
@@ -1421,54 +1431,10 @@ impl Tool for GetWindowStateTool {
         let state = self.state.clone();
         let q = query.clone();
         let out_file = screenshot_out_file.clone();
-        // The tree walk runs under `timeout_ms`. UIA's bulk BuildUpdatedCache
-        // cannot be interrupted (Chrome's provider can block indefinitely on
-        // property reads), so when the walk task itself outlives the budget
-        // the response carries an empty tree flagged `truncated` instead of an
-        // error, and the screenshot below still comes back.
-        let tree_result = if do_tree {
-            let tree_task = tokio::task::spawn_blocking(move || {
-                let mut budget =
-                    cua_driver_core::walk_budget::WalkBudget::new(timeout_ms, max_elements);
-                let tree =
-                    crate::uia::walk_tree_budgeted(hwnd, q.as_deref(), max_depth, &mut budget);
-                let kind = if tree.nodes.iter().any(|node| node.msaa_role.is_some()) {
-                    crate::uia::snapshot::SnapshotKind::Msaa
-                } else {
-                    crate::uia::snapshot::SnapshotKind::Uia
-                };
-                let payload = crate::uia::snapshot::UiaSnapshot::from_nodes(&tree.nodes, kind);
-                (tree, payload, budget.outcome())
-            });
-            let started = std::time::Instant::now();
-            let deadline = std::time::Duration::from_millis(timeout_ms) + UIA_WALK_BACKSTOP_GRACE;
-            match tokio::time::timeout(deadline, tree_task).await {
-                Ok(Ok(tree)) => Some(tree),
-                Ok(Err(e)) => return ToolResult::error(format!("UIA walk task panicked: {e}")),
-                Err(_elapsed) => {
-                    let class = crate::input::delivery::read_class_name(hwnd);
-                    let walk = cua_driver_core::walk_budget::WalkOutcome::timed_out(
-                        timeout_ms,
-                        started.elapsed(),
-                    );
-                    let tree = crate::uia::UiaTreeResult {
-                        tree_markdown: format!(
-                            "(The UIA provider for hwnd 0x{hwnd:x}, class '{class}', did not \
-                             answer. Act by pixel off the screenshot, or send press_key with \
-                             delivery_mode:\"foreground\" for a dialog's default accelerator.)"
-                        ),
-                        nodes: Vec::new(),
-                    };
-                    let payload = crate::uia::snapshot::UiaSnapshot::from_nodes(
-                        &[],
-                        crate::uia::snapshot::SnapshotKind::Uia,
-                    );
-                    Some((tree, payload, walk))
-                }
-            }
-        } else {
-            None
-        };
+        // Start the capture before the walk so the two overlap (Dove W4): GDI
+        // capture and the UIA walk are independent, and the read otherwise
+        // paid for them one after the other. Its deadline still runs from
+        // when the walk finishes.
         let blocking = tokio::task::spawn_blocking(move || -> anyhow::Result<_> {
             // Capture screenshot AND any error message so the response can
             // surface *why* there's no image (the iconic-window guard from
@@ -1507,6 +1473,70 @@ impl Tool for GetWindowStateTool {
             };
             Ok((screenshot, screenshot_err))
         });
+        // The tree walk runs under `timeout_ms`. UIA's bulk BuildUpdatedCache
+        // cannot be interrupted (Chrome's provider can block indefinitely on
+        // property reads), so when the walk task itself outlives the budget
+        // the response carries an empty tree flagged `truncated` instead of an
+        // error, and the screenshot below still comes back.
+        let tree_result = if do_tree {
+            let tree_task = tokio::task::spawn_blocking(move || {
+                let mut budget =
+                    cua_driver_core::walk_budget::WalkBudget::new(timeout_ms, max_elements);
+                // Dove W4.2: reuse an event-invalidated walk when nothing
+                // could have changed it; see `uia::tree_cache`.
+                let (tree, outcome, cache_report) = crate::uia::tree_cache::walk_tree_cached(
+                    hwnd,
+                    pid,
+                    q.as_deref(),
+                    max_depth,
+                    max_elements,
+                    &mut budget,
+                );
+                tracing::debug!(
+                    target: "dove_perf",
+                    "tree_cache hwnd=0x{hwnd:x} status={} validated_rows={} rewalked_subtrees={}",
+                    cache_report.status,
+                    cache_report.validated_rows,
+                    cache_report.rewalked_subtrees
+                );
+                let kind = if tree.nodes.iter().any(|node| node.msaa_role.is_some()) {
+                    crate::uia::snapshot::SnapshotKind::Msaa
+                } else {
+                    crate::uia::snapshot::SnapshotKind::Uia
+                };
+                let payload = crate::uia::snapshot::UiaSnapshot::from_nodes(&tree.nodes, kind);
+                (tree, payload, outcome)
+            });
+            let started = std::time::Instant::now();
+            let deadline = std::time::Duration::from_millis(timeout_ms) + UIA_WALK_BACKSTOP_GRACE;
+            match tokio::time::timeout(deadline, tree_task).await {
+                Ok(Ok(tree)) => Some(tree),
+                Ok(Err(e)) => return ToolResult::error(format!("UIA walk task panicked: {e}")),
+                Err(_elapsed) => {
+                    let class = crate::input::delivery::read_class_name(hwnd);
+                    let walk = cua_driver_core::walk_budget::WalkOutcome::timed_out(
+                        timeout_ms,
+                        started.elapsed(),
+                    );
+                    let tree = crate::uia::UiaTreeResult {
+                        tree_markdown: format!(
+                            "(The UIA provider for hwnd 0x{hwnd:x}, class '{class}', did not \
+                             answer. Act by pixel off the screenshot, or send press_key with \
+                             delivery_mode:\"foreground\" for a dialog's default accelerator.)"
+                        ),
+                        nodes: Vec::new(),
+                    };
+                    let payload = crate::uia::snapshot::UiaSnapshot::from_nodes(
+                        &[],
+                        crate::uia::snapshot::SnapshotKind::Uia,
+                    );
+                    Some((tree, payload, walk))
+                }
+            }
+        } else {
+            None
+        };
+        perf.mark("walk");
         let result: anyhow::Result<_> =
             match tokio::time::timeout(UIA_SCREENSHOT_TIMEOUT, blocking).await {
                 Ok(join_result) => join_result
@@ -1520,6 +1550,7 @@ impl Tool for GetWindowStateTool {
                     )),
                 )),
             };
+        perf.mark("capture");
         let result =
             result.map(|(screenshot, screenshot_err)| (tree_result, screenshot, screenshot_err));
 
@@ -1570,6 +1601,7 @@ impl Tool for GetWindowStateTool {
                         .flatten()
                         .unzip();
                     published_snapshot = snapshot_id.is_some();
+                    perf.mark("publish");
                     invalidated.extend(replaced.into_iter().flatten());
 
                     // Structured `elements` array — preferred consumption
@@ -1604,6 +1636,7 @@ impl Tool for GetWindowStateTool {
                     structured["total_element_count"] = json!(count);
                     structured["returned_element_count"] = json!(elements.len());
                     structured["elements"] = json!(elements);
+                    perf.mark("elements");
                     // Surface 6: snapshot id mirror for debug correlation.
                     if let Some(snapshot_id) = snapshot_id {
                         structured["snapshot_id"] = json!(
@@ -1706,6 +1739,7 @@ impl Tool for GetWindowStateTool {
                 }
 
                 if let Some((b64_opt, file_path, w, h, native_w, native_h, png)) = screenshot_opt {
+                    perf.mark("refresh");
                     let capture_id = if !observation_only {
                         if let Some(bridge) = &state.capture_bridge {
                             let geometry = match crate::capture_admission::CaptureGeometry::new(
@@ -1792,9 +1826,10 @@ impl Tool for GetWindowStateTool {
                     structured["app_name"] = json!(name);
                 }
 
+                perf.mark("capture_publish");
                 cua_driver_core::window_inspection::mark_browser_chrome_capture_coverage(
                     &mut structured,
-                    is_standalone_chromium_browser_process(pid).then_some(
+                    app_name.as_deref().is_some_and(is_chromium_browser_target).then_some(
                         cua_driver_core::window_inspection::BrowserChromeCaptureCoverage::NotObservable,
                     ),
                 );
@@ -1815,6 +1850,7 @@ impl Tool for GetWindowStateTool {
                 if display_only {
                     cua_driver_core::window_state_view::mark_display_only(&mut structured);
                 }
+                perf.mark("coverage");
                 if !observation_only {
                     cua_driver_core::window_state_view::apply(
                         &view,
@@ -1937,12 +1973,6 @@ fn is_chromium_browser_target(target: &str) -> bool {
     )
 }
 
-fn is_standalone_chromium_browser_process(pid: u32) -> bool {
-    crate::win32::list_processes()
-        .into_iter()
-        .find(|process| process.pid == pid)
-        .is_some_and(|process| is_chromium_browser_target(&process.name))
-}
 
 /// Anti-throttling flags injected on hidden Chromium launches (#1620).
 ///

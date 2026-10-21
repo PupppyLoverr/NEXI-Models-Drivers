@@ -2310,6 +2310,10 @@ impl ToolRegistry {
         // back to the uncapped capture before any platform interprets them.
         crate::desktop_capture_scale::map_desktop_args(&mut args);
         crate::tool_activity::note_tool_activity();
+        // Accessibility-tree walks taken before or during this call are not
+        // reused after it unless the tool only reads (Dove W4.2).
+        let _tree_cache_action = (!crate::tree_cache::is_pure_read_tool(resolved_name))
+            .then(crate::tree_cache::ActionGuard::enter);
         let mut result = crate::recording::scope_dispatch_click_capture(
             pending_turn.as_ref(),
             tool.invoke(args.clone()),

@@ -150,6 +150,24 @@ pub fn validate_tool_call(
     era: ProtocolEra,
     inventory: &Value,
 ) -> Result<(), Response> {
+    validate_tool_call_by(req, id, era, |name| inventory_has_tool(inventory, name))
+}
+
+/// Whether a `tools/list` result names `name`.
+pub fn inventory_has_tool(inventory: &Value, name: &str) -> bool {
+    inventory["tools"]
+        .as_array()
+        .is_some_and(|tools| tools.iter().any(|tool| tool["name"].as_str() == Some(name)))
+}
+
+/// [`validate_tool_call`] against a name lookup instead of a whole inventory
+/// value, so callers need not build or copy the tool list per call (Dove W4).
+pub fn validate_tool_call_by(
+    req: &Request,
+    id: Value,
+    era: ProtocolEra,
+    has_tool: impl Fn(&str) -> bool,
+) -> Result<(), Response> {
     if req.method != "tools/call" {
         return Ok(());
     }
@@ -163,13 +181,7 @@ pub fn validate_tool_call(
             "Tool arguments must be an object",
         ));
     }
-    if era == ProtocolEra::Modern
-        && !inventory["tools"].as_array().is_some_and(|tools| {
-            tools
-                .iter()
-                .any(|tool| tool["name"].as_str() == Some(call.name.as_str()))
-        })
-    {
+    if era == ProtocolEra::Modern && !has_tool(call.name.as_str()) {
         return Err(Response::error(
             id,
             -32602,

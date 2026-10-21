@@ -29,6 +29,8 @@ clipboard-rs = "0.3.5"
 keyring = { version = "4.1.6", default-features = false, features = ["v1"] }
 image = { workspace = true }
 windows = { version = "0.58", features = [
+    # `*_Impl` traits for the UIA event handlers of the Dove W4 tree cache.
+    "implement",
     "Win32_Foundation",
     "Win32_UI_Accessibility",
     "Win32_UI_WindowsAndMessaging",
@@ -92,6 +94,9 @@ windows = { version = "0.58", features = [
     "Win32_System_WinRT_Graphics_Capture",
 ] }
 base64 = { workspace = true }
+# `#[implement]` (UIA event handlers for the Dove W4 tree cache) expands to
+# `::windows_core` paths. Same version the `windows` 0.58 crate already uses.
+windows-core = "0.58"
 
 [dev-dependencies]
 uuid = { workspace = true }

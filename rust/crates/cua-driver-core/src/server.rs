@@ -18,6 +18,11 @@ use crate::tool::ToolRegistry;
 #[async_trait::async_trait]
 pub trait ToolProvider: Send + Sync {
     fn tools_list(&self) -> serde_json::Value;
+    /// Whether `tools_list` names `name`. Providers that keep their inventory
+    /// override this so per-call admission does not copy the whole list.
+    fn has_tool(&self, name: &str) -> bool {
+        crate::mcp_wire::inventory_has_tool(&self.tools_list(), name)
+    }
     async fn invoke_tool(
         &self,
         name: &str,
@@ -29,6 +34,10 @@ pub trait ToolProvider: Send + Sync {
 impl ToolProvider for ToolRegistry {
     fn tools_list(&self) -> serde_json::Value {
         ToolRegistry::tools_list(self)
+    }
+
+    fn has_tool(&self, name: &str) -> bool {
+        crate::policy::is_tool_listable(name) && self.get_def(name).is_some()
     }
 
     async fn invoke_tool(
@@ -889,13 +898,17 @@ async fn handle_request_inner(
         Ok(era) => era,
         Err(response) => return response,
     };
+    let mut perf = crate::perf::StageTimer::new("server_request");
     if req.method == "tools/call" {
         if let Err(response) =
-            crate::mcp_wire::validate_tool_call(&req, id.clone(), era, &provider.tools_list())
+            crate::mcp_wire::validate_tool_call_by(&req, id.clone(), era, |name| {
+                provider.has_tool(name)
+            })
         {
             return response;
         }
     }
+    perf.mark("validate");
     let method = req.method.clone();
     let response =
         if let Some(response) = crate::mcp_wire::handle_metadata_request(&req, id.clone()) {
@@ -903,6 +916,7 @@ async fn handle_request_inner(
         } else {
             dispatch_request(req, id, provider, transport_session, era).await
         };
+    perf.mark("dispatch");
     crate::mcp_wire::finish_response(era, &method, response)
 }
 
@@ -969,11 +983,15 @@ async fn dispatch_request(
                 // Both arms answer through the shared boundary, so a tool
                 // payload and an invocation failure are held to the same
                 // advertised `outputSchema`.
+                let mut perf = crate::perf::StageTimer::new("server_tools_call");
                 let result = match provider.invoke_tool(&call.name, call.args).await {
                     Ok(result) => result,
                     Err(error) => tool_error_result(error, serde_json::json!({"exit_code": 1})),
                 };
-                Response::ok(id, conforming_tool_result(&call.name, result))
+                perf.mark("invoke");
+                let result = conforming_tool_result(&call.name, result);
+                perf.mark("conform");
+                Response::ok(id, result)
             }
         },
 

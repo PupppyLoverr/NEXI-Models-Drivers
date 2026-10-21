@@ -219,6 +219,13 @@ async fn shared_connection() -> Result<&'static AccessibilityConnection> {
             {
                 dlog!("AT-SPI active-descendant subscription failed: {error}");
             }
+            // Dove W4.2: the opt-in tree cache invalidates on every object event.
+            if super::tree_cache::enabled() {
+                match conn.register_event::<atspi::ObjectEvents>().await {
+                    Ok(()) => super::tree_cache::note_events_live(),
+                    Err(error) => dlog!("AT-SPI object-event subscription failed: {error}"),
+                }
+            }
             Ok(conn)
         })
         .await
@@ -263,6 +270,9 @@ fn spawn_focus_tracker(conn: &'static AccessibilityConnection) {
         let stream = conn.event_stream();
         futures_util::pin_mut!(stream);
         while let Some(event) = stream.next().await {
+            if let Ok(atspi::Event::Object(object)) = &event {
+                super::tree_cache::note_object_event(object);
+            }
             if let Ok(atspi::Event::Object(atspi::ObjectEvents::ActiveDescendantChanged(active))) =
                 &event
             {
@@ -2358,6 +2368,7 @@ pub fn walk_tree(pid: u32) -> Result<Option<(String, Vec<AtspiNode>)>> {
 
 /// One accessibility snapshot, plus whether it was provably narrowed to the
 /// caller's window.
+#[derive(Clone)]
 pub struct WalkedTree {
     pub markdown: String,
     pub nodes: Vec<AtspiNode>,

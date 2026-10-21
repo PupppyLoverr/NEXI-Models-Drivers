@@ -298,15 +298,34 @@ impl Tool for GetWindowStateTool {
             // for an AX call that ignores the per-element messaging timeout
             // (dropping a spawn_blocking JoinHandle cannot cancel it).
             let walk_future = tokio::task::spawn_blocking(move || {
-                let tree = crate::ax::tree::with_menus_collapsed(collapse_menus, || {
-                    crate::ax::tree::walk_tree_budgeted(
-                        pid,
-                        Some(window_id),
-                        q.as_deref(),
-                        max_depth,
-                        cua_driver_core::walk_budget::WalkBudget::new(timeout_ms, max_elements),
-                    )
-                });
+                // Dove W4.2 (opt-in on macOS, see `ax::tree_cache`): reuse a
+                // walk no AX notification or action could have changed.
+                let tree = match crate::ax::tree_cache::lookup_or_begin(
+                    pid,
+                    window_id,
+                    q.as_deref(),
+                    collapse_menus,
+                    max_elements,
+                    max_depth,
+                ) {
+                    Ok(tree) => tree,
+                    Err(pending) => {
+                        let tree = crate::ax::tree::with_menus_collapsed(collapse_menus, || {
+                            crate::ax::tree::walk_tree_budgeted(
+                                pid,
+                                Some(window_id),
+                                q.as_deref(),
+                                max_depth,
+                                cua_driver_core::walk_budget::WalkBudget::new(
+                                    timeout_ms,
+                                    max_elements,
+                                ),
+                            )
+                        });
+                        crate::ax::tree_cache::store(pending, &tree);
+                        tree
+                    }
+                };
                 let payload = crate::ax::snapshot::AxSnapshot::from_nodes(&tree.nodes);
                 (tree, payload)
             });
