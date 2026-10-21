@@ -14,6 +14,7 @@ use anyhow::Result;
 
 pub mod native;
 pub mod snapshot;
+pub(crate) mod tree_cache;
 pub use native::ensure_listener_active;
 pub use snapshot::Snapshots;
 
@@ -197,6 +198,12 @@ pub fn walk_tree_bounded_within(
     // Every retry runs against what is LEFT of the caller's budget.
     const MAX_ATTEMPTS: usize = 4;
     const RETRY_BACKOFF: std::time::Duration = std::time::Duration::from_millis(150);
+    // Dove W4.2 (opt-in on Linux, see `tree_cache`): reuse a walk no event
+    // or action could have changed.
+    if let Some(walked) = tree_cache::lookup(xid, max_elements, max_depth) {
+        return AtspiTreeResult::from_walked(walked, query);
+    }
+    let cache_ticket = tree_cache::begin(pid, xid);
     let started = std::time::Instant::now();
     let mut native_failure = None;
     let mut last_partial: Option<native::WalkedTree> = None;
@@ -218,6 +225,7 @@ pub fn walk_tree_bounded_within(
                 if !walked.markdown.is_empty()
                     && (walked.nodes.len() > 1 || walked.truncation.is_some() || is_last)
                 {
+                    tree_cache::store(cache_ticket, max_elements, max_depth, &walked);
                     return AtspiTreeResult::from_walked(walked, query);
                 }
                 if walked.truncation.is_some() {

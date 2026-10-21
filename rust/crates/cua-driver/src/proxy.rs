@@ -58,7 +58,11 @@ pub async fn run_direct(driver: Arc<cua_driver_sdk::CuaDriver>) -> anyhow::Resul
     let stdin = tokio::io::stdin();
     let stdout = tokio::io::stdout();
     let mut reader = BufReader::new(stdin);
-    let mut writer = tokio::io::BufWriter::new(stdout);
+    let writer = Arc::new(tokio::sync::Mutex::new(tokio::io::BufWriter::new(stdout)));
+    // Dove W4.4: reads of independent windows run concurrently; any other
+    // request first waits for them, and runs alone, as before.
+    let parallel_reads = parallel_reads_enabled();
+    let mut reads: tokio::task::JoinSet<anyhow::Result<()>> = tokio::task::JoinSet::new();
     let mut line = String::new();
     let mut session_observed = false;
     let mut protocol_session = ProtocolSession::default();
@@ -82,10 +86,14 @@ pub async fn run_direct(driver: Arc<cua_driver_sdk::CuaDriver>) -> anyhow::Resul
         if reader.read_line(&mut line).await? == 0 {
             break;
         }
+        while let Some(done) = reads.try_join_next() {
+            done??;
+        }
         let trimmed = line.trim();
         if trimmed.is_empty() {
             continue;
         }
+        let mut perf = cua_driver_core::perf::StageTimer::new("mcp_direct_request");
         let response = match serde_json::from_str::<Request>(trimmed) {
             Err(error) => {
                 error!("JSON parse error: {error}");
@@ -93,76 +101,153 @@ pub async fn run_direct(driver: Arc<cua_driver_sdk::CuaDriver>) -> anyhow::Resul
             }
             Ok(request) if request.is_notification() => continue,
             Ok(mut request) => {
+                perf.mark("parse");
                 let admission = protocol_session.validate(&request).and_then(|era| {
                     if request.method == "tools/call" {
                         cua_driver_core::tool_disclosure::Disclosure::from_env()
-                            .validate_tool_call(
+                            .validate_tool_call_by(
                                 &request,
                                 request.id.clone().unwrap_or_default(),
                                 era,
-                                &sdk.tools_list(),
+                                |name| {
+                                    cua_driver_core::server::ToolProvider::has_tool(
+                                        sdk.as_ref(),
+                                        name,
+                                    )
+                                },
                             )?;
                     }
                     Ok(era)
                 });
                 if let Err(response) = admission {
-                    writer
-                        .write_all(serde_json::to_string(&response)?.as_bytes())
-                        .await?;
-                    writer.write_all(b"\n").await?;
-                    writer.flush().await?;
+                    write_response_line(&writer, &response).await?;
                     continue;
                 }
                 apply_direct_session_identity(&mut request, &transport_session);
+                if parallel_reads && is_parallel_read(&request) {
+                    while reads.len() >= MAX_PARALLEL_READS {
+                        if let Some(done) = reads.join_next().await {
+                            done??;
+                        }
+                    }
+                    let sdk = sdk.clone();
+                    let writer = writer.clone();
+                    let transport_session = transport_session.clone();
+                    reads.spawn(async move {
+                        let response = direct_tool_call(&sdk, request, &transport_session).await;
+                        write_response_line(&writer, &response).await
+                    });
+                    continue;
+                }
+                // Everything else is ordered after every read already started.
+                while let Some(done) = reads.join_next().await {
+                    done??;
+                }
                 let initialize_metadata = (!session_observed)
                     .then(|| request.initialize_metadata())
                     .flatten();
-                let session_context = request.tool_call().ok().and_then(|call| {
-                    sdk.begin_tool_call(
-                        &call.name,
-                        &call.args,
-                        cua_driver_core::session::SessionTransport::McpStdio,
-                        cua_driver_core::session::SessionClientKind::Mcp,
-                    )
-                });
-                let timer = tool_observation_timer(
-                    &request,
-                    |name| sdk.is_known_tool(name),
-                    StdioExecutionPath::DirectDaemon,
-                );
-                let id = request.id.clone().unwrap_or(serde_json::Value::Null);
-                let response = cua_driver_core::server::handle_request_with_transport_session(
-                    request,
-                    id,
-                    sdk.as_ref(),
-                    &transport_session,
-                )
-                .await;
+                perf.mark("admit");
+                let response = direct_tool_call(&sdk, request, &transport_session).await;
+                perf.mark("handle");
                 if let Some(metadata) = initialize_metadata {
                     observe_proxy_session_started(metadata);
                     session_observed = true;
                 }
-                if let Some(timer) = timer {
-                    let outcome = timer.finish(&response);
-                    if let Some(context) = session_context {
-                        context.complete(&outcome);
-                    }
-                    observe_proxy_tool_completed(outcome);
-                }
                 response
             }
         };
-        let serialized = serde_json::to_string(&response).unwrap_or_else(|error| {
-            format!(
-                r#"{{"jsonrpc":"2.0","id":null,"error":{{"code":-32603,"message":"serialize error: {error}"}}}}"#
-            )
-        });
-        writer.write_all(serialized.as_bytes()).await?;
-        writer.write_all(b"\n").await?;
-        writer.flush().await?;
+        perf.mark("observe");
+        write_response_line(&writer, &response).await?;
+        perf.mark("serialize+write");
+    }
+    while let Some(done) = reads.join_next().await {
+        done??;
     }
 
     sdk.shutdown().await.map_err(anyhow::Error::msg)
+}
+
+/// Reads allowed to run concurrently on the direct stdio transport.
+const MAX_PARALLEL_READS: usize = 4;
+
+/// `DOVE_PARALLEL_READS=1|0` turns concurrent reads on or off. They default
+/// on for Windows, where they are verified, and off elsewhere until the W7
+/// CI runs them.
+fn parallel_reads_enabled() -> bool {
+    match std::env::var("DOVE_PARALLEL_READS")
+        .ok()
+        .as_deref()
+        .map(str::trim)
+    {
+        Some("1" | "true" | "on") => true,
+        Some("0" | "false" | "off") => false,
+        _ => cfg!(windows),
+    }
+}
+
+/// A `tools/call` of a tool that only observes one window or the desktop
+/// list, so running it beside another such call cannot change either result.
+fn is_parallel_read(request: &Request) -> bool {
+    request.tool_call().is_ok_and(|call| {
+        matches!(
+            call.name.as_str(),
+            "get_window_state" | "list_windows" | "list_apps" | "get_screen_size"
+        )
+    })
+}
+
+/// One `tools/call` on the direct runtime, with the same session and
+/// telemetry bookkeeping as the sequential path.
+async fn direct_tool_call(
+    sdk: &Arc<crate::sdk_adapter::SdkAdapter>,
+    request: Request,
+    transport_session: &str,
+) -> Response {
+    let session_context = request.tool_call().ok().and_then(|call| {
+        sdk.begin_tool_call(
+            &call.name,
+            &call.args,
+            cua_driver_core::session::SessionTransport::McpStdio,
+            cua_driver_core::session::SessionClientKind::Mcp,
+        )
+    });
+    let timer = tool_observation_timer(
+        &request,
+        |name| sdk.is_known_tool(name),
+        StdioExecutionPath::DirectDaemon,
+    );
+    let id = request.id.clone().unwrap_or(serde_json::Value::Null);
+    let response = cua_driver_core::server::handle_request_with_transport_session(
+        request,
+        id,
+        sdk.as_ref(),
+        transport_session,
+    )
+    .await;
+    if let Some(timer) = timer {
+        let outcome = timer.finish(&response);
+        if let Some(context) = session_context {
+            context.complete(&outcome);
+        }
+        observe_proxy_tool_completed(outcome);
+    }
+    response
+}
+
+async fn write_response_line<W: AsyncWrite + Unpin>(
+    writer: &tokio::sync::Mutex<W>,
+    response: &Response,
+) -> anyhow::Result<()> {
+    let serialized = serde_json::to_string(response).unwrap_or_else(|error| {
+        format!(
+            r#"{{"jsonrpc":"2.0","id":null,"error":{{"code":-32603,"message":"serialize error: {error}"}}}}"#
+        )
+    });
+    let mut writer = writer.lock().await;
+    writer.write_all(serialized.as_bytes()).await?;
+    writer.write_all(b"\n").await?;
+    writer.flush().await?;
+    Ok(())
 }
 
 pub(crate) fn apply_direct_session_identity(request: &mut Request, transport_session: &str) {

@@ -1,0 +1,4507 @@
+diff --git a/rust/crates/cua-driver-core/src/lib.rs b/rust/crates/cua-driver-core/src/lib.rs
+index 1dcb466..6d45bfe 100644
+--- a/rust/crates/cua-driver-core/src/lib.rs
++++ b/rust/crates/cua-driver-core/src/lib.rs
+@@ -88,6 +88,7 @@ pub mod key_pacing;
+ pub mod launch_guard;
+ pub mod mcp_result;
+ pub mod page;
++pub mod perf;
+ pub mod perception_client;
+ pub mod perception_tools;
+ pub mod pip_hook;
+@@ -120,6 +121,7 @@ pub mod tool_activity;
+ pub mod tool_args;
+ pub mod tool_disclosure;
+ pub mod tool_schema;
++pub mod tree_cache;
+ pub mod video;
+ pub mod video_ffmpeg;
+ pub mod walk_budget;
+diff --git a/rust/crates/cua-driver-core/src/mcp_wire.rs b/rust/crates/cua-driver-core/src/mcp_wire.rs
+index 2fd0bc9..f2d9fe4 100644
+--- a/rust/crates/cua-driver-core/src/mcp_wire.rs
++++ b/rust/crates/cua-driver-core/src/mcp_wire.rs
+@@ -149,6 +149,24 @@ pub fn validate_tool_call(
+     id: Value,
+     era: ProtocolEra,
+     inventory: &Value,
++) -> Result<(), Response> {
++    validate_tool_call_by(req, id, era, |name| inventory_has_tool(inventory, name))
++}
++
++/// Whether a `tools/list` result names `name`.
++pub fn inventory_has_tool(inventory: &Value, name: &str) -> bool {
++    inventory["tools"]
++        .as_array()
++        .is_some_and(|tools| tools.iter().any(|tool| tool["name"].as_str() == Some(name)))
++}
++
++/// [`validate_tool_call`] against a name lookup instead of a whole inventory
++/// value, so callers need not build or copy the tool list per call (Dove W4).
++pub fn validate_tool_call_by(
++    req: &Request,
++    id: Value,
++    era: ProtocolEra,
++    has_tool: impl Fn(&str) -> bool,
+ ) -> Result<(), Response> {
+     if req.method != "tools/call" {
+         return Ok(());
+@@ -163,13 +181,7 @@ pub fn validate_tool_call(
+             "Tool arguments must be an object",
+         ));
+     }
+-    if era == ProtocolEra::Modern
+-        && !inventory["tools"].as_array().is_some_and(|tools| {
+-            tools
+-                .iter()
+-                .any(|tool| tool["name"].as_str() == Some(call.name.as_str()))
+-        })
+-    {
++    if era == ProtocolEra::Modern && !has_tool(call.name.as_str()) {
+         return Err(Response::error(
+             id,
+             -32602,
+diff --git a/rust/crates/cua-driver-core/src/perf.rs b/rust/crates/cua-driver-core/src/perf.rs
+new file mode 100644
+index 0000000..f40a55b
+--- /dev/null
++++ b/rust/crates/cua-driver-core/src/perf.rs
+@@ -0,0 +1,56 @@
++//! Stage timing for latency work (Dove W4).
++//!
++//! `CUA_LOG=dove_perf=debug` prints one line per timed operation, listing
++//! each stage's duration in microseconds. When that target is disabled the
++//! timer records nothing and costs one `Instant::now()`.
++
++use std::time::Instant;
++
++/// Records consecutive stage durations and logs them when dropped.
++pub struct StageTimer {
++    what: &'static str,
++    started: Instant,
++    last: Instant,
++    stages: Option<Vec<(&'static str, u128)>>,
++}
++
++impl StageTimer {
++    pub fn new(what: &'static str) -> Self {
++        let now = Instant::now();
++        let enabled = tracing::enabled!(target: "dove_perf", tracing::Level::DEBUG);
++        Self {
++            what,
++            started: now,
++            last: now,
++            stages: enabled.then(Vec::new),
++        }
++    }
++
++    /// Close the stage that ran since the previous mark (or since `new`).
++    pub fn mark(&mut self, stage: &'static str) {
++        if let Some(stages) = self.stages.as_mut() {
++            let now = Instant::now();
++            stages.push((stage, now.duration_since(self.last).as_micros()));
++            self.last = now;
++        }
++    }
++}
++
++impl Drop for StageTimer {
++    fn drop(&mut self) {
++        let Some(stages) = self.stages.take() else {
++            return;
++        };
++        let mut line = String::new();
++        for (stage, us) in &stages {
++            line.push_str(&format!("{stage}={us} "));
++        }
++        tracing::debug!(
++            target: "dove_perf",
++            "{} total_us={} {}",
++            self.what,
++            self.started.elapsed().as_micros(),
++            line.trim_end()
++        );
++    }
++}
+diff --git a/rust/crates/cua-driver-core/src/server.rs b/rust/crates/cua-driver-core/src/server.rs
+index 78dbdb6..a3529a0 100644
+--- a/rust/crates/cua-driver-core/src/server.rs
++++ b/rust/crates/cua-driver-core/src/server.rs
+@@ -18,6 +18,11 @@ use crate::tool::ToolRegistry;
+ #[async_trait::async_trait]
+ pub trait ToolProvider: Send + Sync {
+     fn tools_list(&self) -> serde_json::Value;
++    /// Whether `tools_list` names `name`. Providers that keep their inventory
++    /// override this so per-call admission does not copy the whole list.
++    fn has_tool(&self, name: &str) -> bool {
++        crate::mcp_wire::inventory_has_tool(&self.tools_list(), name)
++    }
+     async fn invoke_tool(
+         &self,
+         name: &str,
+@@ -31,6 +36,10 @@ impl ToolProvider for ToolRegistry {
+         ToolRegistry::tools_list(self)
+     }
+ 
++    fn has_tool(&self, name: &str) -> bool {
++        crate::policy::is_tool_listable(name) && self.get_def(name).is_some()
++    }
++
+     async fn invoke_tool(
+         &self,
+         name: &str,
+@@ -889,16 +898,18 @@ async fn handle_request_inner(
+         Ok(era) => era,
+         Err(response) => return response,
+     };
++    let mut perf = crate::perf::StageTimer::new("server_request");
+     if req.method == "tools/call" {
+-        if let Err(response) = crate::tool_disclosure::Disclosure::from_env().validate_tool_call(
++        if let Err(response) = crate::tool_disclosure::Disclosure::from_env().validate_tool_call_by(
+             &req,
+             id.clone(),
+             era,
+-            &provider.tools_list(),
++            |name| provider.has_tool(name),
+         ) {
+             return response;
+         }
+     }
++    perf.mark("validate");
+     let method = req.method.clone();
+     let response =
+         if let Some(response) = crate::mcp_wire::handle_metadata_request(&req, id.clone()) {
+@@ -906,6 +917,7 @@ async fn handle_request_inner(
+         } else {
+             dispatch_request(req, id, provider, transport_session, era).await
+         };
++    perf.mark("dispatch");
+     crate::mcp_wire::finish_response(era, &method, response)
+ }
+ 
+@@ -931,13 +943,12 @@ async fn dispatch_request(
+             Ok(mut call) => {
+                 crate::tool_args::sanitize_reserved_args(&mut call.args);
+                 let disclosure = crate::tool_disclosure::Disclosure::from_env();
+-                let full_list = disclosure.is_lazy().then(|| provider.tools_list());
+-                if let Some(full_list) = full_list.as_ref() {
+-                    if let Some(result) =
+-                        disclosure.intercept_call(full_list, &call.name, &call.args)
+-                    {
+-                        return Response::ok(id, result);
+-                    }
++                if disclosure.owns_call(&call.name, |name| provider.has_tool(name)) {
++                    let full_list = provider.tools_list();
++                    return Response::ok(
++                        id,
++                        crate::tool_disclosure::describe_tools(&full_list, &call.args),
++                    );
+                 }
+                 if let Err(error) = authorize_tool_call(&call.name, &call.args) {
+                     return Response::ok(
+@@ -984,13 +995,16 @@ async fn dispatch_request(
+                 // Both arms answer through the shared boundary, so a tool
+                 // payload and an invocation failure are held to the same
+                 // advertised `outputSchema`.
++                let mut perf = crate::perf::StageTimer::new("server_tools_call");
+                 let result = match provider.invoke_tool(&call.name, call.args).await {
+                     Ok(result) => result,
+                     Err(error) => tool_error_result(error, serde_json::json!({"exit_code": 1})),
+                 };
++                perf.mark("invoke");
+                 let mut result = conforming_tool_result(&call.name, result);
+-                if let Some(full_list) = full_list.as_ref() {
+-                    disclosure.annotate_result(full_list, &call.name, &mut result);
++                perf.mark("conform");
++                if disclosure.annotates(&result) {
++                    disclosure.annotate_result(&provider.tools_list(), &call.name, &mut result);
+                 }
+                 Response::ok(id, result)
+             }
+diff --git a/rust/crates/cua-driver-core/src/tool.rs b/rust/crates/cua-driver-core/src/tool.rs
+index 582e704..bf42af3 100644
+--- a/rust/crates/cua-driver-core/src/tool.rs
++++ b/rust/crates/cua-driver-core/src/tool.rs
+@@ -2340,6 +2340,10 @@ impl ToolRegistry {
+         // back to the uncapped capture before any platform interprets them.
+         crate::desktop_capture_scale::map_desktop_args(&mut args);
+         crate::tool_activity::note_tool_activity();
++        // Accessibility-tree walks taken before or during this call are not
++        // reused after it unless the tool only reads (Dove W4.2).
++        let _tree_cache_action = (!crate::tree_cache::is_pure_read_tool(resolved_name))
++            .then(crate::tree_cache::ActionGuard::enter);
+         let mut result = crate::recording::scope_dispatch_click_capture(
+             pending_turn.as_ref(),
+             tool.invoke(args.clone()),
+diff --git a/rust/crates/cua-driver-core/src/tool_disclosure.rs b/rust/crates/cua-driver-core/src/tool_disclosure.rs
+index fbf020e..e517d41 100644
+--- a/rust/crates/cua-driver-core/src/tool_disclosure.rs
++++ b/rust/crates/cua-driver-core/src/tool_disclosure.rs
+@@ -110,29 +110,50 @@ impl Disclosure {
+         era: crate::mcp_wire::ProtocolEra,
+         full: &Value,
+     ) -> Result<(), crate::protocol::Response> {
+-        let owns_call = self.is_lazy()
+-            && req.method == "tools/call"
+-            && req
+-                .tool_call()
+-                .is_ok_and(|call| call.name == DESCRIBE_TOOLS);
+-        if owns_call {
+-            let inventory = json!({"tools": [{"name": DESCRIBE_TOOLS}]});
+-            return crate::mcp_wire::validate_tool_call(req, id, era, &inventory);
+-        }
+-        crate::mcp_wire::validate_tool_call(req, id, era, full)
++        self.validate_tool_call_by(req, id, era, |name| {
++            crate::mcp_wire::inventory_has_tool(full, name)
++        })
++    }
++
++    /// [`Self::validate_tool_call`] against a name lookup, so a caller need
++    /// not build the full tool list per call (Dove W4). Withheld tools stay
++    /// callable: lazy mode only shortens what `tools/list` shows.
++    pub fn validate_tool_call_by(
++        self,
++        req: &crate::protocol::Request,
++        id: Value,
++        era: crate::mcp_wire::ProtocolEra,
++        has_tool: impl Fn(&str) -> bool,
++    ) -> Result<(), crate::protocol::Response> {
++        let lazy = self.is_lazy();
++        crate::mcp_wire::validate_tool_call_by(req, id, era, |name| {
++            (lazy && name == DESCRIBE_TOOLS) || has_tool(name)
++        })
+     }
+ 
+     /// Answer a `describe_tools` call here, at the MCP boundary, when lazy
+     /// mode owns that name. `None` means dispatch the call as usual.
+     pub fn intercept_call(self, full: &Value, tool: &str, args: &Value) -> Option<Value> {
+-        (self.is_lazy() && tool == DESCRIBE_TOOLS && find_tool(full, DESCRIBE_TOOLS).is_none())
++        self.owns_call(tool, |name| find_tool(full, name).is_some())
+             .then(|| describe_tools(full, args))
+     }
+ 
++    /// Whether [`Self::intercept_call`] answers `tool`, from a name lookup,
++    /// so the full list is built only for the call that needs it.
++    pub fn owns_call(self, tool: &str, has_tool: impl Fn(&str) -> bool) -> bool {
++        self.is_lazy() && tool == DESCRIBE_TOOLS && !has_tool(DESCRIBE_TOOLS)
++    }
++
++    /// Whether [`Self::annotate_result`] would add a schema to `result`, so
++    /// the full list is built only for a bad-arguments error.
++    pub fn annotates(self, result: &Value) -> bool {
++        self.is_lazy() && is_bad_arguments(result)
++    }
++
+     /// Put the tool's input schema into a bad-arguments error, so a caller
+     /// that never saw the schema can correct the call in one step.
+     pub fn annotate_result(self, full: &Value, tool: &str, result: &mut Value) {
+-        if !self.is_lazy() || !is_bad_arguments(result) {
++        if !self.annotates(result) {
+             return;
+         }
+         let Some(schema) = find_tool(full, tool).and_then(|entry| entry.get("inputSchema")) else {
+@@ -500,6 +521,49 @@ mod tests {
+         assert_eq!(other, before);
+     }
+ 
++    #[test]
++    fn name_lookup_admission_matches_the_full_list() {
++        let full = full_list();
++        let has_tool = |name: &str| crate::mcp_wire::inventory_has_tool(&full, name);
++        let call = |name: &str| -> crate::protocol::Request {
++            serde_json::from_value(json!({
++                "jsonrpc": "2.0", "id": 1, "method": "tools/call",
++                "params": {"name": name, "arguments": {}}
++            }))
++            .unwrap()
++        };
++        let era = crate::mcp_wire::ProtocolEra::Modern;
++        for mode in [Disclosure::Eager, Disclosure::Lazy] {
++            for name in ["click", "type_text", DESCRIBE_TOOLS, "nope"] {
++                let by_list = mode
++                    .validate_tool_call(&call(name), json!(1), era, &full)
++                    .is_ok();
++                let by_name = mode
++                    .validate_tool_call_by(&call(name), json!(1), era, has_tool)
++                    .is_ok();
++                assert_eq!(by_list, by_name, "{mode:?} {name}");
++            }
++        }
++        // Withheld tools stay callable; describe_tools exists only when lazy.
++        assert!(Disclosure::Lazy
++            .validate_tool_call_by(&call("type_text"), json!(1), era, has_tool)
++            .is_ok());
++        assert!(Disclosure::Lazy
++            .validate_tool_call_by(&call(DESCRIBE_TOOLS), json!(1), era, has_tool)
++            .is_ok());
++        assert!(Disclosure::Eager
++            .validate_tool_call_by(&call(DESCRIBE_TOOLS), json!(1), era, has_tool)
++            .is_err());
++        assert!(Disclosure::Lazy.owns_call(DESCRIBE_TOOLS, has_tool));
++        assert!(!Disclosure::Lazy.owns_call("click", has_tool));
++        assert!(!Disclosure::Lazy.owns_call(DESCRIBE_TOOLS, |_| true));
++        assert!(!Disclosure::Eager.owns_call(DESCRIBE_TOOLS, has_tool));
++        let bad = json!({"isError": true, "structuredContent": {"code": "invalid_arguments"}});
++        assert!(Disclosure::Lazy.annotates(&bad));
++        assert!(!Disclosure::Eager.annotates(&bad));
++        assert!(!Disclosure::Lazy.annotates(&json!({"isError": false})));
++    }
++
+     #[test]
+     fn one_line_descriptions_are_short() {
+         assert_eq!(one_line("Short."), "Short.");
+diff --git a/rust/crates/cua-driver-core/src/tree_cache.rs b/rust/crates/cua-driver-core/src/tree_cache.rs
+new file mode 100644
+index 0000000..2f9e2ef
+--- /dev/null
++++ b/rust/crates/cua-driver-core/src/tree_cache.rs
+@@ -0,0 +1,481 @@
++//! Event-invalidated cache of accessibility-tree walks (Dove W4.2).
++//!
++//! A platform walks a window's tree, stores the result here, and feeds the
++//! cache the platform's change events (UIA StructureChanged/PropertyChanged
++//! and focus, macOS AXObserver notifications, AT-SPI signals). A later read
++//! reuses the stored walk only when nothing could have changed it:
++//!
++//! - **Events.** Each window has a sequence number that every invalidation
++//!   bumps. A walk records the sequence number *before* it starts, so an event
++//!   that arrives while the walk runs leaves the stored result dirty.
++//! - **Actions.** Every tool call that is not a known pure read runs inside an
++//!   [`ActionGuard`], which bumps a global epoch when it starts and again when
++//!   it ends. A walk taken before or during an action is never reused after it.
++//! - **Age.** A stored walk older than [`TreeCache::max_age`] is not reused,
++//!   which bounds the effect of a provider that changes without raising events.
++//! - **Subtrees.** Invalidations that name a subtree are kept as a list. The
++//!   platform can re-walk just those subtrees and splice them in; a full
++//!   invalidation, too many subtrees, or an unknown subtree means a full walk.
++//!
++//! Windows additionally re-reads every row it returns from a reused walk
++//! against the live provider before answering (see `uia::tree_cache`), so a
++//! returned row reflects the application at read time even when a provider
++//! dropped or delayed an event.
++//!
++//! **Off by default.** A row the application ADDED (or renamed so that it now
++//! matches a query) is not in the stored walk, so it can only appear once its
++//! change event arrives. On a WinForms window those events arrived 350-850 ms
++//! after the change (measured 2026-10-21), and a read in that window omitted
++//! the new row. That is a stale answer, so reuse needs an explicit opt-in:
++//! `DOVE_TREE_CACHE=1`. `DOVE_TREE_CACHE_MAX_AGE_MS` sets the age bound
++//! (default 2000 ms, at most 60 000 ms).
++
++use std::collections::HashMap;
++use std::sync::atomic::{AtomicU64, Ordering};
++use std::sync::{Arc, Mutex};
++use std::time::{Duration, Instant};
++
++/// Environment switch: `1`, `true`, `on` or `yes` enables tree reuse.
++pub const TREE_CACHE_ENV: &str = "DOVE_TREE_CACHE";
++/// Environment override for the reuse age bound, in milliseconds.
++pub const TREE_CACHE_MAX_AGE_ENV: &str = "DOVE_TREE_CACHE_MAX_AGE_MS";
++
++/// Default age bound for reusing a walk.
++pub const DEFAULT_MAX_AGE: Duration = Duration::from_millis(2000);
++const MAX_MAX_AGE: Duration = Duration::from_millis(60_000);
++/// More pending subtree invalidations than this collapse into a full one.
++pub const MAX_DIRTY_SUBTREES: usize = 16;
++
++/// Identifies a subtree inside one window's tree: a hash of the platform's
++/// stable element identity (UIA runtime id, AX element hash, AT-SPI path).
++pub type SubtreeId = u64;
++
++/// What a change event invalidates.
++#[derive(Debug, Clone, Copy, PartialEq, Eq)]
++pub enum Invalidation {
++    /// The whole window's tree.
++    Full,
++    /// The subtree rooted at this element (the element itself included).
++    Subtree(SubtreeId),
++    /// Like `Subtree`, but only when the element is part of the stored walk;
++    /// otherwise the event did not concern this window (focus moved
++    /// elsewhere in the same process).
++    Hint(SubtreeId),
++}
++
++/// A dirty subtree reported by [`TreeCache::lookup`].
++#[derive(Debug, Clone, Copy, PartialEq, Eq)]
++pub struct DirtySubtree {
++    pub id: SubtreeId,
++    /// False for [`Invalidation::Hint`]: ignore it when the element is not in
++    /// the stored walk. True means an unknown element forces a full walk.
++    pub required: bool,
++}
++
++// ── action barrier ──────────────────────────────────────────────────────────
++
++/// Counts actions: the epoch is bumped when any action starts and again when
++/// it ends.
++pub struct ActionClock {
++    epoch: AtomicU64,
++    in_flight: AtomicU64,
++}
++
++impl ActionClock {
++    pub const fn new() -> Self {
++        Self {
++            epoch: AtomicU64::new(0),
++            in_flight: AtomicU64::new(0),
++        }
++    }
++
++    /// The current epoch, or `None` while an action runs.
++    fn epoch(&self) -> Option<u64> {
++        // Read the epoch first: an action that starts after this load bumps
++        // it, and one already running shows in the in-flight count.
++        let epoch = self.epoch.load(Ordering::SeqCst);
++        (self.in_flight.load(Ordering::SeqCst) == 0).then_some(epoch)
++    }
++}
++
++impl Default for ActionClock {
++    fn default() -> Self {
++        Self::new()
++    }
++}
++
++/// The process-wide clock that tool dispatch drives.
++pub static ACTIONS: ActionClock = ActionClock::new();
++
++/// Marks one action (any tool call that may change an application) for the
++/// whole of its run. Walks never outlive an action: see the module docs.
++pub struct ActionGuard(&'static ActionClock);
++
++impl ActionGuard {
++    /// Enter an action on the process-wide clock.
++    pub fn enter() -> Self {
++        Self::enter_on(&ACTIONS)
++    }
++
++    pub fn enter_on(clock: &'static ActionClock) -> Self {
++        clock.in_flight.fetch_add(1, Ordering::SeqCst);
++        clock.epoch.fetch_add(1, Ordering::SeqCst);
++        Self(clock)
++    }
++}
++
++impl Drop for ActionGuard {
++    fn drop(&mut self) {
++        self.0.epoch.fetch_add(1, Ordering::SeqCst);
++        self.0.in_flight.fetch_sub(1, Ordering::SeqCst);
++    }
++}
++
++/// Tools that only read. Every other tool runs inside an [`ActionGuard`].
++/// An allowlist rather than the `read_only` annotation, so a new tool is
++/// treated as an action until someone decides otherwise.
++pub fn is_pure_read_tool(name: &str) -> bool {
++    matches!(
++        name,
++        "get_window_state"
++            | "get_accessibility_tree"
++            | "list_windows"
++            | "list_apps"
++            | "get_screen_size"
++            | "get_cursor_position"
++            | "get_desktop_state"
++            | "get_config"
++            | "get_session"
++            | "get_session_state"
++            | "list_sessions"
++            | "get_agent_cursor_state"
++            | "get_recording_state"
++            | "describe_tools"
++            | "health_report"
++            | "check_permissions"
++            | "debug_window_info"
++            | "zoom"
++            | "verify_state"
++    )
++}
++
++// ── cache ───────────────────────────────────────────────────────────────────
++
++/// The walk parameters a stored result is valid for. Reads with different
++/// bounds walk again.
++#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
++pub struct WalkParams {
++    pub max_elements: usize,
++    pub max_depth: usize,
++}
++
++/// Returned by [`TreeCache::begin_walk`]; hand it back to `finish_walk`.
++#[derive(Debug, Clone, Copy)]
++pub struct WalkTicket {
++    window: u64,
++    seq: u64,
++    action_epoch: Option<u64>,
++}
++
++/// Result of [`TreeCache::lookup`].
++pub enum Lookup<T> {
++    /// Reusable as is.
++    Fresh { value: Arc<T>, age: Duration },
++    /// Reusable after re-walking these subtrees.
++    Dirty {
++        value: Arc<T>,
++        subtrees: Vec<DirtySubtree>,
++        age: Duration,
++    },
++    /// Walk the whole window.
++    Miss(MissReason),
++}
++
++#[derive(Debug, Clone, Copy, PartialEq, Eq)]
++pub enum MissReason {
++    Disabled,
++    Empty,
++    Params,
++    Expired,
++    Action,
++    Changed,
++}
++
++impl MissReason {
++    pub fn as_str(self) -> &'static str {
++        match self {
++            Self::Disabled => "disabled",
++            Self::Empty => "empty",
++            Self::Params => "params",
++            Self::Expired => "expired",
++            Self::Action => "action",
++            Self::Changed => "changed",
++        }
++    }
++}
++
++struct Entry<T> {
++    value: Arc<T>,
++    params: WalkParams,
++    seq: u64,
++    action_epoch: u64,
++    walked_at: Instant,
++}
++
++#[derive(Default)]
++struct Slot<T> {
++    pid: i32,
++    seq: u64,
++    /// Invalidations newer than the stored entry, oldest first.
++    pending: Vec<(u64, Invalidation)>,
++    entry: Option<Entry<T>>,
++}
++
++/// Per-window store of walk results. Cheap to share: wrap it in an `Arc` or
++/// a `static`.
++pub struct TreeCache<T> {
++    slots: Mutex<HashMap<u64, Slot<T>>>,
++    enabled: bool,
++    max_age: Duration,
++    actions: &'static ActionClock,
++}
++
++impl<T> TreeCache<T> {
++    /// A cache configured from [`TREE_CACHE_ENV`] (off unless it is `1`,
++    /// `true`, `on` or `yes`) and [`TREE_CACHE_MAX_AGE_ENV`].
++    pub fn from_env() -> Self {
++        let enabled = matches!(
++            std::env::var(TREE_CACHE_ENV)
++                .unwrap_or_default()
++                .trim()
++                .to_ascii_lowercase()
++                .as_str(),
++            "1" | "true" | "on" | "yes"
++        );
++        let max_age = std::env::var(TREE_CACHE_MAX_AGE_ENV)
++            .ok()
++            .and_then(|raw| raw.trim().parse::<u64>().ok())
++            .map(Duration::from_millis)
++            .unwrap_or(DEFAULT_MAX_AGE)
++            .min(MAX_MAX_AGE);
++        Self::new(enabled, max_age)
++    }
++
++    pub fn new(enabled: bool, max_age: Duration) -> Self {
++        Self::with_clock(enabled, max_age, &ACTIONS)
++    }
++
++    /// A cache that follows `actions` instead of the process-wide clock.
++    pub fn with_clock(enabled: bool, max_age: Duration, actions: &'static ActionClock) -> Self {
++        Self {
++            slots: Mutex::new(HashMap::new()),
++            enabled,
++            max_age,
++            actions,
++        }
++    }
++
++    pub fn enabled(&self) -> bool {
++        self.enabled
++    }
++
++    pub fn max_age(&self) -> Duration {
++        self.max_age
++    }
++
++    fn slots(&self) -> std::sync::MutexGuard<'_, HashMap<u64, Slot<T>>> {
++        self.slots.lock().unwrap_or_else(|poison| poison.into_inner())
++    }
++
++    /// Call before reading anything from the application. Events that
++    /// arrive after this point make the stored result dirty.
++    pub fn begin_walk(&self, pid: i32, window: u64) -> WalkTicket {
++        let action_epoch = self.actions.epoch();
++        let mut slots = self.slots();
++        let slot = slots.entry(window).or_insert_with(|| Slot {
++            pid,
++            seq: 0,
++            pending: Vec::new(),
++            entry: None,
++        });
++        slot.pid = pid;
++        WalkTicket {
++            window,
++            seq: slot.seq,
++            action_epoch,
++        }
++    }
++
++    /// Store a completed walk. A walk that overlapped an action is dropped.
++    pub fn finish_walk(&self, ticket: WalkTicket, params: WalkParams, value: T) -> Arc<T> {
++        self.store(ticket, params, value, Instant::now())
++    }
++
++    /// Store the result of re-walking only the dirty subtrees of a stored walk
++    /// that is `base_age` old. It keeps that walk's age: subtree events say
++    /// nothing about the rest of the tree, so only a full walk restarts the
++    /// age bound.
++    pub fn finish_rewalk(
++        &self,
++        ticket: WalkTicket,
++        params: WalkParams,
++        value: T,
++        base_age: Duration,
++    ) -> Arc<T> {
++        let walked_at = Instant::now()
++            .checked_sub(base_age)
++            .unwrap_or_else(Instant::now);
++        self.store(ticket, params, value, walked_at)
++    }
++
++    fn store(&self, ticket: WalkTicket, params: WalkParams, value: T, walked_at: Instant) -> Arc<T> {
++        let value = Arc::new(value);
++        if !self.enabled {
++            return value;
++        }
++        let Some(action_epoch) = ticket.action_epoch else {
++            return value;
++        };
++        let mut slots = self.slots();
++        let Some(slot) = slots.get_mut(&ticket.window) else {
++            return value;
++        };
++        // A newer walk already stored a result; keep the newer one.
++        if slot
++            .entry
++            .as_ref()
++            .is_some_and(|entry| entry.seq > ticket.seq)
++        {
++            return value;
++        }
++        slot.pending.retain(|(seq, _)| *seq > ticket.seq);
++        slot.entry = Some(Entry {
++            value: value.clone(),
++            params,
++            seq: ticket.seq,
++            action_epoch,
++            walked_at,
++        });
++        value
++    }
++
++    /// Decide whether a stored walk of `window` can serve a read.
++    pub fn lookup(&self, window: u64, params: WalkParams) -> Lookup<T> {
++        if !self.enabled {
++            return Lookup::Miss(MissReason::Disabled);
++        }
++        let current_action = self.actions.epoch();
++        let slots = self.slots();
++        let Some(slot) = slots.get(&window) else {
++            return Lookup::Miss(MissReason::Empty);
++        };
++        let Some(entry) = slot.entry.as_ref() else {
++            return Lookup::Miss(MissReason::Empty);
++        };
++        if entry.params != params {
++            return Lookup::Miss(MissReason::Params);
++        }
++        if current_action != Some(entry.action_epoch) {
++            return Lookup::Miss(MissReason::Action);
++        }
++        let age = entry.walked_at.elapsed();
++        if age > self.max_age {
++            return Lookup::Miss(MissReason::Expired);
++        }
++        let mut subtrees: Vec<DirtySubtree> = Vec::new();
++        for (seq, invalidation) in &slot.pending {
++            if *seq <= entry.seq {
++                continue;
++            }
++            let (id, required) = match invalidation {
++                Invalidation::Full => return Lookup::Miss(MissReason::Changed),
++                Invalidation::Subtree(id) => (*id, true),
++                Invalidation::Hint(id) => (*id, false),
++            };
++            match subtrees.iter_mut().find(|subtree| subtree.id == id) {
++                Some(subtree) => subtree.required |= required,
++                None => subtrees.push(DirtySubtree { id, required }),
++            }
++        }
++        if subtrees.len() > MAX_DIRTY_SUBTREES {
++            return Lookup::Miss(MissReason::Changed);
++        }
++        let value = entry.value.clone();
++        if subtrees.is_empty() {
++            Lookup::Fresh { value, age }
++        } else {
++            Lookup::Dirty {
++                value,
++                subtrees,
++                age,
++            }
++        }
++    }
++
++    /// Record a change event for `window`. Unknown windows are ignored: a
++    /// window with no slot has no stored walk and no walk in progress.
++    pub fn invalidate(&self, window: u64, invalidation: Invalidation) {
++        let mut slots = self.slots();
++        if let Some(slot) = slots.get_mut(&window) {
++            Self::push(slot, invalidation);
++        }
++    }
++
++    /// Invalidate every window of `pid` completely.
++    pub fn invalidate_pid(&self, pid: i32) {
++        self.invalidate_pid_with(pid, Invalidation::Full);
++    }
++
++    /// Record `invalidation` for every window of `pid`.
++    pub fn invalidate_pid_with(&self, pid: i32, invalidation: Invalidation) {
++        let mut slots = self.slots();
++        for slot in slots.values_mut().filter(|slot| slot.pid == pid) {
++            Self::push(slot, invalidation);
++        }
++    }
++
++    /// Invalidate every window completely.
++    pub fn invalidate_all(&self) {
++        let mut slots = self.slots();
++        for slot in slots.values_mut() {
++            Self::push(slot, Invalidation::Full);
++        }
++    }
++
++    fn push(slot: &mut Slot<T>, invalidation: Invalidation) {
++        slot.seq += 1;
++        let seq = slot.seq;
++        if slot.pending.len() >= MAX_DIRTY_SUBTREES * 2 {
++            slot.pending.clear();
++            slot.pending.push((seq, Invalidation::Full));
++        } else {
++            slot.pending.push((seq, invalidation));
++        }
++    }
++
++    /// Drop everything stored for `window` (it closed).
++    pub fn forget(&self, window: u64) {
++        self.slots().remove(&window);
++    }
++
++    /// Windows that currently have a slot.
++    pub fn windows(&self) -> Vec<u64> {
++        self.slots().keys().copied().collect()
++    }
++}
++
++/// Stable 64-bit hash of an element identity (FNV-1a), for [`SubtreeId`].
++pub fn subtree_id(parts: &[i32]) -> SubtreeId {
++    let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
++    for part in parts {
++        for byte in part.to_le_bytes() {
++            hash ^= u64::from(byte);
++            hash = hash.wrapping_mul(0x0100_0000_01b3);
++        }
++    }
++    hash
++}
++
++#[cfg(test)]
++#[path = "tree_cache_tests.rs"]
++mod tests;
+diff --git a/rust/crates/cua-driver-core/src/tree_cache_tests.rs b/rust/crates/cua-driver-core/src/tree_cache_tests.rs
+new file mode 100644
+index 0000000..3e5beab
+--- /dev/null
++++ b/rust/crates/cua-driver-core/src/tree_cache_tests.rs
+@@ -0,0 +1,293 @@
++//! Invalidation rules of the tree cache. Each test owns its action clock so
++//! actions dispatched by other tests in this process cannot interfere.
++
++use super::*;
++
++const PARAMS: WalkParams = WalkParams {
++    max_elements: 250,
++    max_depth: 25,
++};
++const WINDOW: u64 = 0x1234;
++const PID: i32 = 42;
++
++fn clock() -> &'static ActionClock {
++    Box::leak(Box::new(ActionClock::new()))
++}
++
++fn cache(actions: &'static ActionClock) -> TreeCache<&'static str> {
++    TreeCache::with_clock(true, Duration::from_secs(60), actions)
++}
++
++fn walk(cache: &TreeCache<&'static str>, value: &'static str) {
++    let ticket = cache.begin_walk(PID, WINDOW);
++    cache.finish_walk(ticket, PARAMS, value);
++}
++
++fn fresh(cache: &TreeCache<&'static str>) -> Option<&'static str> {
++    match cache.lookup(WINDOW, PARAMS) {
++        Lookup::Fresh { value, .. } => Some(*value),
++        _ => None,
++    }
++}
++
++fn miss(cache: &TreeCache<&'static str>) -> Option<MissReason> {
++    match cache.lookup(WINDOW, PARAMS) {
++        Lookup::Miss(reason) => Some(reason),
++        _ => None,
++    }
++}
++
++#[test]
++fn a_quiet_window_is_reused() {
++    let cache = cache(clock());
++    assert_eq!(miss(&cache), Some(MissReason::Empty));
++    walk(&cache, "v1");
++    assert_eq!(fresh(&cache), Some("v1"));
++    assert_eq!(fresh(&cache), Some("v1"));
++}
++
++#[test]
++fn a_full_invalidation_forces_a_walk_and_the_next_walk_is_reused() {
++    let cache = cache(clock());
++    walk(&cache, "v1");
++    cache.invalidate(WINDOW, Invalidation::Full);
++    assert_eq!(miss(&cache), Some(MissReason::Changed));
++    walk(&cache, "v2");
++    assert_eq!(fresh(&cache), Some("v2"));
++}
++
++#[test]
++fn an_event_during_the_walk_leaves_the_result_dirty() {
++    let cache = cache(clock());
++    let ticket = cache.begin_walk(PID, WINDOW);
++    // The application changes after the walk read part of the tree.
++    cache.invalidate(WINDOW, Invalidation::Full);
++    cache.finish_walk(ticket, PARAMS, "torn");
++    assert_eq!(miss(&cache), Some(MissReason::Changed));
++}
++
++#[test]
++fn an_event_before_the_walk_does_not_dirty_it() {
++    let cache = cache(clock());
++    walk(&cache, "v1");
++    cache.invalidate(WINDOW, Invalidation::Full);
++    walk(&cache, "v2");
++    assert_eq!(fresh(&cache), Some("v2"));
++}
++
++#[test]
++fn subtree_events_report_the_dirty_subtrees() {
++    let cache = cache(clock());
++    walk(&cache, "v1");
++    cache.invalidate(WINDOW, Invalidation::Subtree(7));
++    cache.invalidate(WINDOW, Invalidation::Subtree(9));
++    cache.invalidate(WINDOW, Invalidation::Subtree(7));
++    match cache.lookup(WINDOW, PARAMS) {
++        Lookup::Dirty {
++            value, subtrees, ..
++        } => {
++            assert_eq!(*value, "v1");
++            assert_eq!(
++                subtrees,
++                vec![
++                    DirtySubtree {
++                        id: 7,
++                        required: true
++                    },
++                    DirtySubtree {
++                        id: 9,
++                        required: true
++                    }
++                ]
++            );
++        }
++        _ => panic!("expected a dirty lookup"),
++    }
++    // A subtree re-walk that started after those events cleans the entry.
++    walk(&cache, "v1+subtrees");
++    assert_eq!(fresh(&cache), Some("v1+subtrees"));
++}
++
++#[test]
++fn hints_are_optional_unless_a_required_event_names_the_same_subtree() {
++    let cache = cache(clock());
++    walk(&cache, "v1");
++    cache.invalidate_pid_with(PID, Invalidation::Hint(3));
++    cache.invalidate_pid_with(PID + 1, Invalidation::Full);
++    match cache.lookup(WINDOW, PARAMS) {
++        Lookup::Dirty { subtrees, .. } => assert_eq!(
++            subtrees,
++            vec![DirtySubtree {
++                id: 3,
++                required: false
++            }]
++        ),
++        _ => panic!("expected a dirty lookup"),
++    }
++    cache.invalidate(WINDOW, Invalidation::Subtree(3));
++    match cache.lookup(WINDOW, PARAMS) {
++        Lookup::Dirty { subtrees, .. } => assert!(subtrees[0].required),
++        _ => panic!("expected a dirty lookup"),
++    }
++}
++
++#[test]
++fn a_full_invalidation_wins_over_subtrees() {
++    let cache = cache(clock());
++    walk(&cache, "v1");
++    cache.invalidate(WINDOW, Invalidation::Subtree(7));
++    cache.invalidate(WINDOW, Invalidation::Full);
++    assert_eq!(miss(&cache), Some(MissReason::Changed));
++}
++
++#[test]
++fn too_many_subtrees_force_a_full_walk() {
++    let cache = cache(clock());
++    walk(&cache, "v1");
++    for id in 0..(MAX_DIRTY_SUBTREES as u64 + 1) {
++        cache.invalidate(WINDOW, Invalidation::Subtree(id));
++    }
++    assert_eq!(miss(&cache), Some(MissReason::Changed));
++}
++
++#[test]
++fn an_event_flood_collapses_into_a_full_invalidation() {
++    let cache = cache(clock());
++    walk(&cache, "v1");
++    for _ in 0..(MAX_DIRTY_SUBTREES * 4) {
++        cache.invalidate(WINDOW, Invalidation::Subtree(1));
++    }
++    assert_eq!(miss(&cache), Some(MissReason::Changed));
++}
++
++#[test]
++fn an_action_after_the_walk_forces_a_walk() {
++    let actions = clock();
++    let cache = cache(actions);
++    walk(&cache, "v1");
++    drop(ActionGuard::enter_on(actions));
++    assert_eq!(miss(&cache), Some(MissReason::Action));
++    walk(&cache, "v2");
++    assert_eq!(fresh(&cache), Some("v2"));
++}
++
++#[test]
++fn nothing_is_reused_while_an_action_runs() {
++    let actions = clock();
++    let cache = cache(actions);
++    walk(&cache, "v1");
++    let action = ActionGuard::enter_on(actions);
++    assert_eq!(miss(&cache), Some(MissReason::Action));
++    // A walk taken during the action is not stored for later reads either:
++    // the action may change the application after the walk read it.
++    walk(&cache, "during");
++    drop(action);
++    assert_eq!(miss(&cache), Some(MissReason::Action));
++}
++
++#[test]
++fn different_walk_bounds_walk_again() {
++    let cache = cache(clock());
++    walk(&cache, "v1");
++    let other = WalkParams {
++        max_elements: 5000,
++        max_depth: 25,
++    };
++    assert!(matches!(
++        cache.lookup(WINDOW, other),
++        Lookup::Miss(MissReason::Params)
++    ));
++}
++
++#[test]
++fn an_old_walk_expires() {
++    let cache: TreeCache<&'static str> =
++        TreeCache::with_clock(true, Duration::from_millis(20), clock());
++    walk(&cache, "v1");
++    assert_eq!(fresh(&cache), Some("v1"));
++    std::thread::sleep(Duration::from_millis(40));
++    assert_eq!(miss(&cache), Some(MissReason::Expired));
++}
++
++#[test]
++fn a_disabled_cache_never_reuses() {
++    let cache: TreeCache<&'static str> =
++        TreeCache::with_clock(false, Duration::from_secs(60), clock());
++    walk(&cache, "v1");
++    assert_eq!(miss(&cache), Some(MissReason::Disabled));
++}
++
++#[test]
++fn pid_and_global_invalidation_reach_every_window() {
++    let cache = cache(clock());
++    let other_window = WINDOW + 1;
++    walk(&cache, "v1");
++    let ticket = cache.begin_walk(PID + 1, other_window);
++    cache.finish_walk(ticket, PARAMS, "other");
++    cache.invalidate_pid(PID);
++    assert_eq!(miss(&cache), Some(MissReason::Changed));
++    assert!(matches!(
++        cache.lookup(other_window, PARAMS),
++        Lookup::Fresh { .. }
++    ));
++    cache.invalidate_all();
++    assert!(matches!(
++        cache.lookup(other_window, PARAMS),
++        Lookup::Miss(MissReason::Changed)
++    ));
++}
++
++#[test]
++fn an_older_walk_cannot_replace_a_newer_one() {
++    let cache = cache(clock());
++    let slow = cache.begin_walk(PID, WINDOW);
++    cache.invalidate(WINDOW, Invalidation::Full);
++    let fast = cache.begin_walk(PID, WINDOW);
++    cache.finish_walk(fast, PARAMS, "new");
++    cache.finish_walk(slow, PARAMS, "old");
++    assert_eq!(fresh(&cache), Some("new"));
++}
++
++#[test]
++fn a_forgotten_window_starts_empty() {
++    let cache = cache(clock());
++    walk(&cache, "v1");
++    cache.forget(WINDOW);
++    assert_eq!(miss(&cache), Some(MissReason::Empty));
++    // Events for a window with no slot are ignored, not stored.
++    cache.invalidate(WINDOW, Invalidation::Full);
++    walk(&cache, "v2");
++    assert_eq!(fresh(&cache), Some("v2"));
++}
++
++#[test]
++fn subtree_ids_are_stable_and_distinct() {
++    assert_eq!(subtree_id(&[42, 1, 2]), subtree_id(&[42, 1, 2]));
++    assert_ne!(subtree_id(&[42, 1, 2]), subtree_id(&[42, 2, 1]));
++}
++
++#[test]
++fn pure_reads_exclude_actions() {
++    assert!(is_pure_read_tool("get_window_state"));
++    for action in ["click", "type_text", "run_steps", "set_value", "launch_app"] {
++        assert!(!is_pure_read_tool(action), "{action}");
++    }
++}
++
++#[test]
++fn a_subtree_rewalk_keeps_the_full_walk_age() {
++    let cache: TreeCache<&'static str> =
++        TreeCache::with_clock(true, Duration::from_millis(60), clock());
++    walk(&cache, "v1");
++    std::thread::sleep(Duration::from_millis(40));
++    cache.invalidate(WINDOW, Invalidation::Subtree(5));
++    let Lookup::Dirty { age, .. } = cache.lookup(WINDOW, PARAMS) else {
++        panic!("expected a dirty lookup");
++    };
++    let ticket = cache.begin_walk(PID, WINDOW);
++    cache.finish_rewalk(ticket, PARAMS, "v1+subtree", age);
++    assert_eq!(fresh(&cache), Some("v1+subtree"));
++    // The full walk is now older than the bound; the re-walk did not renew it.
++    std::thread::sleep(Duration::from_millis(40));
++    assert_eq!(miss(&cache), Some(MissReason::Expired));
++}
+diff --git a/rust/crates/cua-driver-e2e/tests/latency_baseline.json b/rust/crates/cua-driver-e2e/tests/latency_baseline.json
+new file mode 100644
+index 0000000..2c5ca32
+--- /dev/null
++++ b/rust/crates/cua-driver-e2e/tests/latency_baseline.json
+@@ -0,0 +1,3 @@
++{
++  "_note": "Baseline p50/p95 per <os>/<fixture>/<case>, in ms, from a quiet runner. latency_test.rs fails a gated case that is more than 20% (and at least 2 ms) above its entry. CI should pass its own previous results file through DOVE_LATENCY_BASELINE; entries here are only a fallback. Empty until W7 CI records one: the dev PC that wrote W4 was shared with other builds, so its numbers would not be a fair baseline."
++}
+diff --git a/rust/crates/cua-driver-e2e/tests/latency_test.rs b/rust/crates/cua-driver-e2e/tests/latency_test.rs
+new file mode 100644
+index 0000000..e6d1841
+--- /dev/null
++++ b/rust/crates/cua-driver-e2e/tests/latency_test.rs
+@@ -0,0 +1,615 @@
++//! Dove W4.5: the `get_window_state` latency gate, and the W4.2 tree-cache
++//! invalidation contract.
++//!
++//! The gate reads one fixture window with a `query` many times over MCP and
++//! fails when p50 is 40 ms or more, p95 is 150 ms or more, or either is more
++//! than 20% above the recorded baseline for the same OS, fixture and case
++//! (with a 2 ms floor, so sub-millisecond jitter on a fast runner is not a
++//! regression). Other cases are measured and recorded but not gated.
++//!
++//! Baselines come from `DOVE_LATENCY_BASELINE` (a results file from an
++//! earlier run, which is how CI should feed its own runner's numbers back
++//! in) or else from `latency_baseline.json` beside this file. A case with no
++//! baseline entry skips only the regression check. Results are written to
++//! `DOVE_LATENCY_RESULTS`, or `target/dove-latency/<os>-<fixture>.json`.
++//!
++//! Fixtures:
++//! - Windows: `support/latency_fixture.ps1`, a WinForms window with nine
++//!   controls that applies commands written to a file (rename, add, remove,
++//!   enable, disable, set value) and acknowledges each one. Verified locally.
++//! - Linux: the GTK3 harness; macOS: the SwiftUI harness. Unverified until the
++//!   W7 CI runs them. The invalidation tests need the command file, so they
++//!   run on Windows only.
++//!
++//! Run (needs a desktop; never steals focus on Windows):
++//!   cargo test -p cua-driver-e2e --test latency_test -- --ignored --nocapture --test-threads=1
++
++use std::path::{Path, PathBuf};
++use std::time::{Duration, Instant};
++
++use cua_driver_testkit::{Driver, McpDriver, ToolResponse};
++use serde_json::{json, Value};
++
++const P50_LIMIT_MS: f64 = 40.0;
++const P95_LIMIT_MS: f64 = 150.0;
++const REGRESSION_LIMIT: f64 = 0.20;
++const REGRESSION_FLOOR_MS: f64 = 2.0;
++const WARMUP: usize = 5;
++const SAMPLES: usize = 100;
++/// The gated case.
++const GATED_CASE: &str = "gws_query";
++
++struct Fixture {
++    pid: u32,
++    window_id: u64,
++    /// `<os>/<fixture>`, the baseline key prefix.
++    key: String,
++    /// A query that matches at least one row.
++    query: &'static str,
++    /// Command directory of the Windows fixture.
++    control: Option<tempfile::TempDir>,
++}
++
++fn require_fixtures() -> bool {
++    std::env::var_os("CUA_TEST_REQUIRE_FIXTURES").is_some()
++}
++
++fn skip(why: &str) -> Option<Fixture> {
++    assert!(!require_fixtures(), "required latency fixture missing: {why}");
++    eprintln!("[latency] skipping: {why}");
++    None
++}
++
++#[cfg(target_os = "windows")]
++fn launch_fixture(driver: &mut McpDriver) -> Option<Fixture> {
++    use std::process::{Command, Stdio};
++    let script = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/support/latency_fixture.ps1");
++    let control = tempfile::tempdir().expect("fixture command directory");
++    driver
++        .reaper()
++        .spawn(
++            Command::new("powershell.exe")
++                .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden"])
++                .arg("-File")
++                .arg(&script)
++                .arg("-Dir")
++                .arg(control.path())
++                .stdin(Stdio::null())
++                .stdout(Stdio::null())
++                .stderr(Stdio::null()),
++        )
++        .expect("launch the WinForms latency fixture");
++    let ready = control.path().join("fixture.json");
++    let deadline = Instant::now() + Duration::from_secs(30);
++    let info: Value = loop {
++        if let Some(info) = std::fs::read_to_string(&ready)
++            .ok()
++            .and_then(|text| serde_json::from_str(&text).ok())
++        {
++            break info;
++        }
++        if Instant::now() > deadline {
++            return skip("the WinForms fixture did not start within 30 s");
++        }
++        std::thread::sleep(Duration::from_millis(100));
++    };
++    let pid = info["pid"].as_u64().expect("fixture pid") as u32;
++    let window_id = info["hwnd"].as_u64().expect("fixture hwnd");
++    driver.reaper().track_pid(pid);
++    let fixture = Fixture {
++        pid,
++        window_id,
++        key: "windows/winforms".into(),
++        query: "Save",
++        control: Some(control),
++    };
++    // Wait until UI Automation exposes the client area.
++    let deadline = Instant::now() + Duration::from_secs(15);
++    while !read(driver, &fixture, json!({ "query": "Save", "include_screenshot": false }))
++        .tree_text()
++        .contains("\"Save\"")
++    {
++        if Instant::now() > deadline {
++            return skip("the WinForms fixture never exposed its controls");
++        }
++        std::thread::sleep(Duration::from_millis(200));
++    }
++    Some(fixture)
++}
++
++#[cfg(target_os = "linux")]
++fn launch_fixture(driver: &mut McpDriver) -> Option<Fixture> {
++    launch_harness(
++        driver,
++        cua_driver_testkit::harness_app("harness-gtk3", "CuaTestHarness.Gtk3"),
++        "CuaTestHarness GTK3",
++        "linux/gtk3",
++        "button",
++    )
++}
++
++#[cfg(target_os = "macos")]
++fn launch_fixture(driver: &mut McpDriver) -> Option<Fixture> {
++    launch_harness(
++        driver,
++        cua_driver_testkit::harness_app(
++            "harness-swiftui",
++            "CuaTestHarness.SwiftUI.app/Contents/MacOS/CuaTestHarness.SwiftUI",
++        ),
++        "CuaTestHarness SwiftUI",
++        "macos/swiftui",
++        "AXButton",
++    )
++}
++
++#[cfg(any(target_os = "linux", target_os = "macos"))]
++fn launch_harness(
++    driver: &mut McpDriver,
++    exe: PathBuf,
++    title: &str,
++    key: &str,
++    query: &'static str,
++) -> Option<Fixture> {
++    use std::process::{Command, Stdio};
++    if !exe.exists() {
++        return skip(&format!("harness not built: {exe:?}"));
++    }
++    driver
++        .reaper()
++        .spawn(Command::new(&exe).stdout(Stdio::null()).stderr(Stdio::null()))
++        .expect("launch the harness");
++    let deadline = Instant::now() + Duration::from_secs(15);
++    while Instant::now() < deadline {
++        let response = driver.call("list_windows", json!({}));
++        for window in response.structured()["windows"].as_array().into_iter().flatten() {
++            if window["title"].as_str().unwrap_or("").contains(title) {
++                let pid = window["pid"].as_u64().unwrap_or(0) as u32;
++                let window_id = window["window_id"].as_u64().unwrap_or(0);
++                if pid != 0 && window_id != 0 {
++                    driver.reaper().track_pid(pid);
++                    std::thread::sleep(Duration::from_millis(500));
++                    return Some(Fixture {
++                        pid,
++                        window_id,
++                        key: key.into(),
++                        query,
++                        control: None,
++                    });
++                }
++            }
++        }
++        std::thread::sleep(Duration::from_millis(300));
++    }
++    skip(&format!("{title} window never appeared"))
++}
++
++/// A driver whose daemon has an isolated home and `extra` in its environment.
++fn spawn_driver(extra: &[(&str, &str)]) -> Option<(McpDriver, tempfile::TempDir)> {
++    let home = tempfile::tempdir().expect("isolated home");
++    let root = home.path().display().to_string();
++    let local = home.path().join("AppData/Local").display().to_string();
++    let roaming = home.path().join("AppData/Roaming").display().to_string();
++    let _ = std::fs::create_dir_all(&local);
++    let _ = std::fs::create_dir_all(&roaming);
++    let mut env: Vec<(&str, &str)> = vec![
++        ("USERPROFILE", &root),
++        ("HOME", &root),
++        ("LOCALAPPDATA", &local),
++        ("APPDATA", &roaming),
++    ];
++    env.extend_from_slice(extra);
++    let driver = McpDriver::spawn_with_env(&env)?;
++    Some((driver, home))
++}
++
++fn read(driver: &mut McpDriver, fixture: &Fixture, extra: Value) -> ToolResponse {
++    let mut args = json!({
++        "pid": fixture.pid,
++        "window_id": fixture.window_id,
++        "tree_format": "markdown",
++    });
++    for (key, value) in extra.as_object().into_iter().flatten() {
++        args[key] = value.clone();
++    }
++    let response = driver.call("get_window_state", args);
++    assert!(
++        !response.is_error(),
++        "get_window_state failed: {}",
++        response.text()
++    );
++    response
++}
++
++#[derive(Debug, Clone, Copy)]
++struct Stats {
++    p50: f64,
++    p95: f64,
++    mean: f64,
++    min: f64,
++    max: f64,
++    n: usize,
++}
++
++fn percentile(sorted: &[f64], p: f64) -> f64 {
++    // Nearest rank.
++    let rank = (p * sorted.len() as f64).ceil() as usize;
++    sorted[rank.clamp(1, sorted.len()) - 1]
++}
++
++fn measure(mut call: impl FnMut() -> ToolResponse) -> Stats {
++    for _ in 0..WARMUP {
++        call();
++    }
++    let mut samples: Vec<f64> = (0..SAMPLES)
++        .map(|_| {
++            let started = Instant::now();
++            let response = call();
++            let elapsed = started.elapsed().as_secs_f64() * 1000.0;
++            assert!(!response.is_error(), "call failed: {}", response.text());
++            elapsed
++        })
++        .collect();
++    samples.sort_by(|a, b| a.total_cmp(b));
++    Stats {
++        p50: percentile(&samples, 0.50),
++        p95: percentile(&samples, 0.95),
++        mean: samples.iter().sum::<f64>() / samples.len() as f64,
++        min: samples[0],
++        max: samples[samples.len() - 1],
++        n: samples.len(),
++    }
++}
++
++fn baseline() -> Value {
++    let path = std::env::var_os("DOVE_LATENCY_BASELINE")
++        .map(PathBuf::from)
++        .unwrap_or_else(|| Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/latency_baseline.json"));
++    std::fs::read_to_string(&path)
++        .ok()
++        .and_then(|text| serde_json::from_str(&text).ok())
++        .unwrap_or_else(|| json!({}))
++}
++
++fn results_path(fixture: &Fixture) -> PathBuf {
++    std::env::var_os("DOVE_LATENCY_RESULTS")
++        .map(PathBuf::from)
++        .unwrap_or_else(|| {
++            cua_driver_testkit::workspace_root()
++                .join("target/dove-latency")
++                .join(format!("{}.json", fixture.key.replace('/', "-")))
++        })
++}
++
++/// Failures of `stats` against the absolute limits (gated case only) and the
++/// baseline entry for `key`.
++fn gate(key: &str, stats: Stats, gated: bool, baseline: &Value) -> Vec<String> {
++    let mut failures = Vec::new();
++    if gated {
++        if stats.p50 >= P50_LIMIT_MS {
++            failures.push(format!("{key}: p50 {:.1} ms >= {P50_LIMIT_MS} ms", stats.p50));
++        }
++        if stats.p95 >= P95_LIMIT_MS {
++            failures.push(format!("{key}: p95 {:.1} ms >= {P95_LIMIT_MS} ms", stats.p95));
++        }
++    }
++    if let Some(entry) = baseline.get(key) {
++        for (name, measured) in [("p50", stats.p50), ("p95", stats.p95)] {
++            let Some(base) = entry[format!("{name}_ms")].as_f64() else {
++                continue;
++            };
++            let limit = (base * (1.0 + REGRESSION_LIMIT)).max(base + REGRESSION_FLOOR_MS);
++            if gated && measured > limit {
++                failures.push(format!(
++                    "{key}: {name} {measured:.1} ms regressed more than 20% over the \
++                     baseline {base:.1} ms (limit {limit:.1} ms)"
++                ));
++            }
++        }
++    } else {
++        eprintln!("[latency] {key}: no baseline entry; regression check skipped");
++    }
++    failures
++}
++
++/// The gate, on the default configuration (tree cache off). Also records
++/// ungated cases: the read with a screenshot, an unqueried read,
++/// `list_windows`, and the query with the opt-in tree cache.
++#[test]
++#[ignore = "needs a desktop and a fixture app"]
++fn get_window_state_query_latency_gate() {
++    let Some((mut driver, _home)) = spawn_driver(&[]) else {
++        return;
++    };
++    let Some(fixture) = launch_fixture(&mut driver) else {
++        return;
++    };
++    let query = fixture.query;
++    let mut cases: Vec<(&str, Stats)> = Vec::new();
++    // A just-launched (or just-restored) window can take a moment to expose
++    // its controls.
++    let deadline = Instant::now() + Duration::from_secs(15);
++    loop {
++        let first = read(&mut driver, &fixture, json!({ "query": query, "include_screenshot": false }));
++        if first.tree_text().to_lowercase().contains(&query.to_lowercase()) {
++            break;
++        }
++        assert!(
++            Instant::now() < deadline,
++            "the query {query:?} matched nothing:\n{}",
++            first.tree_text()
++        );
++        std::thread::sleep(Duration::from_millis(200));
++    }
++    cases.push((
++        GATED_CASE,
++        measure(|| read(&mut driver, &fixture, json!({ "query": query, "include_screenshot": false }))),
++    ));
++    cases.push((
++        "gws_query_screenshot",
++        measure(|| read(&mut driver, &fixture, json!({ "query": query }))),
++    ));
++    cases.push((
++        "gws_full_tree",
++        measure(|| read(&mut driver, &fixture, json!({ "include_screenshot": false }))),
++    ));
++    cases.push((
++        "list_windows_pid",
++        measure(|| driver.call("list_windows", json!({ "pid": fixture.pid }))),
++    ));
++
++    // The same query with the opt-in tree cache. `driver` stays alive: its
++    // reaper owns the fixture.
++    if let Some((mut cached, _home)) = spawn_driver(&[("DOVE_TREE_CACHE", "1")]) {
++        cases.push((
++            "gws_query_cache_opt_in",
++            measure(|| read(&mut cached, &fixture, json!({ "query": query, "include_screenshot": false }))),
++        ));
++    }
++
++    let baseline = baseline();
++    let mut failures = Vec::new();
++    let mut results = serde_json::Map::new();
++    for (case, stats) in &cases {
++        let key = format!("{}/{case}", fixture.key);
++        eprintln!(
++            "[latency] {key}: p50 {:.1} ms  p95 {:.1} ms  mean {:.1}  min {:.1}  max {:.1}  (n={})",
++            stats.p50, stats.p95, stats.mean, stats.min, stats.max, stats.n
++        );
++        failures.extend(gate(&key, *stats, *case == GATED_CASE, &baseline));
++        results.insert(
++            key,
++            json!({
++                "p50_ms": stats.p50,
++                "p95_ms": stats.p95,
++                "mean_ms": stats.mean,
++                "min_ms": stats.min,
++                "max_ms": stats.max,
++                "n": stats.n,
++                "gated": *case == GATED_CASE,
++            }),
++        );
++    }
++    let path = results_path(&fixture);
++    if let Some(parent) = path.parent() {
++        let _ = std::fs::create_dir_all(parent);
++    }
++    let _ = std::fs::write(&path, serde_json::to_string_pretty(&Value::Object(results)).unwrap());
++    eprintln!("[latency] results written to {}", path.display());
++    assert!(failures.is_empty(), "latency gate failed:\n{}", failures.join("\n"));
++}
++
++// ── tree-cache invalidation (Windows fixture) ──────────────────────────────
++
++/// Apply one fixture command and wait until the fixture's UI thread has
++/// applied it.
++#[cfg(target_os = "windows")]
++fn mutate(fixture: &Fixture, command: &str) {
++    let dir = fixture.control.as_ref().expect("command directory").path();
++    let acks = || {
++        std::fs::read_to_string(dir.join("ack.txt"))
++            .map(|text| text.lines().count())
++            .unwrap_or(0)
++    };
++    let before = acks();
++    let staged = dir.join("cmd.txt.tmp");
++    std::fs::write(&staged, format!("{command}\n")).expect("stage fixture command");
++    std::fs::rename(&staged, dir.join("cmd.txt")).expect("publish fixture command");
++    let deadline = Instant::now() + Duration::from_secs(10);
++    while acks() <= before {
++        assert!(Instant::now() < deadline, "fixture never applied {command:?}");
++        std::thread::sleep(Duration::from_millis(5));
++    }
++}
++
++/// A query read. A read whose walk timed out says nothing about staleness
++/// (the response says the provider did not answer), so it is retried.
++#[cfg(target_os = "windows")]
++fn tree(driver: &mut McpDriver, fixture: &Fixture, query: &str) -> String {
++    for _ in 0..10 {
++        let text = read(driver, fixture, json!({ "query": query, "include_screenshot": false }))
++            .tree_text()
++            .to_owned();
++        if !text.contains("did not answer") {
++            return text;
++        }
++        std::thread::sleep(Duration::from_millis(200));
++    }
++    panic!("the fixture's UIA provider did not answer ten reads in a row");
++}
++
++/// With the opt-in tree cache, a row a read returns is never stale: each
++/// mutation of a row the query already matches is followed by a read with
++/// no delay, many times, so a cached row that was not re-read would show up
++/// here. (Rows the application adds are covered by
++/// `added_rows_appear_within_the_event_window`.)
++#[cfg(target_os = "windows")]
++#[test]
++#[ignore = "needs a desktop and the WinForms fixture"]
++fn cached_reads_never_return_stale_rows() {
++    let Some((mut driver, _home)) = spawn_driver(&[("DOVE_TREE_CACHE", "1")]) else {
++        return;
++    };
++    let Some(fixture) = launch_fixture(&mut driver) else {
++        return;
++    };
++    // Warm the cache: these reads are answered from the stored walk.
++    for _ in 0..3 {
++        assert!(tree(&mut driver, &fixture, "Status").contains("Status: idle"));
++    }
++
++    // Renames (PropertyChanged on a text row).
++    for round in 1..=25 {
++        let name = format!("Status: renamed {round}");
++        mutate(&fixture, &format!("label {name}"));
++        let text = tree(&mut driver, &fixture, "Status");
++        assert!(
++            text.contains(&format!("\"{name}\"")),
++            "round {round}: rename not visible:\n{text}"
++        );
++        // A second read is a cache hit; it must agree.
++        let again = tree(&mut driver, &fixture, "Status");
++        assert!(again.contains(&format!("\"{name}\"")), "round {round}: hit lost the rename");
++    }
++
++    // Value changes (PropertyChanged on an actionable row).
++    for round in 1..=10 {
++        let value = format!("typed {round}");
++        mutate(&fixture, &format!("value {value}"));
++        let text = tree(&mut driver, &fixture, "entry");
++        assert!(
++            text.contains(&format!("value=\"{value}\"")),
++            "round {round}: value change not visible:\n{text}"
++        );
++    }
++
++    // Removed rows: the query lists the row, so the read re-reads it.
++    for round in 1..=10 {
++        let name = format!("Extra{round}");
++        mutate(&fixture, &format!("add {name}"));
++        let deadline = Instant::now() + Duration::from_secs(5);
++        while !tree(&mut driver, &fixture, &name).contains(&format!("\"{name}\"")) {
++            assert!(Instant::now() < deadline, "round {round}: added row never listed");
++            std::thread::sleep(Duration::from_millis(20));
++        }
++        mutate(&fixture, &format!("remove {name}"));
++        let removed = tree(&mut driver, &fixture, &name);
++        assert!(
++            !removed.contains(&format!("\"{name}\"")),
++            "round {round}: removed row still listed:\n{removed}"
++        );
++    }
++
++    // Disable and enable (an actionable row loses and regains its index).
++    for round in 1..=5 {
++        mutate(&fixture, "disable save");
++        let disabled = tree(&mut driver, &fixture, "Save");
++        assert!(
++            disabled.lines().any(|line| line.contains("Button \"Save\"") && !line.contains("] Button")),
++            "round {round}: disabled Save still indexed:\n{disabled}"
++        );
++        mutate(&fixture, "enable save");
++        let enabled = tree(&mut driver, &fixture, "Save");
++        assert!(
++            enabled.lines().any(|line| line.contains("] Button \"Save\"")),
++            "round {round}: enabled Save not indexed:\n{enabled}"
++        );
++    }
++}
++
++/// A row the application adds is missing from opt-in cached reads until its
++/// UIA event arrives (the reason the cache is off by default). Measures that
++/// window and fails only if it exceeds the cache's age bound plus slack,
++/// which would mean the event never invalidated the walk.
++#[cfg(target_os = "windows")]
++#[test]
++#[ignore = "needs a desktop and the WinForms fixture"]
++fn added_rows_appear_within_the_event_window() {
++    let Some((mut driver, _home)) = spawn_driver(&[("DOVE_TREE_CACHE", "1")]) else {
++        return;
++    };
++    let Some(fixture) = launch_fixture(&mut driver) else {
++        return;
++    };
++    let mut lags = Vec::new();
++    for round in 1..=10 {
++        let name = format!("Late{round}");
++        let _ = tree(&mut driver, &fixture, &name);
++        let _ = tree(&mut driver, &fixture, &name);
++        mutate(&fixture, &format!("add {name}"));
++        let started = Instant::now();
++        while !tree(&mut driver, &fixture, &name).contains(&format!("\"{name}\"")) {
++            assert!(
++                started.elapsed() < Duration::from_millis(3000),
++                "round {round}: added row still missing after 3 s"
++            );
++            std::thread::sleep(Duration::from_millis(5));
++        }
++        lags.push(started.elapsed().as_secs_f64() * 1000.0);
++    }
++    lags.sort_by(|a, b| a.total_cmp(b));
++    eprintln!(
++        "[latency] opt-in cache: added rows appeared after p50 {:.0} ms, max {:.0} ms",
++        percentile(&lags, 0.5),
++        lags[lags.len() - 1]
++    );
++}
++
++/// A driver action invalidates every cached walk before it runs.
++#[cfg(target_os = "windows")]
++#[test]
++#[ignore = "needs a desktop and the WinForms fixture"]
++fn reads_after_a_driver_action_see_its_effect() {
++    let Some((mut driver, _home)) = spawn_driver(&[("DOVE_TREE_CACHE", "1")]) else {
++        return;
++    };
++    let Some(fixture) = launch_fixture(&mut driver) else {
++        return;
++    };
++    // Warm the cache on the label the click changes.
++    assert!(tree(&mut driver, &fixture, "Status").contains("Status: idle"));
++    assert!(tree(&mut driver, &fixture, "Status").contains("Status: idle"));
++    // The token's snapshot must be the window's latest read.
++    let state = read(&mut driver, &fixture, json!({ "query": "Save", "tree_format": "elements" }));
++    let token = state.structured()["elements"]
++        .as_array()
++        .into_iter()
++        .flatten()
++        .find(|element| element["label"].as_str() == Some("Save"))
++        .and_then(|element| element["element_token"].as_str())
++        .expect("Save element_token")
++        .to_owned();
++    let click = driver.call(
++        "click",
++        json!({ "pid": fixture.pid, "window_id": fixture.window_id, "element_token": token }),
++    );
++    assert!(!click.is_error(), "click failed: {}", click.text());
++    // The click already returned, so the change happened before this read.
++    let text = tree(&mut driver, &fixture, "Status");
++    assert!(text.contains("Status: saved"), "click effect not visible:\n{text}");
++}
++
++/// Reads with the cache on and off return the same tree.
++#[cfg(target_os = "windows")]
++#[test]
++#[ignore = "needs a desktop and the WinForms fixture"]
++fn cached_and_uncached_reads_agree() {
++    let Some((mut cached, _home)) = spawn_driver(&[("DOVE_TREE_CACHE", "1")]) else {
++        return;
++    };
++    let Some(fixture) = launch_fixture(&mut cached) else {
++        return;
++    };
++    let Some((mut uncached, _home2)) = spawn_driver(&[]) else {
++        return;
++    };
++    for query in [None, Some("Save"), Some("Status"), Some("mode")] {
++        let extra = match query {
++            Some(query) => json!({ "query": query, "include_screenshot": false }),
++            None => json!({ "include_screenshot": false }),
++        };
++        let _ = read(&mut cached, &fixture, extra.clone());
++        let hit = read(&mut cached, &fixture, extra.clone()).tree_text().to_owned();
++        let walked = read(&mut uncached, &fixture, extra).tree_text().to_owned();
++        assert_eq!(hit, walked, "query {query:?}");
++    }
++}
+diff --git a/rust/crates/cua-driver-e2e/tests/support/latency_fixture.ps1 b/rust/crates/cua-driver-e2e/tests/support/latency_fixture.ps1
+new file mode 100644
+index 0000000..d5a3b89
+--- /dev/null
++++ b/rust/crates/cua-driver-e2e/tests/support/latency_fixture.ps1
+@@ -0,0 +1,74 @@
++param([string]$Dir = $PSScriptRoot)
++# Throwaway WinForms fixture: 9 controls, shown without activation, restored
++# (without activation) if anything minimizes it.
++# Out-of-band mutations: write a line to $Dir\cmd.txt ("label <text>", "add <name>",
++# "remove <name>", "disable <name>", "enable <name>", "value <text>"); the form applies it
++# and appends "ok <n>" to $Dir\ack.txt.
++Add-Type -ReferencedAssemblies System.Windows.Forms, System.Drawing -TypeDefinition @"
++using System;
++using System.IO;
++using System.Drawing;
++using System.Windows.Forms;
++public class LatencyFixture : Form {
++    [System.Runtime.InteropServices.DllImport("user32.dll")] static extern bool ShowWindow(IntPtr h, int cmd);
++    protected override bool ShowWithoutActivation { get { return true; } }
++    string dir; int applied = 0; Label status; TextBox box; FlowLayoutPanel flow;
++    public LatencyFixture(string dir) {
++        this.dir = dir;
++        Text = "Dove Latency Fixture";
++        StartPosition = FormStartPosition.Manual;
++        var wa = Screen.PrimaryScreen.WorkingArea;
++        Bounds = new Rectangle(wa.Right - 440, wa.Bottom - 420, 420, 400);
++        flow = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true };
++        status = new Label { Text = "Status: idle", Name = "status", AutoSize = true };
++        box = new TextBox { Name = "entry", Width = 200, Text = "hello" };
++        var save = new Button { Text = "Save", Name = "save" };
++        var cancel = new Button { Text = "Cancel", Name = "cancel" };
++        var add = new Button { Text = "Add row", Name = "addrow" };
++        int n = 0;
++        add.Click += (s, e) => { n++; flow.Controls.Add(new Button { Text = "Row " + n, Name = "row" + n }); };
++        save.Click += (s, e) => { status.Text = "Status: saved"; };
++        var check = new CheckBox { Text = "Remember", Name = "remember" };
++        var combo = new ComboBox { Name = "mode", DropDownStyle = ComboBoxStyle.DropDownList };
++        combo.Items.AddRange(new object[] { "Fast", "Slow" }); combo.SelectedIndex = 0;
++        var list = new ListBox { Name = "items", Height = 40 };
++        list.Items.AddRange(new object[] { "Alpha", "Beta" });
++        flow.Controls.AddRange(new Control[] { status, box, save, cancel, add, check, combo, list });
++        Controls.Add(flow);
++        var t = new Timer { Interval = 25 };
++        t.Tick += (s, e) => Poll();
++        t.Start();
++        Shown += (s, e) => File.WriteAllText(Path.Combine(dir, "fixture.json"),
++            "{\"pid\":" + System.Diagnostics.Process.GetCurrentProcess().Id + ",\"hwnd\":" + Handle.ToInt64() + "}");
++    }
++    void Poll() {
++        // A minimized WinForms window exposes no client area over UI Automation.
++        // Show Desktop and similar minimize every window; come back without
++        // taking focus (SW_SHOWNOACTIVATE).
++        if (WindowState == FormWindowState.Minimized) ShowWindow(Handle, 4);
++        var cmd = Path.Combine(dir, "cmd.txt");
++        if (!File.Exists(cmd)) return;
++        string[] lines;
++        try { lines = File.ReadAllLines(cmd); File.Delete(cmd); } catch { return; }
++        foreach (var raw in lines) {
++            var line = raw.Trim(); if (line.Length == 0) continue;
++            var sp = line.IndexOf(' '); var verb = sp < 0 ? line : line.Substring(0, sp); var arg = sp < 0 ? "" : line.Substring(sp + 1);
++            Control c;
++            switch (verb) {
++                case "label": status.Text = arg; break;
++                case "value": box.Text = arg; break;
++                case "add": flow.Controls.Add(new Button { Text = arg, Name = arg }); break;
++                case "remove": c = Find(arg); if (c != null) { flow.Controls.Remove(c); c.Dispose(); } break;
++                case "disable": c = Find(arg); if (c != null) c.Enabled = false; break;
++                case "enable": c = Find(arg); if (c != null) c.Enabled = true; break;
++                case "quit": Close(); return;
++            }
++            applied++;
++        }
++        File.AppendAllText(Path.Combine(dir, "ack.txt"), "ok " + applied + "\n");
++    }
++    Control Find(string name) { foreach (Control c in flow.Controls) if (c.Name == name || c.Text == name) return c; return null; }
++}
++"@
++[System.Windows.Forms.Application]::EnableVisualStyles()
++[System.Windows.Forms.Application]::Run((New-Object LatencyFixture $Dir))
+diff --git a/rust/crates/cua-driver/src/proxy.rs b/rust/crates/cua-driver/src/proxy.rs
+index 9ca3fb0..fc66dde 100644
+--- a/rust/crates/cua-driver/src/proxy.rs
++++ b/rust/crates/cua-driver/src/proxy.rs
+@@ -58,7 +58,11 @@ pub async fn run_direct(driver: Arc<cua_driver_sdk::CuaDriver>) -> anyhow::Resul
+     let stdin = tokio::io::stdin();
+     let stdout = tokio::io::stdout();
+     let mut reader = BufReader::new(stdin);
+-    let mut writer = tokio::io::BufWriter::new(stdout);
++    let writer = Arc::new(tokio::sync::Mutex::new(tokio::io::BufWriter::new(stdout)));
++    // Dove W4.4: reads of independent windows run concurrently; any other
++    // request first waits for them, and runs alone, as before.
++    let parallel_reads = parallel_reads_enabled();
++    let mut reads: tokio::task::JoinSet<anyhow::Result<()>> = tokio::task::JoinSet::new();
+     let mut line = String::new();
+     let mut session_observed = false;
+     let mut protocol_session = ProtocolSession::default();
+@@ -82,10 +86,14 @@ pub async fn run_direct(driver: Arc<cua_driver_sdk::CuaDriver>) -> anyhow::Resul
+         if reader.read_line(&mut line).await? == 0 {
+             break;
+         }
++        while let Some(done) = reads.try_join_next() {
++            done??;
++        }
+         let trimmed = line.trim();
+         if trimmed.is_empty() {
+             continue;
+         }
++        let mut perf = cua_driver_core::perf::StageTimer::new("mcp_direct_request");
+         let response = match serde_json::from_str::<Request>(trimmed) {
+             Err(error) => {
+                 error!("JSON parse error: {error}");
+@@ -93,78 +101,155 @@ pub async fn run_direct(driver: Arc<cua_driver_sdk::CuaDriver>) -> anyhow::Resul
+             }
+             Ok(request) if request.is_notification() => continue,
+             Ok(mut request) => {
++                perf.mark("parse");
+                 let admission = protocol_session.validate(&request).and_then(|era| {
+                     if request.method == "tools/call" {
+                         cua_driver_core::tool_disclosure::Disclosure::from_env()
+-                            .validate_tool_call(
++                            .validate_tool_call_by(
+                                 &request,
+                                 request.id.clone().unwrap_or_default(),
+                                 era,
+-                                &sdk.tools_list(),
++                                |name| {
++                                    cua_driver_core::server::ToolProvider::has_tool(
++                                        sdk.as_ref(),
++                                        name,
++                                    )
++                                },
+                             )?;
+                     }
+                     Ok(era)
+                 });
+                 if let Err(response) = admission {
+-                    writer
+-                        .write_all(serde_json::to_string(&response)?.as_bytes())
+-                        .await?;
+-                    writer.write_all(b"\n").await?;
+-                    writer.flush().await?;
++                    write_response_line(&writer, &response).await?;
+                     continue;
+                 }
+                 apply_direct_session_identity(&mut request, &transport_session);
++                if parallel_reads && is_parallel_read(&request) {
++                    while reads.len() >= MAX_PARALLEL_READS {
++                        if let Some(done) = reads.join_next().await {
++                            done??;
++                        }
++                    }
++                    let sdk = sdk.clone();
++                    let writer = writer.clone();
++                    let transport_session = transport_session.clone();
++                    reads.spawn(async move {
++                        let response = direct_tool_call(&sdk, request, &transport_session).await;
++                        write_response_line(&writer, &response).await
++                    });
++                    continue;
++                }
++                // Everything else is ordered after every read already started.
++                while let Some(done) = reads.join_next().await {
++                    done??;
++                }
+                 let initialize_metadata = (!session_observed)
+                     .then(|| request.initialize_metadata())
+                     .flatten();
+-                let session_context = request.tool_call().ok().and_then(|call| {
+-                    sdk.begin_tool_call(
+-                        &call.name,
+-                        &call.args,
+-                        cua_driver_core::session::SessionTransport::McpStdio,
+-                        cua_driver_core::session::SessionClientKind::Mcp,
+-                    )
+-                });
+-                let timer = tool_observation_timer(
+-                    &request,
+-                    |name| sdk.is_known_tool(name),
+-                    StdioExecutionPath::DirectDaemon,
+-                );
+-                let id = request.id.clone().unwrap_or(serde_json::Value::Null);
+-                let response = cua_driver_core::server::handle_request_with_transport_session(
+-                    request,
+-                    id,
+-                    sdk.as_ref(),
+-                    &transport_session,
+-                )
+-                .await;
++                perf.mark("admit");
++                let response = direct_tool_call(&sdk, request, &transport_session).await;
++                perf.mark("handle");
+                 if let Some(metadata) = initialize_metadata {
+                     observe_proxy_session_started(metadata);
+                     session_observed = true;
+                 }
+-                if let Some(timer) = timer {
+-                    let outcome = timer.finish(&response);
+-                    if let Some(context) = session_context {
+-                        context.complete(&outcome);
+-                    }
+-                    observe_proxy_tool_completed(outcome);
+-                }
+                 response
+             }
+         };
+-        let serialized = serde_json::to_string(&response).unwrap_or_else(|error| {
+-            format!(
+-                r#"{{"jsonrpc":"2.0","id":null,"error":{{"code":-32603,"message":"serialize error: {error}"}}}}"#
+-            )
+-        });
+-        writer.write_all(serialized.as_bytes()).await?;
+-        writer.write_all(b"\n").await?;
+-        writer.flush().await?;
++        perf.mark("observe");
++        write_response_line(&writer, &response).await?;
++        perf.mark("serialize+write");
++    }
++    while let Some(done) = reads.join_next().await {
++        done??;
+     }
+ 
+     sdk.shutdown().await.map_err(anyhow::Error::msg)
+ }
+ 
++/// Reads allowed to run concurrently on the direct stdio transport.
++const MAX_PARALLEL_READS: usize = 4;
++
++/// `DOVE_PARALLEL_READS=1|0` turns concurrent reads on or off. They default
++/// on for Windows, where they are verified, and off elsewhere until the W7
++/// CI runs them.
++fn parallel_reads_enabled() -> bool {
++    match std::env::var("DOVE_PARALLEL_READS")
++        .ok()
++        .as_deref()
++        .map(str::trim)
++    {
++        Some("1" | "true" | "on") => true,
++        Some("0" | "false" | "off") => false,
++        _ => cfg!(windows),
++    }
++}
++
++/// A `tools/call` of a tool that only observes one window or the desktop
++/// list, so running it beside another such call cannot change either result.
++fn is_parallel_read(request: &Request) -> bool {
++    request.tool_call().is_ok_and(|call| {
++        matches!(
++            call.name.as_str(),
++            "get_window_state" | "list_windows" | "list_apps" | "get_screen_size"
++        )
++    })
++}
++
++/// One `tools/call` on the direct runtime, with the same session and
++/// telemetry bookkeeping as the sequential path.
++async fn direct_tool_call(
++    sdk: &Arc<crate::sdk_adapter::SdkAdapter>,
++    request: Request,
++    transport_session: &str,
++) -> Response {
++    let session_context = request.tool_call().ok().and_then(|call| {
++        sdk.begin_tool_call(
++            &call.name,
++            &call.args,
++            cua_driver_core::session::SessionTransport::McpStdio,
++            cua_driver_core::session::SessionClientKind::Mcp,
++        )
++    });
++    let timer = tool_observation_timer(
++        &request,
++        |name| sdk.is_known_tool(name),
++        StdioExecutionPath::DirectDaemon,
++    );
++    let id = request.id.clone().unwrap_or(serde_json::Value::Null);
++    let response = cua_driver_core::server::handle_request_with_transport_session(
++        request,
++        id,
++        sdk.as_ref(),
++        transport_session,
++    )
++    .await;
++    if let Some(timer) = timer {
++        let outcome = timer.finish(&response);
++        if let Some(context) = session_context {
++            context.complete(&outcome);
++        }
++        observe_proxy_tool_completed(outcome);
++    }
++    response
++}
++
++async fn write_response_line<W: AsyncWrite + Unpin>(
++    writer: &tokio::sync::Mutex<W>,
++    response: &Response,
++) -> anyhow::Result<()> {
++    let serialized = serde_json::to_string(response).unwrap_or_else(|error| {
++        format!(
++            r#"{{"jsonrpc":"2.0","id":null,"error":{{"code":-32603,"message":"serialize error: {error}"}}}}"#
++        )
++    });
++    let mut writer = writer.lock().await;
++    writer.write_all(serialized.as_bytes()).await?;
++    writer.write_all(b"\n").await?;
++    writer.flush().await?;
++    Ok(())
++}
++
+ pub(crate) fn apply_direct_session_identity(request: &mut Request, transport_session: &str) {
+     let Some(arguments) = request
+         .params
+diff --git a/rust/crates/cua-driver/src/sdk_adapter.rs b/rust/crates/cua-driver/src/sdk_adapter.rs
+index b063860..e7190dc 100644
+--- a/rust/crates/cua-driver/src/sdk_adapter.rs
++++ b/rust/crates/cua-driver/src/sdk_adapter.rs
+@@ -469,6 +469,10 @@ impl ToolProvider for SdkAdapter {
+         self.tools_list()
+     }
+ 
++    fn has_tool(&self, name: &str) -> bool {
++        cua_driver_core::mcp_wire::inventory_has_tool(&self.tools_list, name)
++    }
++
+     async fn invoke_tool(&self, name: &str, arguments: Value) -> Result<Value, String> {
+         self.invoke_raw(name, arguments).await
+     }
+diff --git a/rust/crates/platform-linux/src/atspi/mod.rs b/rust/crates/platform-linux/src/atspi/mod.rs
+index 77c5608..fff7e2e 100644
+--- a/rust/crates/platform-linux/src/atspi/mod.rs
++++ b/rust/crates/platform-linux/src/atspi/mod.rs
+@@ -14,6 +14,7 @@ use anyhow::Result;
+ 
+ pub mod native;
+ pub mod snapshot;
++pub(crate) mod tree_cache;
+ pub use native::ensure_listener_active;
+ pub use snapshot::Snapshots;
+ 
+@@ -197,6 +198,12 @@ pub fn walk_tree_bounded_within(
+     // Every retry runs against what is LEFT of the caller's budget.
+     const MAX_ATTEMPTS: usize = 4;
+     const RETRY_BACKOFF: std::time::Duration = std::time::Duration::from_millis(150);
++    // Dove W4.2 (opt-in on Linux, see `tree_cache`): reuse a walk no event
++    // or action could have changed.
++    if let Some(walked) = tree_cache::lookup(xid, max_elements, max_depth) {
++        return AtspiTreeResult::from_walked(walked, query);
++    }
++    let cache_ticket = tree_cache::begin(pid, xid);
+     let started = std::time::Instant::now();
+     let mut native_failure = None;
+     let mut last_partial: Option<native::WalkedTree> = None;
+@@ -218,6 +225,7 @@ pub fn walk_tree_bounded_within(
+                 if !walked.markdown.is_empty()
+                     && (walked.nodes.len() > 1 || walked.truncation.is_some() || is_last)
+                 {
++                    tree_cache::store(cache_ticket, max_elements, max_depth, &walked);
+                     return AtspiTreeResult::from_walked(walked, query);
+                 }
+                 if walked.truncation.is_some() {
+diff --git a/rust/crates/platform-linux/src/atspi/native.rs b/rust/crates/platform-linux/src/atspi/native.rs
+index 36451e5..367b399 100644
+--- a/rust/crates/platform-linux/src/atspi/native.rs
++++ b/rust/crates/platform-linux/src/atspi/native.rs
+@@ -219,6 +219,13 @@ async fn shared_connection() -> Result<&'static AccessibilityConnection> {
+             {
+                 dlog!("AT-SPI active-descendant subscription failed: {error}");
+             }
++            // Dove W4.2: the opt-in tree cache invalidates on every object event.
++            if super::tree_cache::enabled() {
++                match conn.register_event::<atspi::ObjectEvents>().await {
++                    Ok(()) => super::tree_cache::note_events_live(),
++                    Err(error) => dlog!("AT-SPI object-event subscription failed: {error}"),
++                }
++            }
+             Ok(conn)
+         })
+         .await
+@@ -263,6 +270,9 @@ fn spawn_focus_tracker(conn: &'static AccessibilityConnection) {
+         let stream = conn.event_stream();
+         futures_util::pin_mut!(stream);
+         while let Some(event) = stream.next().await {
++            if let Ok(atspi::Event::Object(object)) = &event {
++                super::tree_cache::note_object_event(object);
++            }
+             if let Ok(atspi::Event::Object(atspi::ObjectEvents::ActiveDescendantChanged(active))) =
+                 &event
+             {
+@@ -2358,6 +2368,7 @@ pub fn walk_tree(pid: u32) -> Result<Option<(String, Vec<AtspiNode>)>> {
+ 
+ /// One accessibility snapshot, plus whether it was provably narrowed to the
+ /// caller's window.
++#[derive(Clone)]
+ pub struct WalkedTree {
+     pub markdown: String,
+     pub nodes: Vec<AtspiNode>,
+diff --git a/rust/crates/platform-linux/src/atspi/tree_cache.rs b/rust/crates/platform-linux/src/atspi/tree_cache.rs
+new file mode 100644
+index 0000000..d193cff
+--- /dev/null
++++ b/rust/crates/platform-linux/src/atspi/tree_cache.rs
+@@ -0,0 +1,105 @@
++//! Linux side of the event-invalidated tree cache (Dove W4.2).
++//!
++//! UNVERIFIED until the W7 CI runs it on Linux, so it is off unless
++//! `DOVE_TREE_CACHE=1`. When on, the shared AT-SPI connection also subscribes
++//! to every `object:` event (`children-changed`, `state-changed`,
++//! `property-change`, `text-changed`, ...). AT-SPI events name an application
++//! bus, not a window, so any of them invalidates every stored walk; so does
++//! every driver action and the age bound of [`cua_driver_core::tree_cache`].
++//! Nothing is reused until the subscription is live.
++//!
++//! Unlike Windows, a reused walk's rows are not re-read from the application
++//! before they are returned, and there is no dirty-subtree re-walk. Both are
++//! needed before this can be on by default.
++
++use super::native::WalkedTree;
++use cua_driver_core::tree_cache::{Lookup, TreeCache, WalkParams, WalkTicket, TREE_CACHE_ENV};
++use std::sync::atomic::{AtomicBool, Ordering};
++use std::sync::OnceLock;
++
++static EVENTS_LIVE: AtomicBool = AtomicBool::new(false);
++
++/// Whether `DOVE_TREE_CACHE` explicitly turns the cache on.
++pub(crate) fn enabled() -> bool {
++    static ENABLED: OnceLock<bool> = OnceLock::new();
++    *ENABLED.get_or_init(|| {
++        matches!(
++            std::env::var(TREE_CACHE_ENV)
++                .unwrap_or_default()
++                .trim()
++                .to_ascii_lowercase()
++                .as_str(),
++            "1" | "true" | "on" | "yes"
++        )
++    })
++}
++
++fn cache() -> &'static TreeCache<WalkedTree> {
++    static CACHE: OnceLock<TreeCache<WalkedTree>> = OnceLock::new();
++    CACHE.get_or_init(TreeCache::from_env)
++}
++
++fn active() -> bool {
++    enabled() && EVENTS_LIVE.load(Ordering::SeqCst)
++}
++
++/// The shared connection now receives every `object:` event.
++pub(crate) fn note_events_live() {
++    EVENTS_LIVE.store(true, Ordering::SeqCst);
++}
++
++/// One AT-SPI object event from any application.
++pub(crate) fn note_object_event(event: &atspi::ObjectEvents) {
++    if matches!(
++        event,
++        atspi::ObjectEvents::TextCaretMoved(_) | atspi::ObjectEvents::Announcement(_)
++    ) {
++        return;
++    }
++    cache().invalidate_all();
++}
++
++fn params(max_elements: Option<usize>, max_depth: Option<usize>) -> WalkParams {
++    WalkParams {
++        max_elements: max_elements.unwrap_or(usize::MAX),
++        max_depth: max_depth.unwrap_or(usize::MAX),
++    }
++}
++
++/// A stored walk of window `xid` that nothing could have changed.
++pub(crate) fn lookup(
++    xid: u64,
++    max_elements: Option<usize>,
++    max_depth: Option<usize>,
++) -> Option<WalkedTree> {
++    if !active() || xid == 0 {
++        return None;
++    }
++    match cache().lookup(xid, params(max_elements, max_depth)) {
++        Lookup::Fresh { value, .. } => {
++            let mut walked = (*value).clone();
++            walked.elapsed = std::time::Duration::ZERO;
++            Some(walked)
++        }
++        _ => None,
++    }
++}
++
++/// Call before walking `xid`; pass the ticket to [`store`].
++pub(crate) fn begin(pid: u32, xid: u64) -> Option<WalkTicket> {
++    (active() && xid != 0).then(|| cache().begin_walk(pid as i32, xid))
++}
++
++/// Keep a complete walk for later reads.
++pub(crate) fn store(
++    ticket: Option<WalkTicket>,
++    max_elements: Option<usize>,
++    max_depth: Option<usize>,
++    walked: &WalkedTree,
++) {
++    if let Some(ticket) = ticket {
++        if walked.truncation.is_none() && walked.nodes.len() > 1 {
++            cache().finish_walk(ticket, params(max_elements, max_depth), walked.clone());
++        }
++    }
++}
+diff --git a/rust/crates/platform-macos/src/ax/mod.rs b/rust/crates/platform-macos/src/ax/mod.rs
+index 6ad8c6e..c900a74 100644
+--- a/rust/crates/platform-macos/src/ax/mod.rs
++++ b/rust/crates/platform-macos/src/ax/mod.rs
+@@ -23,6 +23,7 @@ pub mod launch;
+ pub mod reveal_scroll;
+ pub mod snapshot;
+ pub mod tree;
++pub(crate) mod tree_cache;
+ pub mod window_scope;
+ 
+ pub use snapshot::Snapshots;
+diff --git a/rust/crates/platform-macos/src/ax/tree_cache.rs b/rust/crates/platform-macos/src/ax/tree_cache.rs
+new file mode 100644
+index 0000000..79c88f1
+--- /dev/null
++++ b/rust/crates/platform-macos/src/ax/tree_cache.rs
+@@ -0,0 +1,330 @@
++//! macOS side of the event-invalidated tree cache (Dove W4.2).
++//!
++//! UNVERIFIED until the W7 CI runs it on macOS, so it is off unless
++//! `DOVE_TREE_CACHE=1`. When on, `get_window_state` asks [`watch`] for an
++//! `AXObserver` on the target application. One background thread owns every
++//! observer's run-loop source. Any of the notifications in [`NOTIFICATIONS`]
++//! from that application invalidates every stored walk of its windows, and so
++//! do driver actions and the age bound of [`cua_driver_core::tree_cache`]. A
++//! walk is stored only when the application's observer was live before the
++//! walk began, so no change can fall between them.
++//!
++//! Walks are stored per (window, query, menu collapse), because the macOS
++//! walker filters by query while it walks. A stored walk keeps its own
++//! retain on every indexed element and hands each read a fresh retain, which
++//! that read's snapshot releases as usual.
++//!
++//! Unlike Windows, a reused walk's rows are not re-read from the application
++//! before they are returned, and there is no dirty-subtree re-walk. Both are
++//! needed before this can be on by default.
++
++use super::bindings::{AXUIElementCreateApplication, AXUIElementRef};
++use super::tree::{AXNode, TreeWalkResult};
++use super::window_scope::WindowScope;
++use core_foundation::base::{CFRelease, CFRetain, CFTypeRef, TCFType};
++use core_foundation::string::{CFString, CFStringRef};
++use cua_driver_core::tree_cache::{Lookup, TreeCache, WalkParams, WalkTicket, TREE_CACHE_ENV};
++use cua_driver_core::walk_budget::WalkOutcome;
++use std::collections::HashSet;
++use std::os::raw::c_void;
++use std::sync::mpsc::{channel, Sender};
++use std::sync::{Mutex, OnceLock};
++
++/// Application notifications that can change a row. Registered on the
++/// application element, they arrive for every element of the application.
++const NOTIFICATIONS: &[&str] = &[
++    "AXCreated",
++    "AXUIElementDestroyed",
++    "AXValueChanged",
++    "AXTitleChanged",
++    "AXFocusedUIElementChanged",
++    "AXSelectedChildrenChanged",
++    "AXSelectedRowsChanged",
++    "AXSelectedTextChanged",
++    "AXRowCountChanged",
++    "AXRowExpanded",
++    "AXRowCollapsed",
++    "AXLayoutChanged",
++    "AXResized",
++    "AXMoved",
++    "AXWindowCreated",
++    "AXWindowMoved",
++    "AXWindowResized",
++    "AXWindowMiniaturized",
++    "AXWindowDeminiaturized",
++    "AXMenuOpened",
++    "AXMenuClosed",
++    "AXElementBusyChanged",
++];
++
++/// Applications observed at once.
++const MAX_WATCHED: usize = 64;
++
++type AXObserverRef = *mut c_void;
++type AXObserverCallback =
++    unsafe extern "C" fn(AXObserverRef, AXUIElementRef, CFStringRef, *mut c_void);
++
++#[link(name = "ApplicationServices", kind = "framework")]
++extern "C" {
++    fn AXObserverCreate(
++        application: i32,
++        callback: AXObserverCallback,
++        out_observer: *mut AXObserverRef,
++    ) -> i32;
++    fn AXObserverAddNotification(
++        observer: AXObserverRef,
++        element: AXUIElementRef,
++        notification: CFStringRef,
++        refcon: *mut c_void,
++    ) -> i32;
++    fn AXObserverGetRunLoopSource(observer: AXObserverRef) -> *mut c_void;
++}
++
++#[link(name = "CoreFoundation", kind = "framework")]
++extern "C" {
++    fn CFRunLoopGetCurrent() -> *mut c_void;
++    fn CFRunLoopAddSource(run_loop: *mut c_void, source: *mut c_void, mode: *const c_void);
++    fn CFRunLoopRunInMode(mode: *const c_void, seconds: f64, return_after_source: u8) -> i32;
++    static kCFRunLoopDefaultMode: *const c_void;
++}
++
++/// Whether `DOVE_TREE_CACHE` explicitly turns the cache on.
++pub(crate) fn enabled() -> bool {
++    static ENABLED: OnceLock<bool> = OnceLock::new();
++    *ENABLED.get_or_init(|| {
++        matches!(
++            std::env::var(TREE_CACHE_ENV)
++                .unwrap_or_default()
++                .trim()
++                .to_ascii_lowercase()
++                .as_str(),
++            "1" | "true" | "on" | "yes"
++        )
++    })
++}
++
++// ── stored walks ────────────────────────────────────────────────────────────
++
++/// A walk kept for reuse. Owns one retain on each indexed element.
++pub(crate) struct CachedWalk {
++    tree_markdown: String,
++    nodes: Vec<AXNode>,
++    truncated: bool,
++    walk: WalkOutcome,
++    window_scope: Option<WindowScope>,
++}
++
++// SAFETY: AXUIElementRef is a CFType; CFRetain/CFRelease are thread-safe and
++// the AX API may be called from any thread.
++unsafe impl Send for CachedWalk {}
++unsafe impl Sync for CachedWalk {}
++
++fn retain_indexed(nodes: &[AXNode]) {
++    for node in nodes.iter().filter(|n| n.element_index.is_some() && n.element_ptr != 0) {
++        unsafe { CFRetain(node.element_ptr as CFTypeRef) };
++    }
++}
++
++impl CachedWalk {
++    fn keep(result: &TreeWalkResult) -> Self {
++        retain_indexed(&result.nodes);
++        Self {
++            tree_markdown: result.tree_markdown.clone(),
++            nodes: result.nodes.clone(),
++            truncated: result.truncated,
++            walk: result.walk,
++            window_scope: result.window_scope.clone(),
++        }
++    }
++
++    /// A result for one more read. Its indexed elements carry a retain the
++    /// read's snapshot will own, exactly like a fresh walk's.
++    fn hand_out(&self) -> TreeWalkResult {
++        retain_indexed(&self.nodes);
++        TreeWalkResult {
++            tree_markdown: self.tree_markdown.clone(),
++            nodes: self.nodes.clone(),
++            truncated: self.truncated,
++            walk: WalkOutcome {
++                elapsed_ms: 0,
++                ..self.walk
++            },
++            window_scope: self.window_scope.clone(),
++        }
++    }
++}
++
++impl Drop for CachedWalk {
++    fn drop(&mut self) {
++        for node in self
++            .nodes
++            .iter()
++            .filter(|n| n.element_index.is_some() && n.element_ptr != 0)
++        {
++            unsafe { CFRelease(node.element_ptr as CFTypeRef) };
++        }
++    }
++}
++
++fn cache() -> &'static TreeCache<CachedWalk> {
++    static CACHE: OnceLock<TreeCache<CachedWalk>> = OnceLock::new();
++    CACHE.get_or_init(TreeCache::from_env)
++}
++
++/// Cache key: the walker filters by query and collapses menus while it walks.
++fn key(window_id: u32, query: Option<&str>, collapse_menus: bool) -> u64 {
++    let mut parts = vec![window_id as i32, i32::from(collapse_menus)];
++    parts.extend(query.unwrap_or("").chars().map(|c| c as i32));
++    cua_driver_core::tree_cache::subtree_id(&parts)
++}
++
++/// Pending store for one walk.
++pub(crate) struct Pending {
++    ticket: WalkTicket,
++    params: WalkParams,
++}
++
++/// Look up a reusable walk, or start one: `Ok` is a stored walk, `Err` a
++/// ticket to pass to [`store`] (`None` when nothing may be stored).
++pub(crate) fn lookup_or_begin(
++    pid: i32,
++    window_id: u32,
++    query: Option<&str>,
++    collapse_menus: bool,
++    max_elements: usize,
++    max_depth: usize,
++) -> Result<TreeWalkResult, Option<Pending>> {
++    if !enabled() {
++        return Err(None);
++    }
++    let key = key(window_id, query, collapse_menus);
++    let params = WalkParams {
++        max_elements,
++        max_depth,
++    };
++    if is_watched(pid) {
++        if let Lookup::Fresh { value, .. } = cache().lookup(key, params) {
++            return Ok(value.hand_out());
++        }
++    }
++    let live = watch(pid);
++    // The ticket must predate the walk, and the observer must predate the
++    // ticket, or a change between them would go unseen.
++    let ticket = cache().begin_walk(pid, key);
++    Err(live.then_some(Pending { ticket, params }))
++}
++
++/// Keep a complete, window-matched walk.
++pub(crate) fn store(pending: Option<Pending>, result: &TreeWalkResult) {
++    let Some(pending) = pending else {
++        return;
++    };
++    let complete = !result.truncated
++        && result
++            .window_scope
++            .as_ref()
++            .is_none_or(WindowScope::is_matched);
++    if complete {
++        cache().finish_walk(pending.ticket, pending.params, CachedWalk::keep(result));
++    }
++}
++
++// ── observers ───────────────────────────────────────────────────────────────
++
++fn watched() -> &'static Mutex<HashSet<i32>> {
++    static WATCHED: OnceLock<Mutex<HashSet<i32>>> = OnceLock::new();
++    WATCHED.get_or_init(|| Mutex::new(HashSet::new()))
++}
++
++fn is_watched(pid: i32) -> bool {
++    watched()
++        .lock()
++        .unwrap_or_else(|p| p.into_inner())
++        .contains(&pid)
++}
++
++/// Ask for `pid`'s observer. Returns whether it is already live; a new one
++/// becomes live on the observer thread shortly after.
++fn watch(pid: i32) -> bool {
++    if is_watched(pid) {
++        return true;
++    }
++    static REQUESTS: OnceLock<Mutex<Sender<i32>>> = OnceLock::new();
++    let sender = REQUESTS.get_or_init(|| {
++        let (sender, receiver) = channel::<i32>();
++        std::thread::Builder::new()
++            .name("dove-ax-observer".into())
++            .spawn(move || observer_thread(receiver))
++            .expect("spawn the AX observer thread");
++        Mutex::new(sender)
++    });
++    let _ = sender.lock().unwrap_or_else(|p| p.into_inner()).send(pid);
++    false
++}
++
++fn observer_thread(requests: std::sync::mpsc::Receiver<i32>) {
++    let run_loop = unsafe { CFRunLoopGetCurrent() };
++    loop {
++        while let Ok(pid) = requests.try_recv() {
++            if is_watched(pid) || watched().lock().map(|w| w.len()).unwrap_or(0) >= MAX_WATCHED {
++                continue;
++            }
++            if unsafe { add_observer(run_loop, pid) } {
++                watched()
++                    .lock()
++                    .unwrap_or_else(|p| p.into_inner())
++                    .insert(pid);
++            }
++        }
++        // Deliver notifications; wake regularly to pick up new requests.
++        unsafe { CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, 0) };
++    }
++}
++
++/// Create `pid`'s observer and add its source to `run_loop`. The observer
++/// and application element live for the rest of the process.
++unsafe fn add_observer(run_loop: *mut c_void, pid: i32) -> bool {
++    let mut observer: AXObserverRef = std::ptr::null_mut();
++    if AXObserverCreate(pid, on_notification, &mut observer) != 0 || observer.is_null() {
++        return false;
++    }
++    let application = AXUIElementCreateApplication(pid);
++    if application.is_null() {
++        CFRelease(observer as CFTypeRef);
++        return false;
++    }
++    let mut added = 0;
++    for name in NOTIFICATIONS {
++        let notification = CFString::new(name);
++        let refcon = pid as isize as *mut c_void;
++        if AXObserverAddNotification(
++            observer,
++            application,
++            notification.as_concrete_TypeRef(),
++            refcon,
++        ) == 0
++        {
++            added += 1;
++        }
++    }
++    if added == 0 {
++        CFRelease(application as CFTypeRef);
++        CFRelease(observer as CFTypeRef);
++        return false;
++    }
++    CFRunLoopAddSource(
++        run_loop,
++        AXObserverGetRunLoopSource(observer),
++        kCFRunLoopDefaultMode,
++    );
++    true
++}
++
++unsafe extern "C" fn on_notification(
++    _observer: AXObserverRef,
++    _element: AXUIElementRef,
++    _notification: CFStringRef,
++    refcon: *mut c_void,
++) {
++    cache().invalidate_pid(refcon as isize as i32);
++}
+diff --git a/rust/crates/platform-macos/src/tools/get_window_state.rs b/rust/crates/platform-macos/src/tools/get_window_state.rs
+index 29d9a97..29f9997 100644
+--- a/rust/crates/platform-macos/src/tools/get_window_state.rs
++++ b/rust/crates/platform-macos/src/tools/get_window_state.rs
+@@ -298,15 +298,34 @@ impl Tool for GetWindowStateTool {
+             // for an AX call that ignores the per-element messaging timeout
+             // (dropping a spawn_blocking JoinHandle cannot cancel it).
+             let walk_future = tokio::task::spawn_blocking(move || {
+-                let tree = crate::ax::tree::with_menus_collapsed(collapse_menus, || {
+-                    crate::ax::tree::walk_tree_budgeted(
+-                        pid,
+-                        Some(window_id),
+-                        q.as_deref(),
+-                        max_depth,
+-                        cua_driver_core::walk_budget::WalkBudget::new(timeout_ms, max_elements),
+-                    )
+-                });
++                // Dove W4.2 (opt-in on macOS, see `ax::tree_cache`): reuse a
++                // walk no AX notification or action could have changed.
++                let tree = match crate::ax::tree_cache::lookup_or_begin(
++                    pid,
++                    window_id,
++                    q.as_deref(),
++                    collapse_menus,
++                    max_elements,
++                    max_depth,
++                ) {
++                    Ok(tree) => tree,
++                    Err(pending) => {
++                        let tree = crate::ax::tree::with_menus_collapsed(collapse_menus, || {
++                            crate::ax::tree::walk_tree_budgeted(
++                                pid,
++                                Some(window_id),
++                                q.as_deref(),
++                                max_depth,
++                                cua_driver_core::walk_budget::WalkBudget::new(
++                                    timeout_ms,
++                                    max_elements,
++                                ),
++                            )
++                        });
++                        crate::ax::tree_cache::store(pending, &tree);
++                        tree
++                    }
++                };
+                 let payload = crate::ax::snapshot::AxSnapshot::from_nodes(&tree.nodes);
+                 (tree, payload)
+             });
+diff --git a/rust/crates/platform-windows/Cargo.toml b/rust/crates/platform-windows/Cargo.toml
+index 1d2a2ae..b32f339 100644
+--- a/rust/crates/platform-windows/Cargo.toml
++++ b/rust/crates/platform-windows/Cargo.toml
+@@ -29,6 +29,8 @@ clipboard-rs = "0.3.5"
+ keyring = { version = "4.1.6", default-features = false, features = ["v1"] }
+ image = { workspace = true }
+ windows = { version = "0.58", features = [
++    # `*_Impl` traits for the UIA event handlers of the Dove W4 tree cache.
++    "implement",
+     "Win32_Foundation",
+     "Win32_UI_Accessibility",
+     "Win32_UI_WindowsAndMessaging",
+@@ -92,6 +94,9 @@ windows = { version = "0.58", features = [
+     "Win32_System_WinRT_Graphics_Capture",
+ ] }
+ base64 = { workspace = true }
++# `#[implement]` (UIA event handlers for the Dove W4 tree cache) expands to
++# `::windows_core` paths. Same version the `windows` 0.58 crate already uses.
++windows-core = "0.58"
+ 
+ [dev-dependencies]
+ uuid = { workspace = true }
+diff --git a/rust/crates/platform-windows/src/tools/impl_.rs b/rust/crates/platform-windows/src/tools/impl_.rs
+index 2519865..9af34c1 100644
+--- a/rust/crates/platform-windows/src/tools/impl_.rs
++++ b/rust/crates/platform-windows/src/tools/impl_.rs
+@@ -1278,6 +1278,7 @@ impl Tool for GetWindowStateTool {
+     }
+ 
+     async fn invoke(&self, args: Value) -> ToolResult {
++        let mut perf = cua_driver_core::perf::StageTimer::new("get_window_state");
+         let display_only = match cua_driver_core::window_state_view::display_only(&args) {
+             Ok(display_only) => display_only,
+             Err(refusal) => return refusal,
+@@ -1325,6 +1326,7 @@ impl Tool for GetWindowStateTool {
+         // Dove W1: with the window's size, a tree-first read keeps the
+         // session's last screenshot frame while the window keeps that size.
+         let window_size = Some((f64::from(window.width), f64::from(window.height)));
++        perf.mark("lookup");
+         let win_geom = Some((
+             window.title.clone(),
+             window.x,
+@@ -1332,15 +1334,23 @@ impl Tool for GetWindowStateTool {
+             window.width,
+             window.height,
+         ));
++        // One process's image name, instead of a Toolhelp snapshot of every
++        // process (Dove W4). The snapshot stays as the fallback for processes
++        // this one cannot open.
+         let app_name = tokio::task::spawn_blocking(move || {
+-            crate::win32::list_processes()
+-                .into_iter()
+-                .find(|p| p.pid == pid)
+-                .map(|p| p.name)
++            crate::history::process_executable_path(pid)
++                .and_then(|path| path.file_name().map(|n| n.to_string_lossy().into_owned()))
++                .or_else(|| {
++                    crate::win32::list_processes()
++                        .into_iter()
++                        .find(|p| p.pid == pid)
++                        .map(|p| p.name)
++                })
+         })
+         .await
+         .ok()
+         .flatten();
++        perf.mark("app_name");
+         use cua_driver_core::tool_args::ArgsExt;
+         // The canonical per-call value overrides all configured limits,
+         // including `0` for native resolution. The legacy field retains its
+@@ -1441,6 +1451,61 @@ impl Tool for GetWindowStateTool {
+         let state = self.state.clone();
+         let q = query.clone();
+         let out_file = screenshot_out_file.clone();
++        // Dove W4 + W1: the GDI capture and the UIA walk are independent, so
++        // when a screenshot is certain before the walk (requested, out file,
++        // marks, a vision session, no tree) the capture starts first and the
++        // two overlap. Under the tree-first `IfSparse` policy the walk goes
++        // first and the capture runs only if the walked tree is sparse. The
++        // capture's deadline still runs from when the walk finishes.
++        let mut spawn_capture = Some(move || {
++            tokio::task::spawn_blocking(move || -> anyhow::Result<_> {
++                // Capture screenshot AND any error message so the response can
++                // surface *why* there's no image (the iconic-window guard from
++                // #1973 / PR #1974 is the load-bearing case: minimized windows
++                // legitimately can't be captured, and the caller needs to know
++                // to call `bring_to_front` instead of retrying).
++                // The previous `Err(_) => None` silently dropped the error and
++                // upstream agents saw an empty response with no signal.
++                let (screenshot, screenshot_err) =
++                    match crate::capture::screenshot_window_bytes(hwnd) {
++                        Ok(raw) => {
++                            let (native_w, native_h) = crate::capture::png_dimensions_pub(&raw)?;
++                            let png = crate::capture::resize_png_if_needed(&raw, max_dim)?;
++                            let (w, h) = crate::capture::png_dimensions_pub(&png)?;
++                            // `screenshot_out_file` set (any mode) → write to disk and
++                            // surface the path, never embed bytes. Otherwise (vision,
++                            // no out_file) → embed base64.
++                            // The embedded copy is encoded for the model (JPEG,
++                            // marks) once the element frames are known.
++                            if let Some(ref path) = out_file {
++                                std::fs::write(path, &png)?;
++                                (
++                                    Some((
++                                        false,
++                                        Some(path.clone()),
++                                        w,
++                                        h,
++                                        native_w,
++                                        native_h,
++                                        png,
++                                    )),
++                                    None,
++                                )
++                            } else {
++                                (Some((true, None, w, h, native_w, native_h, png)), None)
++                            }
++                        }
++                        Err(e) => (None, Some(format!("{e}"))),
++                    };
++                Ok((screenshot, screenshot_err))
++            })
++        });
++        let mut capture_task = match shot_policy {
++            cua_driver_core::dove_observation::ShotPolicy::Always(_) => {
++                spawn_capture.take().map(|spawn| spawn())
++            }
++            _ => None,
++        };
+         // The tree walk runs under `timeout_ms`. UIA's bulk BuildUpdatedCache
+         // cannot be interrupted (Chrome's provider can block indefinitely on
+         // property reads), so when the walk task itself outlives the budget
+@@ -1450,15 +1515,30 @@ impl Tool for GetWindowStateTool {
+             let tree_task = tokio::task::spawn_blocking(move || {
+                 let mut budget =
+                     cua_driver_core::walk_budget::WalkBudget::new(timeout_ms, max_elements);
+-                let tree =
+-                    crate::uia::walk_tree_budgeted(hwnd, q.as_deref(), max_depth, &mut budget);
++                // Dove W4.2: reuse an event-invalidated walk when nothing
++                // could have changed it; see `uia::tree_cache`.
++                let (tree, outcome, cache_report) = crate::uia::tree_cache::walk_tree_cached(
++                    hwnd,
++                    pid,
++                    q.as_deref(),
++                    max_depth,
++                    max_elements,
++                    &mut budget,
++                );
++                tracing::debug!(
++                    target: "dove_perf",
++                    "tree_cache hwnd=0x{hwnd:x} status={} validated_rows={} rewalked_subtrees={}",
++                    cache_report.status,
++                    cache_report.validated_rows,
++                    cache_report.rewalked_subtrees
++                );
+                 let kind = if tree.nodes.iter().any(|node| node.msaa_role.is_some()) {
+                     crate::uia::snapshot::SnapshotKind::Msaa
+                 } else {
+                     crate::uia::snapshot::SnapshotKind::Uia
+                 };
+                 let payload = crate::uia::snapshot::UiaSnapshot::from_nodes(&tree.nodes, kind);
+-                (tree, payload, budget.outcome())
++                (tree, payload, outcome)
+             });
+             let started = std::time::Instant::now();
+             let deadline = std::time::Duration::from_millis(timeout_ms) + UIA_WALK_BACKSTOP_GRACE;
+@@ -1489,6 +1569,7 @@ impl Tool for GetWindowStateTool {
+         } else {
+             None
+         };
++        perf.mark("walk");
+         // The tree is walked first, so a sparse tree (canvas, game, remote
+         // desktop) can still bring a screenshot with it.
+         let walked_elements = tree_result.as_ref().map(|(tr, _, _)| {
+@@ -1498,56 +1579,27 @@ impl Tool for GetWindowStateTool {
+                 .count()
+         });
+         let shot_reason = shot_policy.decide(walked_elements);
+-        let do_shot = shot_reason.is_some();
+-        let blocking = tokio::task::spawn_blocking(move || -> anyhow::Result<_> {
+-            // Capture screenshot AND any error message so the response can
+-            // surface *why* there's no image (the iconic-window guard from
+-            // #1973 / PR #1974 is the load-bearing case: minimized windows
+-            // legitimately can't be captured, and the caller needs to know
+-            // to call `bring_to_front` instead of retrying).
+-            // The previous `Err(_) => None` silently dropped the error and
+-            // upstream agents saw an empty response with no signal.
+-            let (screenshot, screenshot_err) = if do_shot {
+-                match crate::capture::screenshot_window_bytes(hwnd) {
+-                    Ok(raw) => {
+-                        let (native_w, native_h) = crate::capture::png_dimensions_pub(&raw)?;
+-                        let png = crate::capture::resize_png_if_needed(&raw, max_dim)?;
+-                        let (w, h) = crate::capture::png_dimensions_pub(&png)?;
+-                        // `screenshot_out_file` set (any mode) → write to disk and
+-                        // surface the path, never embed bytes. Otherwise (vision,
+-                        // no out_file) → embed base64.
+-                        // The embedded copy is encoded for the model (JPEG,
+-                        // marks) once the element frames are known.
+-                        if let Some(ref path) = out_file {
+-                            std::fs::write(path, &png)?;
+-                            (
+-                                Some((false, Some(path.clone()), w, h, native_w, native_h, png)),
+-                                None,
+-                            )
+-                        } else {
+-                            (Some((true, None, w, h, native_w, native_h, png)), None)
+-                        }
+-                    }
+-                    Err(e) => (None, Some(format!("{e}"))),
+-                }
+-            } else {
+-                (None, None)
+-            };
+-            Ok((screenshot, screenshot_err))
+-        });
+-        let result: anyhow::Result<_> =
+-            match tokio::time::timeout(UIA_SCREENSHOT_TIMEOUT, blocking).await {
+-                Ok(join_result) => join_result
+-                    .map_err(|e| anyhow::anyhow!("task panic: {e}"))
+-                    .and_then(|r| r),
+-                Err(_elapsed) => Ok((
+-                    None,
+-                    Some(format!(
+-                        "window capture did not finish within {}s",
+-                        UIA_SCREENSHOT_TIMEOUT.as_secs()
++        if shot_reason.is_some() && capture_task.is_none() {
++            capture_task = spawn_capture.take().map(|spawn| spawn());
++        }
++        let result: anyhow::Result<_> = match capture_task {
++            None => Ok((None, None)),
++            Some(capture_task) => {
++                match tokio::time::timeout(UIA_SCREENSHOT_TIMEOUT, capture_task).await {
++                    Ok(join_result) => join_result
++                        .map_err(|e| anyhow::anyhow!("task panic: {e}"))
++                        .and_then(|r| r),
++                    Err(_elapsed) => Ok((
++                        None,
++                        Some(format!(
++                            "window capture did not finish within {}s",
++                            UIA_SCREENSHOT_TIMEOUT.as_secs()
++                        )),
+                     )),
+-                )),
+-            };
++                }
++            }
++        };
++        perf.mark("capture");
+         let result =
+             result.map(|(screenshot, screenshot_err)| (tree_result, screenshot, screenshot_err));
+ 
+@@ -1599,6 +1651,7 @@ impl Tool for GetWindowStateTool {
+                         .flatten()
+                         .unzip();
+                     published_snapshot = snapshot_id.is_some();
++                    perf.mark("publish");
+                     invalidated.extend(replaced.into_iter().flatten());
+ 
+                     // Structured `elements` array — preferred consumption
+@@ -1633,6 +1686,7 @@ impl Tool for GetWindowStateTool {
+                     structured["total_element_count"] = json!(count);
+                     structured["returned_element_count"] = json!(elements.len());
+                     structured["elements"] = json!(elements);
++                    perf.mark("elements");
+                     // Surface 6: snapshot id mirror for debug correlation.
+                     if let Some(snapshot_id) = snapshot_id {
+                         structured["snapshot_id"] = json!(
+@@ -1735,6 +1789,7 @@ impl Tool for GetWindowStateTool {
+                 }
+ 
+                 if let Some((embed, file_path, w, h, native_w, native_h, png)) = screenshot_opt {
++                    perf.mark("refresh");
+                     let model_png = embed.then(|| png.clone());
+                     let capture_id = if !observation_only {
+                         if let Some(bridge) = &state.capture_bridge {
+@@ -1855,9 +1910,10 @@ impl Tool for GetWindowStateTool {
+                     structured["app_name"] = json!(name);
+                 }
+ 
++                perf.mark("capture_publish");
+                 cua_driver_core::window_inspection::mark_browser_chrome_capture_coverage(
+                     &mut structured,
+-                    is_standalone_chromium_browser_process(pid).then_some(
++                    app_name.as_deref().is_some_and(is_chromium_browser_target).then_some(
+                         cua_driver_core::window_inspection::BrowserChromeCaptureCoverage::NotObservable,
+                     ),
+                 );
+@@ -1878,6 +1934,7 @@ impl Tool for GetWindowStateTool {
+                 if display_only {
+                     cua_driver_core::window_state_view::mark_display_only(&mut structured);
+                 }
++                perf.mark("coverage");
+                 if !observation_only {
+                     cua_driver_core::window_state_view::apply(
+                         &view,
+@@ -2000,13 +2057,6 @@ fn is_chromium_browser_target(target: &str) -> bool {
+     )
+ }
+ 
+-fn is_standalone_chromium_browser_process(pid: u32) -> bool {
+-    crate::win32::list_processes()
+-        .into_iter()
+-        .find(|process| process.pid == pid)
+-        .is_some_and(|process| is_chromium_browser_target(&process.name))
+-}
+-
+ /// Anti-throttling flags injected on hidden Chromium launches (#1620).
+ ///
+ /// `launch_app` uses `SW_SHOWNOACTIVATE` so the launched window is
+diff --git a/rust/crates/platform-windows/src/uia/mod.rs b/rust/crates/platform-windows/src/uia/mod.rs
+index 7536aed..f7d8aa6 100644
+--- a/rust/crates/platform-windows/src/uia/mod.rs
++++ b/rust/crates/platform-windows/src/uia/mod.rs
+@@ -17,20 +17,22 @@ use windows::Win32::System::Com::{
+ use windows::Win32::UI::Accessibility::{
+     CUIAutomation, IUIAutomation, IUIAutomationCacheRequest, IUIAutomationElement,
+     IUIAutomationExpandCollapsePattern, IUIAutomationInvokePattern,
+-    IUIAutomationSelectionItemPattern, IUIAutomationTogglePattern, ToggleState_Off, ToggleState_On,
+-    TreeScope, TreeScope_Children, TreeScope_Element, TreeScope_Subtree,
+-    UIA_AutomationIdPropertyId, UIA_BoundingRectanglePropertyId, UIA_ControlTypePropertyId,
+-    UIA_ExpandCollapsePatternId, UIA_HelpTextPropertyId, UIA_InvokePatternId,
+-    UIA_IsEnabledPropertyId, UIA_IsOffscreenPropertyId, UIA_NamePropertyId,
+-    UIA_ProcessIdPropertyId, UIA_RangeValuePatternId, UIA_ScrollPatternId,
+-    UIA_SelectionItemIsSelectedPropertyId, UIA_SelectionItemPatternId, UIA_TextPatternId,
+-    UIA_TogglePatternId, UIA_ToggleToggleStatePropertyId, UIA_ValuePatternId,
+-    UIA_ValueValuePropertyId,
++    IUIAutomationSelectionItemPattern, TreeScope, TreeScope_Children, TreeScope_Element,
++    TreeScope_Subtree, UIA_AutomationIdPropertyId, UIA_BoundingRectanglePropertyId,
++    UIA_ControlTypePropertyId, UIA_ExpandCollapsePatternId, UIA_HelpTextPropertyId,
++    UIA_InvokePatternId, UIA_IsEnabledPropertyId, UIA_IsExpandCollapsePatternAvailablePropertyId,
++    UIA_IsInvokePatternAvailablePropertyId, UIA_IsRangeValuePatternAvailablePropertyId,
++    UIA_IsScrollPatternAvailablePropertyId, UIA_IsSelectionItemPatternAvailablePropertyId,
++    UIA_IsTextPatternAvailablePropertyId, UIA_IsTogglePatternAvailablePropertyId,
++    UIA_IsValuePatternAvailablePropertyId, UIA_NamePropertyId, UIA_ProcessIdPropertyId,
++    UIA_SelectionItemIsSelectedPropertyId, UIA_SelectionItemPatternId,
++    UIA_ToggleToggleStatePropertyId, UIA_ValueValuePropertyId,
+ };
+ 
+ pub mod fg_bypass;
+ pub mod scroll;
+ pub mod snapshot;
++pub mod tree_cache;
+ pub mod windows_enum;
+ pub use snapshot::Snapshots;
+ pub use windows_enum::enumerate_top_level_windows;
+@@ -40,6 +42,36 @@ pub const DEFAULT_MAX_DEPTH: usize = 25;
+ /// Default cap; callers can override via [`walk_tree_bounded`].
+ pub const DEFAULT_MAX_TOTAL_ELEMENTS: usize = 5000;
+ 
++/// The process-wide UIA client, created once (Dove W4). `CUIAutomation` is
++/// free-threaded, so every MTA thread can use the same instance; creating
++/// one per walk cost a COM activation and a fresh client-side proxy table on
++/// every read. Joins the calling thread to the MTA like the walks always did.
++pub(crate) fn automation() -> windows::core::Result<IUIAutomation> {
++    struct Shared(IUIAutomation);
++    // SAFETY: CUIAutomation is registered ThreadingModel=Both and is only
++    // used from MTA threads.
++    unsafe impl Send for Shared {}
++    unsafe impl Sync for Shared {}
++    static SHARED: std::sync::OnceLock<Shared> = std::sync::OnceLock::new();
++    unsafe {
++        let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
++    }
++    if let Some(shared) = SHARED.get() {
++        return Ok(shared.0.clone());
++    }
++    let created: IUIAutomation =
++        unsafe { CoCreateInstance(&CUIAutomation, None, CLSCTX_INPROC_SERVER) }?;
++    Ok(SHARED.get_or_init(|| Shared(created)).0.clone())
++}
++
++/// Whether `hwnd` is a VCL/SAL (LibreOffice) window, walked through MSAA.
++pub(crate) fn is_sal_window(hwnd: u64) -> bool {
++    use windows::Win32::UI::WindowsAndMessaging::GetClassNameW;
++    let mut buf = [0u16; 64];
++    let n = unsafe { GetClassNameW(windows::Win32::Foundation::HWND(hwnd as *mut _), &mut buf) };
++    n > 0 && String::from_utf16_lossy(&buf[..n as usize]).starts_with("SAL")
++}
++
+ // Historical aliases — referenced by the thin `walk_cached` shim that
+ // keeps the pre-#22865 call signature compiling. `walk_tree_bounded`
+ // reads from the caller-supplied caps instead.
+@@ -264,18 +296,16 @@ unsafe fn walk_tree_unsafe(
+     max_depth: usize,
+     budget: &mut WalkBudget,
+ ) -> UiaTreeResult {
+-    let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
+-
+-    let automation: IUIAutomation =
+-        match CoCreateInstance(&CUIAutomation, None, CLSCTX_INPROC_SERVER) {
+-            Ok(a) => a,
+-            Err(e) => {
+-                return UiaTreeResult {
+-                    tree_markdown: format!("UIA init failed: {e}"),
+-                    nodes: Vec::new(),
+-                }
++    let mut perf = cua_driver_core::perf::StageTimer::new("uia_walk");
++    let automation = match automation() {
++        Ok(a) => a,
++        Err(e) => {
++            return UiaTreeResult {
++                tree_markdown: format!("UIA init failed: {e}"),
++                nodes: Vec::new(),
+             }
+-        };
++        }
++    };
+ 
+     // Build a cache request that fetches everything we need in ONE bulk RPC.
+     let cache_req = match node_cache_request(&automation) {
+@@ -288,6 +318,7 @@ unsafe fn walk_tree_unsafe(
+         }
+     };
+ 
++    perf.mark("init");
+     // Fetch entire subtree in one call.
+     let _ = cache_req.SetTreeScope(TreeScope_Subtree);
+ 
+@@ -348,6 +379,7 @@ unsafe fn walk_tree_unsafe(
+     // so one misbehaving provider doesn't force the agent down to pixel mode.
+     // See #1881. (A per-node partial-tree fallback — returning elements=N for
+     // the subtrees that did resolve — remains a larger follow-up.)
++    perf.mark("element_from_handle");
+     let root_elem = {
+         const MAX_ATTEMPTS: u32 = 3;
+         let mut attempt = 0u32;
+@@ -370,6 +402,7 @@ unsafe fn walk_tree_unsafe(
+         }
+     };
+ 
++    perf.mark("build_cache");
+     let mut nodes: Vec<UiaNode> = Vec::new();
+     let mut lines: Vec<(usize, String)> = Vec::new();
+     let mut counter = 0usize;
+@@ -489,6 +522,7 @@ unsafe fn walk_tree_unsafe(
+         }
+     }
+ 
++    perf.mark("project");
+     let raw_md = render_lines(&lines);
+     let tree_markdown = if let Some(q) = query {
+         filter_tree(&raw_md, q)
+@@ -515,6 +549,45 @@ unsafe fn pid_from_hwnd(hwnd: windows::Win32::Foundation::HWND) -> Option<u32> {
+     }
+ }
+ 
++/// The CoreWindow fallback of the uncached walk, for the tree cache's own
++/// primary walk. `None` when it finds nothing actionable.
++pub(crate) fn core_window_fallback(
++    automation: &IUIAutomation,
++    hwnd: u64,
++    max_depth: usize,
++    budget: &mut WalkBudget,
++) -> Option<UiaTreeResult> {
++    unsafe {
++        let cache_req = node_cache_request(automation).ok()?;
++        let _ = cache_req.SetTreeScope(TreeScope_Subtree);
++        if let Ok(ctrl_cond) = automation.ControlViewCondition() {
++            let _ = cache_req.SetTreeFilter(&ctrl_cond);
++        }
++        let target_pid = pid_from_hwnd(windows::Win32::Foundation::HWND(hwnd as *mut _))?;
++        let mut nodes = Vec::new();
++        let mut lines = Vec::new();
++        let mut counter = 0usize;
++        walk_root_by_pid(
++            automation,
++            &cache_req,
++            target_pid,
++            &mut nodes,
++            &mut lines,
++            &mut counter,
++            budget,
++            max_depth,
++        );
++        if !nodes.iter().any(|n| n.element_index.is_some()) {
++            release_walk_nodes(nodes);
++            return None;
++        }
++        Some(UiaTreeResult {
++            tree_markdown: render_lines(&lines),
++            nodes,
++        })
++    }
++}
++
+ /// Root-walk UIA fallback for apps whose top-level window is a
+ /// `Windows.UI.Core.CoreWindow` (Calculator, Settings, older UWPs).
+ ///
+@@ -667,8 +740,13 @@ unsafe fn walk_cached_bounded(
+     }
+ }
+ 
+-/// Cache request carrying every property and pattern the node projection
+-/// reads. Callers choose the tree scope and filter.
++/// Cache request carrying exactly the properties a row reads. Callers choose
++/// the tree scope and filter.
++///
++/// Dove W4.3: pattern availability comes from the `Is*PatternAvailable`
++/// properties instead of `AddPattern`, so the bulk fetch marshals no pattern
++/// objects, and toggle/selection state comes from the state properties.
++/// Nothing reads `IsOffscreen` from a row, so it is not fetched.
+ unsafe fn node_cache_request(
+     automation: &IUIAutomation,
+ ) -> windows::core::Result<IUIAutomationCacheRequest> {
+@@ -680,25 +758,20 @@ unsafe fn node_cache_request(
+         UIA_AutomationIdPropertyId,
+         UIA_HelpTextPropertyId,
+         UIA_IsEnabledPropertyId,
+-        UIA_IsOffscreenPropertyId,
+         UIA_BoundingRectanglePropertyId,
+         UIA_ToggleToggleStatePropertyId,
+         UIA_SelectionItemIsSelectedPropertyId,
++        UIA_IsInvokePatternAvailablePropertyId,
++        UIA_IsTogglePatternAvailablePropertyId,
++        UIA_IsSelectionItemPatternAvailablePropertyId,
++        UIA_IsExpandCollapsePatternAvailablePropertyId,
++        UIA_IsValuePatternAvailablePropertyId,
++        UIA_IsRangeValuePatternAvailablePropertyId,
++        UIA_IsTextPatternAvailablePropertyId,
++        UIA_IsScrollPatternAvailablePropertyId,
+     ] {
+         let _ = cache_req.AddProperty(*prop);
+     }
+-    for pat in &[
+-        UIA_InvokePatternId,
+-        UIA_TogglePatternId,
+-        UIA_SelectionItemPatternId,
+-        UIA_ExpandCollapsePatternId,
+-        UIA_ValuePatternId,
+-        UIA_RangeValuePatternId,
+-        UIA_TextPatternId,
+-        UIA_ScrollPatternId,
+-    ] {
+-        let _ = cache_req.AddPattern(*pat);
+-    }
+     Ok(cache_req)
+ }
+ 
+@@ -718,10 +791,7 @@ unsafe fn node_cache_request(
+ /// would misstate tab topology, so callers must treat it as unavailable.
+ pub fn walk_native_tree(hwnd: u64) -> Result<Vec<UiaNode>, String> {
+     unsafe {
+-        let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
+-        let automation: IUIAutomation =
+-            CoCreateInstance(&CUIAutomation, None, CLSCTX_INPROC_SERVER)
+-                .map_err(|e| format!("UIA init failed: {e}"))?;
++        let automation = automation().map_err(|e| format!("UIA init failed: {e}"))?;
+         let cache_req = node_cache_request(&automation)
+             .map_err(|e| format!("CreateCacheRequest failed: {e}"))?;
+         let _ = cache_req.SetTreeScope(TreeScope(TreeScope_Element.0 | TreeScope_Children.0));
+@@ -811,83 +881,131 @@ fn emit_cached_node(
+     lines: &mut Vec<(usize, String)>,
+     counter: &mut usize,
+ ) -> (String, Option<usize>) {
+-    let control_type = read_cached_control_type(element);
+-    let name = read_cached_bstr_name(element);
+-    let value = read_cached_bstr_value(element);
+-    let automation_id = read_cached_bstr(element, UIA_AutomationIdPropertyId);
+-    let help_text = read_cached_bstr(element, UIA_HelpTextPropertyId);
+-    let enabled = read_cached_bool(element, UIA_IsEnabledPropertyId);
+-    // Missing UIA state must remain unknown on the structured observation
+-    // surface. Action discovery keeps its historical best-effort assumption.
+-    let is_enabled = enabled.unwrap_or(true);
+-    let selected = read_cached_selected(element);
+-    let actions = detect_cached_actions(element, &control_type, is_enabled);
+-    let is_actionable = !actions.is_empty() && is_enabled;
+-    let has_content = name
+-        .as_deref()
+-        .map(|s| !s.trim().is_empty())
+-        .unwrap_or(false)
+-        || value
+-            .as_deref()
+-            .map(|s| !s.trim().is_empty())
+-            .unwrap_or(false);
+-
+-    let mut emitted_parent: Option<usize> = parent_index;
+-    if is_actionable || has_content {
++    let props = read_node_props(element);
++    let ptr = if props.is_actionable() || props.has_content() {
+         let retained: IUIAutomationElement = element.clone();
+         let ptr = retained.as_raw() as usize;
+         std::mem::forget(retained);
+-
+-        let node = if is_actionable {
+-            let idx = *counter;
+-            *counter += 1;
+-            let (center_x, center_y, rect) = read_cached_bounding_rect_full(element);
+-            emitted_parent = Some(idx);
+-            UiaNode {
+-                element_index: Some(idx),
+-                control_type: control_type.clone(),
+-                name: name.clone(),
+-                value: value.clone(),
+-                automation_id: automation_id.clone(),
+-                help_text: help_text.clone(),
+-                actions: actions.clone(),
+-                enabled,
+-                selected,
+-                element_ptr: ptr,
+-                center_x,
+-                center_y,
+-                rect,
+-                msaa_role: None,
+-                depth,
+-                parent_element_index: parent_index,
+-                in_web_content,
+-            }
+-        } else {
+-            UiaNode {
+-                element_index: None,
+-                control_type: control_type.clone(),
+-                name: name.clone(),
+-                value: value.clone(),
+-                automation_id: automation_id.clone(),
+-                help_text: help_text.clone(),
+-                actions: vec![],
+-                enabled,
+-                selected,
+-                element_ptr: ptr,
+-                center_x: 0,
+-                center_y: 0,
+-                rect: None,
+-                msaa_role: None,
+-                depth,
+-                parent_element_index: parent_index,
+-                in_web_content,
+-            }
+-        };
+-
++        ptr
++    } else {
++        0
++    };
++    let (row, emitted_parent) =
++        build_row(&props, depth, parent_index, in_web_content, counter, ptr);
++    if let Some(node) = row {
+         lines.push((depth, format_node_line(&node)));
+         nodes.push(node);
+     }
+-    (control_type, emitted_parent)
++    (props.control_type, emitted_parent)
++}
++
++/// Everything a row shows about one cached element.
++#[derive(Debug, Clone, PartialEq)]
++pub(crate) struct NodeProps {
++    pub control_type: String,
++    pub name: Option<String>,
++    pub value: Option<String>,
++    pub automation_id: Option<String>,
++    pub help_text: Option<String>,
++    pub enabled: Option<bool>,
++    pub selected: Option<bool>,
++    pub actions: Vec<String>,
++    pub rect: Option<(i32, i32, i32, i32)>,
++}
++
++impl NodeProps {
++    pub(crate) fn is_actionable(&self) -> bool {
++        // Missing UIA state must remain unknown on the structured observation
++        // surface. Action discovery keeps its historical best-effort assumption.
++        !self.actions.is_empty() && self.enabled.unwrap_or(true)
++    }
++
++    pub(crate) fn has_content(&self) -> bool {
++        self.name.as_deref().is_some_and(|s| !s.trim().is_empty())
++            || self.value.as_deref().is_some_and(|s| !s.trim().is_empty())
++    }
++}
++
++/// Read a cached element's row properties.
++pub(crate) fn read_node_props(element: &IUIAutomationElement) -> NodeProps {
++    let control_type = read_cached_control_type(element);
++    let enabled = read_cached_bool(element, UIA_IsEnabledPropertyId);
++    let actions = detect_cached_actions(element, &control_type, enabled.unwrap_or(true));
++    NodeProps {
++        name: read_cached_bstr_name(element),
++        value: read_cached_bstr_value(element),
++        automation_id: read_cached_bstr(element, UIA_AutomationIdPropertyId),
++        help_text: read_cached_bstr(element, UIA_HelpTextPropertyId),
++        enabled,
++        selected: read_cached_selected(element),
++        actions,
++        rect: read_cached_bounding_rect_full(element).2,
++        control_type,
++    }
++}
++
++/// Build one element's row. An actionable element takes the next index and
++/// becomes the parent its descendants report; a content-only element gets an
++/// unindexed row; any other element gets none. Returns the row and the parent
++/// index the element's children inherit.
++pub(crate) fn build_row(
++    props: &NodeProps,
++    depth: usize,
++    parent_index: Option<usize>,
++    in_web_content: bool,
++    counter: &mut usize,
++    element_ptr: usize,
++) -> (Option<UiaNode>, Option<usize>) {
++    if props.is_actionable() {
++        let idx = *counter;
++        *counter += 1;
++        let (center_x, center_y) = props
++            .rect
++            .map_or((0, 0), |(l, t, r, b)| ((l + r) / 2, (t + b) / 2));
++        let node = UiaNode {
++            element_index: Some(idx),
++            control_type: props.control_type.clone(),
++            name: props.name.clone(),
++            value: props.value.clone(),
++            automation_id: props.automation_id.clone(),
++            help_text: props.help_text.clone(),
++            actions: props.actions.clone(),
++            enabled: props.enabled,
++            selected: props.selected,
++            element_ptr,
++            center_x,
++            center_y,
++            rect: props.rect,
++            msaa_role: None,
++            depth,
++            parent_element_index: parent_index,
++            in_web_content,
++        };
++        (Some(node), Some(idx))
++    } else if props.has_content() {
++        let node = UiaNode {
++            element_index: None,
++            control_type: props.control_type.clone(),
++            name: props.name.clone(),
++            value: props.value.clone(),
++            automation_id: props.automation_id.clone(),
++            help_text: props.help_text.clone(),
++            actions: vec![],
++            enabled: props.enabled,
++            selected: props.selected,
++            element_ptr,
++            center_x: 0,
++            center_y: 0,
++            rect: None,
++            msaa_role: None,
++            depth,
++            parent_element_index: parent_index,
++            in_web_content,
++        };
++        (Some(node), parent_index)
++    } else {
++        (None, parent_index)
++    }
+ }
+ 
+ fn read_cached_control_type(element: &IUIAutomationElement) -> String {
+@@ -978,38 +1096,34 @@ fn detect_cached_actions(
+         return vec![];
+     }
+     let mut actions = Vec::new();
+-    unsafe {
+-        if element.GetCachedPattern(UIA_InvokePatternId).is_ok() {
+-            actions.push("invoke".into());
+-        }
+-        if element.GetCachedPattern(UIA_TogglePatternId).is_ok() {
+-            actions.push("toggle".into());
+-        }
+-        if element.GetCachedPattern(UIA_SelectionItemPatternId).is_ok() {
+-            actions.push("select".into());
+-        }
+-        if element
+-            .GetCachedPattern(UIA_ExpandCollapsePatternId)
+-            .is_ok()
+-        {
+-            actions.push("expand".into());
+-        }
+-        if element.GetCachedPattern(UIA_ValuePatternId).is_ok() {
+-            actions.push("set_value".into());
+-        }
+-        // RangeValuePattern is exposed by Sliders, ProgressBars, and other
+-        // numeric-range controls. Without this entry the slider parent
+-        // gets actions=[] → marked non-actionable → no `[N]` index in the
+-        // flat tree, making the slider unaddressable by AutomationId.
+-        if element.GetCachedPattern(UIA_RangeValuePatternId).is_ok() {
+-            actions.push("set_value".into());
+-        }
+-        if element.GetCachedPattern(UIA_TextPatternId).is_ok() {
+-            actions.push("text".into());
+-        }
+-        if element.GetCachedPattern(UIA_ScrollPatternId).is_ok() {
+-            actions.push("scroll".into());
+-        }
++    let available = |property| read_cached_bool(element, property) == Some(true);
++    if available(UIA_IsInvokePatternAvailablePropertyId) {
++        actions.push("invoke".into());
++    }
++    if available(UIA_IsTogglePatternAvailablePropertyId) {
++        actions.push("toggle".into());
++    }
++    if available(UIA_IsSelectionItemPatternAvailablePropertyId) {
++        actions.push("select".into());
++    }
++    if available(UIA_IsExpandCollapsePatternAvailablePropertyId) {
++        actions.push("expand".into());
++    }
++    if available(UIA_IsValuePatternAvailablePropertyId) {
++        actions.push("set_value".into());
++    }
++    // RangeValuePattern is exposed by Sliders, ProgressBars, and other
++    // numeric-range controls. Without this entry the slider parent
++    // gets actions=[] → marked non-actionable → no `[N]` index in the
++    // flat tree, making the slider unaddressable by AutomationId.
++    if available(UIA_IsRangeValuePatternAvailablePropertyId) {
++        actions.push("set_value".into());
++    }
++    if available(UIA_IsTextPatternAvailablePropertyId) {
++        actions.push("text".into());
++    }
++    if available(UIA_IsScrollPatternAvailablePropertyId) {
++        actions.push("scroll".into());
+     }
+     if actions.is_empty() && control_type == "MenuItem" {
+         // Some WPF MenuItem peers show up in ControlView with a usable name
+@@ -1022,28 +1136,32 @@ fn detect_cached_actions(
+ }
+ 
+ fn read_cached_selected(element: &IUIAutomationElement) -> Option<bool> {
+-    unsafe {
+-        if let Ok(pattern) = element.GetCachedPattern(UIA_TogglePatternId) {
+-            if let Ok(toggle) = pattern.cast::<IUIAutomationTogglePattern>() {
+-                return match toggle.CachedToggleState() {
+-                    Ok(state) if state == ToggleState_On => Some(true),
+-                    Ok(state) if state == ToggleState_Off => Some(false),
+-                    _ => None,
+-                };
+-            }
+-        }
+-        if let Ok(pattern) = element.GetCachedPattern(UIA_SelectionItemPatternId) {
+-            if let Ok(selection) = pattern.cast::<IUIAutomationSelectionItemPattern>() {
+-                return selection
+-                    .CachedIsSelected()
+-                    .ok()
+-                    .map(|selected| selected.as_bool());
+-            }
+-        }
++    if read_cached_bool(element, UIA_IsTogglePatternAvailablePropertyId) == Some(true) {
++        // ToggleState: 0 off, 1 on, 2 indeterminate.
++        return match read_cached_i32(element, UIA_ToggleToggleStatePropertyId) {
++            Some(1) => Some(true),
++            Some(0) => Some(false),
++            _ => None,
++        };
++    }
++    if read_cached_bool(element, UIA_IsSelectionItemPatternAvailablePropertyId) == Some(true) {
++        return read_cached_bool(element, UIA_SelectionItemIsSelectedPropertyId);
+     }
+     None
+ }
+ 
++fn read_cached_i32(
++    element: &IUIAutomationElement,
++    property_id: windows::Win32::UI::Accessibility::UIA_PROPERTY_ID,
++) -> Option<i32> {
++    unsafe {
++        let variant = element.GetCachedPropertyValue(property_id).ok()?;
++        // VT_I4
++        (variant.as_raw().Anonymous.Anonymous.vt == 3)
++            .then(|| variant.as_raw().Anonymous.Anonymous.Anonymous.lVal)
++    }
++}
++
+ fn control_type_name(id: i32) -> String {
+     match id {
+         50000 => "Button",
+diff --git a/rust/crates/platform-windows/src/uia/tree_cache.rs b/rust/crates/platform-windows/src/uia/tree_cache.rs
+new file mode 100644
+index 0000000..eb87fb6
+--- /dev/null
++++ b/rust/crates/platform-windows/src/uia/tree_cache.rs
+@@ -0,0 +1,958 @@
++//! Windows side of the event-invalidated tree cache (Dove W4.2).
++//!
++//! `get_window_state` walks a window through [`walk_tree_cached`]. A full
++//! walk keeps every visited control-view node (its cached element, runtime id
++//! and row properties) in [`cua_driver_core::tree_cache`], and registers UIA
++//! event handlers on the window's root element:
++//!
++//! - `StructureChanged` (subtree): a container's children changed. The
++//!   container's subtree is dirty; `ChildAdded`, whose sender is the new child,
++//!   dirties the whole window.
++//! - `PropertyChanged` (subtree) for every property a row shows: the sender's
++//!   subtree is dirty.
++//! - `WindowClosed`: the window is forgotten.
++//! - Focus changes (desktop-wide): the focused element's subtree is dirty when
++//!   it is part of a cached window.
++//!
++//! A later read with the same bounds then either reuses the walk, re-walks
++//! only the dirty subtrees and splices them in, or walks the window again.
++//! Before answering from a reused walk, every row the response returns is
++//! re-read from the provider (one element-scoped `BuildUpdatedCache` per row)
++//! and compared with the cached row; any difference, a moved or resized
++//! window, an unknown dirty subtree or a missing provider means a full walk.
++//! A read walks instead when it would return more than [`MAX_VALIDATED_ROWS`]
++//! rows, or when re-reading its rows is estimated to cost more than the
++//! window's last full walk (so the cache never makes a read slower).
++//!
++//! Opt-in (`DOVE_TREE_CACHE=1`). Every returned row is current, but a row the
++//! application added, or renamed into a query's match, is missing until its
++//! UIA event arrives (350-850 ms on a WinForms window), or until the stored
++//! walk ages out. With the cache off (the default) `walk_tree_cached` is a
++//! plain walk and registers no event handlers.
++
++use super::{
++    automation, build_row, format_node_line, node_cache_request, read_node_props, render_lines,
++    NodeProps, UiaNode, UiaTreeResult,
++};
++use cua_driver_core::tree_cache::{
++    subtree_id, Invalidation, Lookup, SubtreeId, TreeCache, WalkParams,
++};
++use cua_driver_core::walk_budget::{WalkBudget, WalkOutcome, WalkStop};
++use std::collections::{HashMap, HashSet};
++use std::sync::atomic::{AtomicU64, Ordering};
++use std::sync::{Mutex, OnceLock};
++use std::time::Instant;
++use windows::core::{implement, Interface};
++use windows::Win32::System::Com::SAFEARRAY;
++use windows::Win32::UI::Accessibility::{
++    IUIAutomation, IUIAutomationCacheRequest, IUIAutomationElement, IUIAutomationEventHandler,
++    IUIAutomationEventHandler_Impl, IUIAutomationFocusChangedEventHandler,
++    IUIAutomationFocusChangedEventHandler_Impl, IUIAutomationPropertyChangedEventHandler,
++    IUIAutomationPropertyChangedEventHandler_Impl, IUIAutomationStructureChangedEventHandler,
++    IUIAutomationStructureChangedEventHandler_Impl, StructureChangeType,
++    StructureChangeType_ChildAdded, TreeScope_Element,
++    TreeScope_Subtree, UIA_AutomationIdPropertyId, UIA_BoundingRectanglePropertyId,
++    UIA_ControlTypePropertyId, UIA_EVENT_ID, UIA_HelpTextPropertyId,
++    UIA_IsEnabledPropertyId, UIA_IsExpandCollapsePatternAvailablePropertyId,
++    UIA_IsInvokePatternAvailablePropertyId, UIA_IsOffscreenPropertyId,
++    UIA_IsRangeValuePatternAvailablePropertyId, UIA_IsScrollPatternAvailablePropertyId,
++    UIA_IsSelectionItemPatternAvailablePropertyId, UIA_IsTextPatternAvailablePropertyId,
++    UIA_IsTogglePatternAvailablePropertyId, UIA_IsValuePatternAvailablePropertyId,
++    UIA_NamePropertyId, UIA_PROPERTY_ID, UIA_ProcessIdPropertyId, UIA_RuntimeIdPropertyId,
++    UIA_ScrollHorizontalScrollPercentPropertyId, UIA_ScrollVerticalScrollPercentPropertyId,
++    UIA_SelectionItemIsSelectedPropertyId, UIA_ToggleToggleStatePropertyId,
++    UIA_ValueValuePropertyId, UIA_Window_WindowClosedEventId,
++};
++
++/// Reads that would return more rows than this walk instead of validating
++/// each row against the provider.
++pub const MAX_VALIDATED_ROWS: usize = 48;
++/// Windows with registered event handlers at once; the least recently read
++/// beyond this is dropped.
++const MAX_WATCHED_WINDOWS: usize = 24;
++
++/// Properties whose change events dirty a row: everything a row shows, plus
++/// scroll position (it moves descendants' frames).
++const WATCHED_PROPERTIES: &[UIA_PROPERTY_ID] = &[
++    UIA_NamePropertyId,
++    UIA_ValueValuePropertyId,
++    UIA_AutomationIdPropertyId,
++    UIA_HelpTextPropertyId,
++    UIA_IsEnabledPropertyId,
++    UIA_IsOffscreenPropertyId,
++    UIA_BoundingRectanglePropertyId,
++    UIA_ControlTypePropertyId,
++    UIA_ToggleToggleStatePropertyId,
++    UIA_SelectionItemIsSelectedPropertyId,
++    UIA_IsInvokePatternAvailablePropertyId,
++    UIA_IsTogglePatternAvailablePropertyId,
++    UIA_IsSelectionItemPatternAvailablePropertyId,
++    UIA_IsExpandCollapsePatternAvailablePropertyId,
++    UIA_IsValuePatternAvailablePropertyId,
++    UIA_IsRangeValuePatternAvailablePropertyId,
++    UIA_IsTextPatternAvailablePropertyId,
++    UIA_IsScrollPatternAvailablePropertyId,
++    UIA_ScrollHorizontalScrollPercentPropertyId,
++    UIA_ScrollVerticalScrollPercentPropertyId,
++];
++
++// ── cached walk ─────────────────────────────────────────────────────────────
++
++/// One visited control-view node, in pre-order.
++#[derive(Clone)]
++struct WalkedNode {
++    element: IUIAutomationElement,
++    id: SubtreeId,
++    depth: usize,
++    in_web_content: bool,
++    props: NodeProps,
++    /// One past the index of this node's last descendant.
++    end: usize,
++}
++
++pub(crate) struct CachedTree {
++    walked: Vec<WalkedNode>,
++    outcome: WalkOutcome,
++    window_rect: (i32, i32, i32, i32),
++    /// How long the last full walk of this window took.
++    walk_cost_us: u64,
++}
++
++/// Running estimate of one row's validation round trip, in microseconds.
++static ROW_COST_US: AtomicU64 = AtomicU64::new(300);
++
++/// Why a stored walk did not answer a read.
++enum Decline {
++    /// A returned row differs from the provider, or could not be read.
++    Changed,
++    /// Re-reading the rows would cost more than walking again.
++    Cost,
++}
++
++// SAFETY: UIA client elements are free-threaded; every thread that touches
++// them has joined the MTA (see `super::automation`).
++unsafe impl Send for CachedTree {}
++unsafe impl Sync for CachedTree {}
++
++fn cache() -> &'static TreeCache<CachedTree> {
++    static CACHE: OnceLock<TreeCache<CachedTree>> = OnceLock::new();
++    CACHE.get_or_init(TreeCache::from_env)
++}
++
++/// How a read was answered, for perf logs and tests.
++#[derive(Debug, Clone, Default)]
++pub struct CacheReport {
++    /// `hit`, `partial`, `miss:<reason>`, `uncached:<why>` or `off`.
++    pub status: String,
++    pub validated_rows: usize,
++    pub rewalked_subtrees: usize,
++}
++
++fn report(status: impl Into<String>) -> CacheReport {
++    CacheReport {
++        status: status.into(),
++        ..CacheReport::default()
++    }
++}
++
++/// [`super::walk_tree_budgeted`] through the tree cache. Returns the walk
++/// outcome explicitly, because a reused walk never touches `budget`.
++pub fn walk_tree_cached(
++    hwnd: u64,
++    pid: u32,
++    query: Option<&str>,
++    max_depth: usize,
++    max_elements: usize,
++    budget: &mut WalkBudget,
++) -> (UiaTreeResult, WalkOutcome, CacheReport) {
++    let started = Instant::now();
++    let cache = cache();
++    let uncached = |budget: &mut WalkBudget, why: &str| {
++        let tree = super::walk_tree_budgeted(hwnd, query, max_depth, budget);
++        (tree, budget.outcome(), report(why))
++    };
++    if !cache.enabled() {
++        return uncached(budget, "off");
++    }
++    if super::is_sal_window(hwnd) {
++        return uncached(budget, "uncached:msaa");
++    }
++    let Some(rect) = window_rect(hwnd) else {
++        return uncached(budget, "uncached:no_window_rect");
++    };
++    let params = WalkParams {
++        max_elements,
++        max_depth,
++    };
++    let Ok(automation) = automation() else {
++        return uncached(budget, "uncached:no_automation");
++    };
++    touch_watch(hwnd);
++
++    let miss_reason = match cache.lookup(hwnd, params) {
++        Lookup::Fresh { value, .. } if value.window_rect == rect => {
++            match serve(&automation, &value, query) {
++                Ok((tree, validated)) => {
++                    let outcome = reused_outcome(&value.outcome, started);
++                    let report = CacheReport {
++                        status: "hit".into(),
++                        validated_rows: validated,
++                        rewalked_subtrees: 0,
++                    };
++                    return (tree, outcome, report);
++                }
++                Err(Decline::Cost) => "miss:cost".to_owned(),
++                Err(Decline::Changed) => {
++                    cache.invalidate(hwnd, Invalidation::Full);
++                    "miss:validation".to_owned()
++                }
++            }
++        }
++        Lookup::Dirty {
++            value,
++            subtrees,
++            age,
++        } if value.window_rect == rect && value.outcome.stop.is_none() => {
++            let ticket = cache.begin_walk(pid as i32, hwnd);
++            match rewalk_subtrees(&automation, &value, &subtrees, params) {
++                Some((walked, rewalked)) => {
++                    let tree = CachedTree {
++                        outcome: WalkOutcome {
++                            nodes_visited: walked.len(),
++                            ..value.outcome
++                        },
++                        walked,
++                        window_rect: rect,
++                        walk_cost_us: value.walk_cost_us,
++                    };
++                    let stored = cache.finish_rewalk(ticket, params, tree, age);
++                    match serve(&automation, &stored, query) {
++                        Ok((result, validated)) => {
++                            let outcome = reused_outcome(&stored.outcome, started);
++                            let report = CacheReport {
++                                status: "partial".into(),
++                                validated_rows: validated,
++                                rewalked_subtrees: rewalked,
++                            };
++                            return (result, outcome, report);
++                        }
++                        Err(Decline::Cost) => "miss:cost".to_owned(),
++                        Err(Decline::Changed) => {
++                            cache.invalidate(hwnd, Invalidation::Full);
++                            "miss:validation".to_owned()
++                        }
++                    }
++                }
++                None => "miss:subtree".to_owned(),
++            }
++        }
++        Lookup::Fresh { .. } | Lookup::Dirty { .. } => "miss:moved_or_truncated".to_owned(),
++        Lookup::Miss(reason) => format!("miss:{}", reason.as_str()),
++    };
++
++    // Full walk. Handlers go in before the walk's ticket is taken, so any
++    // change after the walk starts reaches the cache.
++    let watched = ensure_watch(&automation, hwnd);
++    let ticket = cache.begin_walk(pid as i32, hwnd);
++    let walk_started = Instant::now();
++    match full_walk(&automation, hwnd, max_depth, budget) {
++        FullWalk::Cacheable(walked) => {
++            let outcome = budget.outcome();
++            let tree = CachedTree {
++                walked,
++                outcome,
++                window_rect: rect,
++                walk_cost_us: walk_started.elapsed().as_micros() as u64,
++            };
++            let store = watched && outcome.stop != Some(WalkStop::Timeout);
++            let (result, _) = project(&tree.walked, query);
++            if store {
++                cache.finish_walk(ticket, params, tree);
++            }
++            let status = if store {
++                miss_reason
++            } else {
++                format!("{miss_reason}+unstored")
++            };
++            (result, outcome, report(status))
++        }
++        FullWalk::Other(result) => (result, budget.outcome(), report("uncached:fallback")),
++    }
++}
++
++/// The outcome reported for a reused walk: the stored one, timed now.
++fn reused_outcome(stored: &WalkOutcome, started: Instant) -> WalkOutcome {
++    WalkOutcome {
++        elapsed_ms: started.elapsed().as_millis() as u64,
++        ..*stored
++    }
++}
++
++fn window_rect(hwnd: u64) -> Option<(i32, i32, i32, i32)> {
++    use windows::Win32::Foundation::{HWND, RECT};
++    use windows::Win32::UI::WindowsAndMessaging::GetWindowRect;
++    let mut rect = RECT::default();
++    unsafe { GetWindowRect(HWND(hwnd as *mut _), &mut rect) }.ok()?;
++    Some((rect.left, rect.top, rect.right, rect.bottom))
++}
++
++enum FullWalk {
++    Cacheable(Vec<WalkedNode>),
++    /// A result from the uncached fallbacks (CoreWindow root walk, errors).
++    Other(UiaTreeResult),
++}
++
++/// The cache request for cached walks: row properties plus runtime ids.
++fn walk_request(
++    automation: &IUIAutomation,
++    scope: windows::Win32::UI::Accessibility::TreeScope,
++) -> windows::core::Result<IUIAutomationCacheRequest> {
++    unsafe {
++        let request = node_cache_request(automation)?;
++        request.AddProperty(UIA_RuntimeIdPropertyId)?;
++        request.SetTreeScope(scope)?;
++        if let Ok(condition) = automation.ControlViewCondition() {
++            request.SetTreeFilter(&condition)?;
++        }
++        Ok(request)
++    }
++}
++
++fn full_walk(
++    automation: &IUIAutomation,
++    hwnd: u64,
++    max_depth: usize,
++    budget: &mut WalkBudget,
++) -> FullWalk {
++    let error = |message: String| {
++        FullWalk::Other(UiaTreeResult {
++            tree_markdown: message,
++            nodes: Vec::new(),
++        })
++    };
++    let request = match walk_request(automation, TreeScope_Subtree) {
++        Ok(request) => request,
++        Err(e) => return error(format!("CreateCacheRequest failed: {e}")),
++    };
++    let hwnd_win = windows::Win32::Foundation::HWND(hwnd as *mut _);
++    let uncached = match unsafe { automation.ElementFromHandle(hwnd_win) } {
++        Ok(element) => element,
++        Err(e) => return error(format!("ElementFromHandle failed: {e}")),
++    };
++    // Same transient-error retry as the uncached walk (#1881).
++    let root = {
++        const MAX_ATTEMPTS: u32 = 3;
++        let mut attempt = 0u32;
++        loop {
++            match unsafe { uncached.BuildUpdatedCache(&request) } {
++                Ok(element) => break element,
++                Err(e) => {
++                    attempt += 1;
++                    if attempt >= MAX_ATTEMPTS {
++                        return error(format!(
++                            "BuildUpdatedCache failed after {attempt} attempts: {e}"
++                        ));
++                    }
++                    std::thread::sleep(std::time::Duration::from_millis(40));
++                }
++            }
++        }
++    };
++    let mut walked = Vec::new();
++    collect(&root, 0, false, max_depth, budget, &mut walked);
++    if walked.iter().any(|node| node.props.is_actionable()) || budget.expired() {
++        return FullWalk::Cacheable(walked);
++    }
++    // CoreWindow-class apps keep their tree at the desktop root. Use the
++    // uncached walker's fallback and do not cache it.
++    match super::core_window_fallback(automation, hwnd, max_depth, budget) {
++        Some(result) => FullWalk::Other(result),
++        None => FullWalk::Cacheable(walked),
++    }
++}
++
++/// Collect `element`'s cached subtree in pre-order, under the same depth and
++/// node budget rules as the uncached walk.
++fn collect(
++    element: &IUIAutomationElement,
++    depth: usize,
++    in_web_content: bool,
++    max_depth: usize,
++    budget: &mut WalkBudget,
++    out: &mut Vec<WalkedNode>,
++) {
++    if depth > max_depth || !budget.admit() {
++        return;
++    }
++    let props = read_node_props(element);
++    let child_web = in_web_content || props.control_type.eq_ignore_ascii_case("Document");
++    let index = out.len();
++    out.push(WalkedNode {
++        element: element.clone(),
++        id: cached_runtime_id(element).map_or(0, |id| subtree_id(&id)),
++        depth,
++        in_web_content,
++        props,
++        end: index + 1,
++    });
++    if let Ok(children) = unsafe { element.GetCachedChildren() } {
++        let len = unsafe { children.Length() }.unwrap_or(0);
++        for i in 0..len {
++            if let Ok(child) = unsafe { children.GetElement(i) } {
++                collect(&child, depth + 1, child_web, max_depth, budget, out);
++            }
++        }
++    }
++    out[index].end = out.len();
++}
++
++// ── projection and validation ──────────────────────────────────────────────
++
++/// Project walked nodes into rows exactly like the uncached walk. Returns the
++/// result and, per row, the index of its walked node.
++fn project(walked: &[WalkedNode], query: Option<&str>) -> (UiaTreeResult, Vec<usize>) {
++    let mut nodes = Vec::new();
++    let mut lines = Vec::new();
++    let mut origins = Vec::new();
++    let mut counter = 0usize;
++    // (depth, parent index the node's children inherit)
++    let mut stack: Vec<(usize, Option<usize>)> = Vec::new();
++    for (i, node) in walked.iter().enumerate() {
++        while stack.last().is_some_and(|(depth, _)| *depth >= node.depth) {
++            stack.pop();
++        }
++        let parent_index = stack.last().and_then(|(_, parent)| *parent);
++        let indexed = node.props.is_actionable();
++        let ptr = if indexed {
++            let retained = node.element.clone();
++            let ptr = retained.as_raw() as usize;
++            std::mem::forget(retained);
++            ptr
++        } else {
++            0
++        };
++        let (row, emitted_parent) = build_row(
++            &node.props,
++            node.depth,
++            parent_index,
++            node.in_web_content,
++            &mut counter,
++            ptr,
++        );
++        stack.push((node.depth, emitted_parent));
++        if let Some(row) = row {
++            lines.push((node.depth, format_node_line(&row)));
++            nodes.push(row);
++            origins.push(i);
++        }
++    }
++    let raw = render_lines(&lines);
++    let tree_markdown = match query {
++        Some(query) => super::filter_tree(&raw, query),
++        None => raw,
++    };
++    (
++        UiaTreeResult {
++            tree_markdown,
++            nodes,
++        },
++        origins,
++    )
++}
++
++/// Answer from a stored walk after re-reading every returned row.
++fn serve(
++    automation: &IUIAutomation,
++    tree: &CachedTree,
++    query: Option<&str>,
++) -> Result<(UiaTreeResult, usize), Decline> {
++    let (result, origins) = project(&tree.walked, query);
++    let returned: HashSet<&str> = result.tree_markdown.lines().collect();
++    let rendered: Vec<String> = result
++        .nodes
++        .iter()
++        .map(|node| format!("{}{}", "  ".repeat(node.depth), format_node_line(node)))
++        .collect();
++    let to_check: Vec<usize> = rendered
++        .iter()
++        .enumerate()
++        .filter(|(_, line)| returned.contains(line.as_str()))
++        .map(|(row, _)| origins[row])
++        .collect();
++    let estimate = to_check.len() as u64 * ROW_COST_US.load(Ordering::Relaxed);
++    if to_check.len() > MAX_VALIDATED_ROWS || estimate >= tree.walk_cost_us {
++        unsafe { release_rows(result.nodes) };
++        return Err(Decline::Cost);
++    }
++    let validating = Instant::now();
++    let valid = validate(automation, &tree.walked, &to_check).unwrap_or(false);
++    if valid && !to_check.is_empty() {
++        let per_row = validating.elapsed().as_micros() as u64 / to_check.len() as u64;
++        let old = ROW_COST_US.load(Ordering::Relaxed);
++        ROW_COST_US.store((old * 3 + per_row) / 4, Ordering::Relaxed);
++    }
++    if valid {
++        Ok((result, to_check.len()))
++    } else {
++        unsafe { release_rows(result.nodes) };
++        Err(Decline::Changed)
++    }
++}
++
++/// Re-read each listed node from the provider and compare its row.
++fn validate(
++    automation: &IUIAutomation,
++    walked: &[WalkedNode],
++    indices: &[usize],
++) -> windows::core::Result<bool> {
++    if indices.is_empty() {
++        return Ok(true);
++    }
++    let request = walk_request(automation, TreeScope_Element)?;
++    for &i in indices {
++        let node = &walked[i];
++        let live = unsafe { node.element.BuildUpdatedCache(&request) }?;
++        let props = read_node_props(&live);
++        if !same_row(&node.props, &props) {
++            tracing::debug!(target: "dove_perf", "tree cache: row {i} changed");
++            return Ok(false);
++        }
++    }
++    Ok(true)
++}
++
++/// Whether two reads of one element produce the same row.
++fn same_row(cached: &NodeProps, live: &NodeProps) -> bool {
++    let shown_rect = cached.is_actionable() || live.is_actionable();
++    cached.control_type == live.control_type
++        && cached.name == live.name
++        && cached.value == live.value
++        && cached.automation_id == live.automation_id
++        && cached.help_text == live.help_text
++        && cached.enabled == live.enabled
++        && cached.selected == live.selected
++        && cached.actions == live.actions
++        && (!shown_rect || cached.rect == live.rect)
++}
++
++/// Release the element references `project` handed to rows that will not be
++/// returned.
++unsafe fn release_rows(nodes: Vec<UiaNode>) {
++    for node in nodes {
++        if node.element_ptr != 0 {
++            drop(IUIAutomationElement::from_raw(node.element_ptr as *mut _));
++        }
++    }
++}
++
++// ── dirty-subtree re-walk ──────────────────────────────────────────────────
++
++/// Re-walk the dirty subtrees of `tree` and splice them in. `None` when a
++/// required subtree is not in the stored walk, a subtree cannot be read, or
++/// the result would exceed the walk bounds.
++fn rewalk_subtrees(
++    automation: &IUIAutomation,
++    tree: &CachedTree,
++    dirty: &[cua_driver_core::tree_cache::DirtySubtree],
++    params: WalkParams,
++) -> Option<(Vec<WalkedNode>, usize)> {
++    let mut positions: HashMap<SubtreeId, usize> = HashMap::new();
++    for (i, node) in tree.walked.iter().enumerate() {
++        if node.id != 0 {
++            positions.entry(node.id).or_insert(i);
++        }
++    }
++    let mut roots = Vec::new();
++    for subtree in dirty {
++        match positions.get(&subtree.id) {
++            Some(&i) => roots.push(i),
++            None if subtree.required => return None,
++            None => {}
++        }
++    }
++    roots.sort_unstable();
++    roots.dedup();
++    // Drop roots inside another dirty root's range.
++    let mut outer: Vec<usize> = Vec::new();
++    for i in roots {
++        if outer
++            .last()
++            .is_some_and(|&o| i < tree.walked[o].end)
++        {
++            continue;
++        }
++        outer.push(i);
++    }
++    let request = walk_request(automation, TreeScope_Subtree).ok()?;
++    let mut walked = tree.walked.clone();
++    for &i in outer.iter().rev() {
++        let root = &walked[i];
++        let fresh = unsafe { root.element.BuildUpdatedCache(&request) }.ok()?;
++        let mut budget = WalkBudget::nodes_only(params.max_elements);
++        let mut replacement = Vec::new();
++        collect(
++            &fresh,
++            root.depth,
++            root.in_web_content,
++            params.max_depth,
++            &mut budget,
++            &mut replacement,
++        );
++        if replacement.is_empty() || budget.outcome().stop.is_some() {
++            return None;
++        }
++        let end = root.end;
++        walked.splice(i..end, replacement).for_each(drop);
++    }
++    if walked.len() > params.max_elements {
++        return None;
++    }
++    fix_ends(&mut walked);
++    Some((walked, outer.len()))
++}
++
++/// Recompute every node's subtree end after a splice.
++fn fix_ends(walked: &mut [WalkedNode]) {
++    let mut stack: Vec<usize> = Vec::new();
++    for i in 0..walked.len() {
++        while let Some(&open) = stack.last() {
++            if walked[open].depth >= walked[i].depth {
++                walked[open].end = i;
++                stack.pop();
++            } else {
++                break;
++            }
++        }
++        stack.push(i);
++    }
++    let len = walked.len();
++    for open in stack {
++        walked[open].end = len;
++    }
++}
++
++// ── runtime ids ─────────────────────────────────────────────────────────────
++
++fn cached_runtime_id(element: &IUIAutomationElement) -> Option<Vec<i32>> {
++    let variant = unsafe { element.GetCachedPropertyValue(UIA_RuntimeIdPropertyId) }.ok()?;
++    let raw = variant.as_raw();
++    // VT_ARRAY | VT_I4
++    if unsafe { raw.Anonymous.Anonymous.vt } != 0x2003 {
++        return None;
++    }
++    let array = unsafe { raw.Anonymous.Anonymous.Anonymous.parray } as *const SAFEARRAY;
++    unsafe { read_i32_array(array) }
++}
++
++/// Read a one-dimensional `SAFEARRAY` of `VT_I4`.
++unsafe fn read_i32_array(array: *const SAFEARRAY) -> Option<Vec<i32>> {
++    let array = array.as_ref()?;
++    if array.cDims != 1 || array.cbElements != 4 || array.pvData.is_null() {
++        return None;
++    }
++    let len = array.rgsabound[0].cElements as usize;
++    Some(std::slice::from_raw_parts(array.pvData as *const i32, len).to_vec())
++}
++
++fn cached_pid(element: &IUIAutomationElement) -> Option<u32> {
++    let variant = unsafe { element.GetCachedPropertyValue(UIA_ProcessIdPropertyId) }.ok()?;
++    let raw = variant.as_raw();
++    (unsafe { raw.Anonymous.Anonymous.vt } == 3)
++        .then(|| unsafe { raw.Anonymous.Anonymous.Anonymous.lVal } as u32)
++}
++
++// ── event handlers ──────────────────────────────────────────────────────────
++
++#[implement(
++    IUIAutomationStructureChangedEventHandler,
++    IUIAutomationPropertyChangedEventHandler,
++    IUIAutomationEventHandler
++)]
++struct WindowEvents {
++    hwnd: u64,
++}
++
++impl IUIAutomationStructureChangedEventHandler_Impl for WindowEvents_Impl {
++    fn HandleStructureChangedEvent(
++        &self,
++        sender: Option<&IUIAutomationElement>,
++        change: StructureChangeType,
++        _runtime_id: *const SAFEARRAY,
++    ) -> windows::core::Result<()> {
++        // ChildAdded names the new child, not the container that changed.
++        let invalidation = if change == StructureChangeType_ChildAdded {
++            Invalidation::Full
++        } else {
++            // ChildRemoved, ChildrenInvalidated, bulk changes and reorders
++            // name the container.
++            sender_invalidation(sender)
++        };
++        cache().invalidate(self.hwnd, invalidation);
++        Ok(())
++    }
++}
++
++impl IUIAutomationPropertyChangedEventHandler_Impl for WindowEvents_Impl {
++    fn HandlePropertyChangedEvent(
++        &self,
++        sender: Option<&IUIAutomationElement>,
++        _property: UIA_PROPERTY_ID,
++        _value: &windows::core::VARIANT,
++    ) -> windows::core::Result<()> {
++        cache().invalidate(self.hwnd, sender_invalidation(sender));
++        Ok(())
++    }
++}
++
++impl IUIAutomationEventHandler_Impl for WindowEvents_Impl {
++    fn HandleAutomationEvent(
++        &self,
++        _sender: Option<&IUIAutomationElement>,
++        _event: UIA_EVENT_ID,
++    ) -> windows::core::Result<()> {
++        // WindowClosed. Handlers are removed on the next read path, never
++        // from inside a UIA callback.
++        cache().invalidate(self.hwnd, Invalidation::Full);
++        Ok(())
++    }
++}
++
++fn sender_invalidation(sender: Option<&IUIAutomationElement>) -> Invalidation {
++    sender
++        .and_then(cached_runtime_id)
++        .map_or(Invalidation::Full, |id| Invalidation::Subtree(subtree_id(&id)))
++}
++
++#[implement(IUIAutomationFocusChangedEventHandler)]
++struct FocusEvents;
++
++impl IUIAutomationFocusChangedEventHandler_Impl for FocusEvents_Impl {
++    fn HandleFocusChangedEvent(
++        &self,
++        sender: Option<&IUIAutomationElement>,
++    ) -> windows::core::Result<()> {
++        let Some(sender) = sender else {
++            return Ok(());
++        };
++        if let (Some(pid), Some(id)) = (cached_pid(sender), cached_runtime_id(sender)) {
++            // Only a cached window that contains the focused element changes.
++            cache().invalidate_pid_with(pid as i32, Invalidation::Hint(subtree_id(&id)));
++        }
++        Ok(())
++    }
++}
++
++struct Watch {
++    root: IUIAutomationElement,
++    events: IUIAutomationStructureChangedEventHandler,
++    properties: IUIAutomationPropertyChangedEventHandler,
++    closed: IUIAutomationEventHandler,
++    last_used: Instant,
++}
++
++struct Watches {
++    windows: HashMap<u64, Watch>,
++    focus: Option<IUIAutomationFocusChangedEventHandler>,
++}
++
++// SAFETY: free-threaded UIA objects, used only from MTA threads.
++unsafe impl Send for Watches {}
++
++fn watches() -> &'static Mutex<Watches> {
++    static WATCHES: OnceLock<Mutex<Watches>> = OnceLock::new();
++    WATCHES.get_or_init(|| {
++        Mutex::new(Watches {
++            windows: HashMap::new(),
++            focus: None,
++        })
++    })
++}
++
++fn touch_watch(hwnd: u64) {
++    if let Some(watch) = watches()
++        .lock()
++        .unwrap_or_else(|p| p.into_inner())
++        .windows
++        .get_mut(&hwnd)
++    {
++        watch.last_used = Instant::now();
++    }
++}
++
++/// Make sure `hwnd`'s events reach the cache. `false` when they cannot be
++/// registered; such a window is never served from the cache.
++fn ensure_watch(automation: &IUIAutomation, hwnd: u64) -> bool {
++    let mut watches = watches().lock().unwrap_or_else(|p| p.into_inner());
++    let request = match registration_request(automation) {
++        Ok(request) => request,
++        Err(_) => return false,
++    };
++    if watches.focus.is_none() {
++        let handler: IUIAutomationFocusChangedEventHandler = FocusEvents.into();
++        if unsafe { automation.AddFocusChangedEventHandler(&request, &handler) }.is_ok() {
++            watches.focus = Some(handler);
++        }
++    }
++    if watches.focus.is_none() {
++        return false;
++    }
++    // Drop windows that closed.
++    let closed: Vec<u64> = watches
++        .windows
++        .keys()
++        .copied()
++        .filter(|&w| !is_window(w))
++        .collect();
++    for window in closed {
++        if let Some(watch) = watches.windows.remove(&window) {
++            unwatch(automation, &watch);
++        }
++        cache().forget(window);
++    }
++    if let Some(watch) = watches.windows.get_mut(&hwnd) {
++        watch.last_used = Instant::now();
++        return true;
++    }
++    while watches.windows.len() >= MAX_WATCHED_WINDOWS {
++        let Some(oldest) = watches
++            .windows
++            .iter()
++            .min_by_key(|(_, watch)| watch.last_used)
++            .map(|(&w, _)| w)
++        else {
++            break;
++        };
++        if let Some(watch) = watches.windows.remove(&oldest) {
++            unwatch(automation, &watch);
++        }
++        cache().forget(oldest);
++    }
++    let Ok(root) =
++        (unsafe { automation.ElementFromHandle(windows::Win32::Foundation::HWND(hwnd as *mut _)) })
++    else {
++        return false;
++    };
++    let events: IUIAutomationStructureChangedEventHandler = WindowEvents { hwnd }.into();
++    let (Ok(properties), Ok(closed)) = (
++        events.cast::<IUIAutomationPropertyChangedEventHandler>(),
++        events.cast::<IUIAutomationEventHandler>(),
++    ) else {
++        return false;
++    };
++    let registered = unsafe {
++        automation
++            .AddStructureChangedEventHandler(&root, TreeScope_Subtree, &request, &events)
++            .and_then(|()| {
++                automation.AddPropertyChangedEventHandlerNativeArray(
++                    &root,
++                    TreeScope_Subtree,
++                    &request,
++                    &properties,
++                    WATCHED_PROPERTIES,
++                )
++            })
++            .and_then(|()| {
++                automation.AddAutomationEventHandler(
++                    UIA_Window_WindowClosedEventId,
++                    &root,
++                    TreeScope_Element,
++                    &request,
++                    &closed,
++                )
++            })
++    };
++    let watch = Watch {
++        root,
++        events,
++        properties,
++        closed,
++        last_used: Instant::now(),
++    };
++    if registered.is_err() {
++        unwatch(automation, &watch);
++        return false;
++    }
++    watches.windows.insert(hwnd, watch);
++    true
++}
++
++fn unwatch(automation: &IUIAutomation, watch: &Watch) {
++    unsafe {
++        let _ = automation.RemoveStructureChangedEventHandler(&watch.root, &watch.events);
++        let _ = automation.RemovePropertyChangedEventHandler(&watch.root, &watch.properties);
++        let _ = automation.RemoveAutomationEventHandler(
++            UIA_Window_WindowClosedEventId,
++            &watch.root,
++            &watch.closed,
++        );
++    }
++}
++
++/// Event senders arrive with their runtime id and process id cached.
++fn registration_request(automation: &IUIAutomation) -> windows::core::Result<IUIAutomationCacheRequest> {
++    unsafe {
++        let request = automation.CreateCacheRequest()?;
++        request.AddProperty(UIA_RuntimeIdPropertyId)?;
++        request.AddProperty(UIA_ProcessIdPropertyId)?;
++        request.SetTreeScope(TreeScope_Element)?;
++        Ok(request)
++    }
++}
++
++fn is_window(hwnd: u64) -> bool {
++    unsafe {
++        windows::Win32::UI::WindowsAndMessaging::IsWindow(windows::Win32::Foundation::HWND(
++            hwnd as *mut _,
++        ))
++    }
++    .as_bool()
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    fn props(name: &str) -> NodeProps {
++        NodeProps {
++            control_type: "Button".into(),
++            name: Some(name.into()),
++            value: None,
++            automation_id: None,
++            help_text: None,
++            enabled: Some(true),
++            selected: None,
++            actions: vec!["invoke".into()],
++            rect: Some((0, 0, 10, 10)),
++        }
++    }
++
++    #[test]
++    fn a_renamed_row_is_not_the_same_row() {
++        assert!(same_row(&props("Save"), &props("Save")));
++        assert!(!same_row(&props("Save"), &props("Saved")));
++    }
++
++    #[test]
++    fn a_moved_actionable_row_is_not_the_same_row() {
++        let mut moved = props("Save");
++        moved.rect = Some((5, 0, 15, 10));
++        assert!(!same_row(&props("Save"), &moved));
++    }
++
++    #[test]
++    fn a_text_row_ignores_its_unshown_frame() {
++        let mut text = props("Status");
++        text.actions.clear();
++        text.control_type = "Text".into();
++        let mut moved = text.clone();
++        moved.rect = Some((5, 0, 15, 10));
++        assert!(same_row(&text, &moved));
++    }
++
++    #[test]
++    fn a_disabled_row_is_not_the_same_row() {
++        let mut disabled = props("Save");
++        disabled.enabled = Some(false);
++        assert!(!same_row(&props("Save"), &disabled));
++    }
++}

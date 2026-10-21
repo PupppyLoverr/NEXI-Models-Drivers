@@ -142,6 +142,26 @@ and W8 reports round trips per task.
 | W4.4 | Snapshot several windows in parallel for `get_desktop_state` and multi-window flows. | `cua-driver-core/src/window_observation.rs`; per-platform `get_desktop_state` |
 | W4.5 | Latency harness: p50/p95 per tool per fixture app, run in CI, failing on a regression above 20%. Start from upstream's `ci-cua-driver-bench.yml` and `cua-driver-core/tests/recording_turn_latency.rs`. | `cua-driver-e2e/tests/` (new `latency_test.rs`), `/.github/workflows/` |
 
+**Status (patch 0008, 2026-10-21).** Windows verified locally; macOS and Linux code is unverified until W7 CI.
+- Per-call overhead removed: the MCP layer cloned the 236 KB `tools/list` twice per call (now a name lookup);
+  `get_window_state` took two full process snapshots (now one image-name query); capture now overlaps the walk;
+  one shared `IUIAutomation`. Merged with W1's tree-first policy, the capture overlaps the walk only when a
+  screenshot is certain beforehand (requested, out file, marks, vision session); otherwise the walk goes first and
+  the capture runs only for a sparse tree. On a WinForms fixture, a query read without a screenshot went from p50 199 ms to
+  23.6 ms (cache off) on a quiet machine, and the MCP floor (`get_screen_size`) from 8.1 to 2.2 ms. Walk time on
+  that fixture swings 30-300 ms with machine load, which no change here controls.
+- W4.3: the CacheRequest fetches `Is*PatternAvailable` properties instead of pattern objects and drops the unread
+  `IsOffscreen`. No measurable effect on WinForms (noise dominates); native providers were not measured.
+- W4.2: event-driven cache with dirty-subtree re-walk, built on all three OSes, **off by default**
+  (`DOVE_TREE_CACHE=1`). Rows it returns are re-read live on Windows, but a row the app adds appears only once its
+  UIA event arrives (350-880 ms on WinForms), so it is not safe as a default. Windows hits: p50 3-33 ms.
+- W4.4: concurrent read-only calls on the direct stdio transport (Windows default; `DOVE_PARALLEL_READS`). Calls in
+  one session are still serialized by session dispatch; two windows in separate sessions: 65 to 51 ms.
+- W4.5: `cua-driver-e2e/tests/latency_test.rs` gates the default query read (p50 < 40 ms, p95 < 150 ms, +20%
+  regression). W7 should run it on a quiet runner and feed results back as the baseline.
+- Follow-ups: per-window capture (PrintWindow + PNG) costs 30-45 ms on screenshot reads; `list_windows` costs
+  200-500 ms; the cache needs a sound way to see new rows before it can default on.
+
 ## W5. Lazy tool disclosure
 
 **Goal:** a harness sees a tiny tool list until it needs more.

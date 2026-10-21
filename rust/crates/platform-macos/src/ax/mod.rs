@@ -23,6 +23,7 @@ pub mod launch;
 pub mod reveal_scroll;
 pub mod snapshot;
 pub mod tree;
+pub(crate) mod tree_cache;
 pub mod window_scope;
 
 pub use snapshot::Snapshots;

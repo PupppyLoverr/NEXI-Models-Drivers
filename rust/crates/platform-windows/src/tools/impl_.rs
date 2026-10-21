@@ -1278,6 +1278,7 @@ impl Tool for GetWindowStateTool {
     }
 
     async fn invoke(&self, args: Value) -> ToolResult {
+        let mut perf = cua_driver_core::perf::StageTimer::new("get_window_state");
         let display_only = match cua_driver_core::window_state_view::display_only(&args) {
             Ok(display_only) => display_only,
             Err(refusal) => return refusal,
@@ -1325,6 +1326,7 @@ impl Tool for GetWindowStateTool {
         // Dove W1: with the window's size, a tree-first read keeps the
         // session's last screenshot frame while the window keeps that size.
         let window_size = Some((f64::from(window.width), f64::from(window.height)));
+        perf.mark("lookup");
         let win_geom = Some((
             window.title.clone(),
             window.x,
@@ -1332,15 +1334,23 @@ impl Tool for GetWindowStateTool {
             window.width,
             window.height,
         ));
+        // One process's image name, instead of a Toolhelp snapshot of every
+        // process (Dove W4). The snapshot stays as the fallback for processes
+        // this one cannot open.
         let app_name = tokio::task::spawn_blocking(move || {
-            crate::win32::list_processes()
-                .into_iter()
-                .find(|p| p.pid == pid)
-                .map(|p| p.name)
+            crate::history::process_executable_path(pid)
+                .and_then(|path| path.file_name().map(|n| n.to_string_lossy().into_owned()))
+                .or_else(|| {
+                    crate::win32::list_processes()
+                        .into_iter()
+                        .find(|p| p.pid == pid)
+                        .map(|p| p.name)
+                })
         })
         .await
         .ok()
         .flatten();
+        perf.mark("app_name");
         use cua_driver_core::tool_args::ArgsExt;
         // The canonical per-call value overrides all configured limits,
         // including `0` for native resolution. The legacy field retains its
@@ -1441,6 +1451,61 @@ impl Tool for GetWindowStateTool {
         let state = self.state.clone();
         let q = query.clone();
         let out_file = screenshot_out_file.clone();
+        // Dove W4 + W1: the GDI capture and the UIA walk are independent, so
+        // when a screenshot is certain before the walk (requested, out file,
+        // marks, a vision session, no tree) the capture starts first and the
+        // two overlap. Under the tree-first `IfSparse` policy the walk goes
+        // first and the capture runs only if the walked tree is sparse. The
+        // capture's deadline still runs from when the walk finishes.
+        let mut spawn_capture = Some(move || {
+            tokio::task::spawn_blocking(move || -> anyhow::Result<_> {
+                // Capture screenshot AND any error message so the response can
+                // surface *why* there's no image (the iconic-window guard from
+                // #1973 / PR #1974 is the load-bearing case: minimized windows
+                // legitimately can't be captured, and the caller needs to know
+                // to call `bring_to_front` instead of retrying).
+                // The previous `Err(_) => None` silently dropped the error and
+                // upstream agents saw an empty response with no signal.
+                let (screenshot, screenshot_err) =
+                    match crate::capture::screenshot_window_bytes(hwnd) {
+                        Ok(raw) => {
+                            let (native_w, native_h) = crate::capture::png_dimensions_pub(&raw)?;
+                            let png = crate::capture::resize_png_if_needed(&raw, max_dim)?;
+                            let (w, h) = crate::capture::png_dimensions_pub(&png)?;
+                            // `screenshot_out_file` set (any mode) → write to disk and
+                            // surface the path, never embed bytes. Otherwise (vision,
+                            // no out_file) → embed base64.
+                            // The embedded copy is encoded for the model (JPEG,
+                            // marks) once the element frames are known.
+                            if let Some(ref path) = out_file {
+                                std::fs::write(path, &png)?;
+                                (
+                                    Some((
+                                        false,
+                                        Some(path.clone()),
+                                        w,
+                                        h,
+                                        native_w,
+                                        native_h,
+                                        png,
+                                    )),
+                                    None,
+                                )
+                            } else {
+                                (Some((true, None, w, h, native_w, native_h, png)), None)
+                            }
+                        }
+                        Err(e) => (None, Some(format!("{e}"))),
+                    };
+                Ok((screenshot, screenshot_err))
+            })
+        });
+        let mut capture_task = match shot_policy {
+            cua_driver_core::dove_observation::ShotPolicy::Always(_) => {
+                spawn_capture.take().map(|spawn| spawn())
+            }
+            _ => None,
+        };
         // The tree walk runs under `timeout_ms`. UIA's bulk BuildUpdatedCache
         // cannot be interrupted (Chrome's provider can block indefinitely on
         // property reads), so when the walk task itself outlives the budget
@@ -1450,15 +1515,30 @@ impl Tool for GetWindowStateTool {
             let tree_task = tokio::task::spawn_blocking(move || {
                 let mut budget =
                     cua_driver_core::walk_budget::WalkBudget::new(timeout_ms, max_elements);
-                let tree =
-                    crate::uia::walk_tree_budgeted(hwnd, q.as_deref(), max_depth, &mut budget);
+                // Dove W4.2: reuse an event-invalidated walk when nothing
+                // could have changed it; see `uia::tree_cache`.
+                let (tree, outcome, cache_report) = crate::uia::tree_cache::walk_tree_cached(
+                    hwnd,
+                    pid,
+                    q.as_deref(),
+                    max_depth,
+                    max_elements,
+                    &mut budget,
+                );
+                tracing::debug!(
+                    target: "dove_perf",
+                    "tree_cache hwnd=0x{hwnd:x} status={} validated_rows={} rewalked_subtrees={}",
+                    cache_report.status,
+                    cache_report.validated_rows,
+                    cache_report.rewalked_subtrees
+                );
                 let kind = if tree.nodes.iter().any(|node| node.msaa_role.is_some()) {
                     crate::uia::snapshot::SnapshotKind::Msaa
                 } else {
                     crate::uia::snapshot::SnapshotKind::Uia
                 };
                 let payload = crate::uia::snapshot::UiaSnapshot::from_nodes(&tree.nodes, kind);
-                (tree, payload, budget.outcome())
+                (tree, payload, outcome)
             });
             let started = std::time::Instant::now();
             let deadline = std::time::Duration::from_millis(timeout_ms) + UIA_WALK_BACKSTOP_GRACE;
@@ -1489,6 +1569,7 @@ impl Tool for GetWindowStateTool {
         } else {
             None
         };
+        perf.mark("walk");
         // The tree is walked first, so a sparse tree (canvas, game, remote
         // desktop) can still bring a screenshot with it.
         let walked_elements = tree_result.as_ref().map(|(tr, _, _)| {
@@ -1498,56 +1579,27 @@ impl Tool for GetWindowStateTool {
                 .count()
         });
         let shot_reason = shot_policy.decide(walked_elements);
-        let do_shot = shot_reason.is_some();
-        let blocking = tokio::task::spawn_blocking(move || -> anyhow::Result<_> {
-            // Capture screenshot AND any error message so the response can
-            // surface *why* there's no image (the iconic-window guard from
-            // #1973 / PR #1974 is the load-bearing case: minimized windows
-            // legitimately can't be captured, and the caller needs to know
-            // to call `bring_to_front` instead of retrying).
-            // The previous `Err(_) => None` silently dropped the error and
-            // upstream agents saw an empty response with no signal.
-            let (screenshot, screenshot_err) = if do_shot {
-                match crate::capture::screenshot_window_bytes(hwnd) {
-                    Ok(raw) => {
-                        let (native_w, native_h) = crate::capture::png_dimensions_pub(&raw)?;
-                        let png = crate::capture::resize_png_if_needed(&raw, max_dim)?;
-                        let (w, h) = crate::capture::png_dimensions_pub(&png)?;
-                        // `screenshot_out_file` set (any mode) → write to disk and
-                        // surface the path, never embed bytes. Otherwise (vision,
-                        // no out_file) → embed base64.
-                        // The embedded copy is encoded for the model (JPEG,
-                        // marks) once the element frames are known.
-                        if let Some(ref path) = out_file {
-                            std::fs::write(path, &png)?;
-                            (
-                                Some((false, Some(path.clone()), w, h, native_w, native_h, png)),
-                                None,
-                            )
-                        } else {
-                            (Some((true, None, w, h, native_w, native_h, png)), None)
-                        }
-                    }
-                    Err(e) => (None, Some(format!("{e}"))),
-                }
-            } else {
-                (None, None)
-            };
-            Ok((screenshot, screenshot_err))
-        });
-        let result: anyhow::Result<_> =
-            match tokio::time::timeout(UIA_SCREENSHOT_TIMEOUT, blocking).await {
-                Ok(join_result) => join_result
-                    .map_err(|e| anyhow::anyhow!("task panic: {e}"))
-                    .and_then(|r| r),
-                Err(_elapsed) => Ok((
-                    None,
-                    Some(format!(
-                        "window capture did not finish within {}s",
-                        UIA_SCREENSHOT_TIMEOUT.as_secs()
+        if shot_reason.is_some() && capture_task.is_none() {
+            capture_task = spawn_capture.take().map(|spawn| spawn());
+        }
+        let result: anyhow::Result<_> = match capture_task {
+            None => Ok((None, None)),
+            Some(capture_task) => {
+                match tokio::time::timeout(UIA_SCREENSHOT_TIMEOUT, capture_task).await {
+                    Ok(join_result) => join_result
+                        .map_err(|e| anyhow::anyhow!("task panic: {e}"))
+                        .and_then(|r| r),
+                    Err(_elapsed) => Ok((
+                        None,
+                        Some(format!(
+                            "window capture did not finish within {}s",
+                            UIA_SCREENSHOT_TIMEOUT.as_secs()
+                        )),
                     )),
-                )),
-            };
+                }
+            }
+        };
+        perf.mark("capture");
         let result =
             result.map(|(screenshot, screenshot_err)| (tree_result, screenshot, screenshot_err));
 
@@ -1599,6 +1651,7 @@ impl Tool for GetWindowStateTool {
                         .flatten()
                         .unzip();
                     published_snapshot = snapshot_id.is_some();
+                    perf.mark("publish");
                     invalidated.extend(replaced.into_iter().flatten());
 
                     // Structured `elements` array — preferred consumption
@@ -1633,6 +1686,7 @@ impl Tool for GetWindowStateTool {
                     structured["total_element_count"] = json!(count);
                     structured["returned_element_count"] = json!(elements.len());
                     structured["elements"] = json!(elements);
+                    perf.mark("elements");
                     // Surface 6: snapshot id mirror for debug correlation.
                     if let Some(snapshot_id) = snapshot_id {
                         structured["snapshot_id"] = json!(
@@ -1735,6 +1789,7 @@ impl Tool for GetWindowStateTool {
                 }
 
                 if let Some((embed, file_path, w, h, native_w, native_h, png)) = screenshot_opt {
+                    perf.mark("refresh");
                     let model_png = embed.then(|| png.clone());
                     let capture_id = if !observation_only {
                         if let Some(bridge) = &state.capture_bridge {
@@ -1855,9 +1910,10 @@ impl Tool for GetWindowStateTool {
                     structured["app_name"] = json!(name);
                 }
 
+                perf.mark("capture_publish");
                 cua_driver_core::window_inspection::mark_browser_chrome_capture_coverage(
                     &mut structured,
-                    is_standalone_chromium_browser_process(pid).then_some(
+                    app_name.as_deref().is_some_and(is_chromium_browser_target).then_some(
                         cua_driver_core::window_inspection::BrowserChromeCaptureCoverage::NotObservable,
                     ),
                 );
@@ -1878,6 +1934,7 @@ impl Tool for GetWindowStateTool {
                 if display_only {
                     cua_driver_core::window_state_view::mark_display_only(&mut structured);
                 }
+                perf.mark("coverage");
                 if !observation_only {
                     cua_driver_core::window_state_view::apply(
                         &view,
@@ -1998,13 +2055,6 @@ fn is_chromium_browser_target(target: &str) -> bool {
             | "browser" // Yandex Browser's exe is browser.exe
             | "arc"
     )
-}
-
-fn is_standalone_chromium_browser_process(pid: u32) -> bool {
-    crate::win32::list_processes()
-        .into_iter()
-        .find(|process| process.pid == pid)
-        .is_some_and(|process| is_chromium_browser_target(&process.name))
 }
 
 /// Anti-throttling flags injected on hidden Chromium launches (#1620).

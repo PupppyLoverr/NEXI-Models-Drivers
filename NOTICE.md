@@ -125,6 +125,17 @@ Feature patches (`scripts/dove/patches/`, applied by the same script):
   - the confirm and block classes of nexi-cua (see below) are checked against the target element and the call's
     optional `intent`. Blocked: refused. Confirm: refused with a `confirm_token` in `standard` mode, refused in
     `bounded` mode, run in `unrestricted` mode. `DOVE_DRIVER_SAFETY_CLASSES=off` turns the classes off.
+- `0008-speed.patch` (ROADMAP W4). Same results, less time per call:
+  - tool-call admission looks the tool name up instead of copying the whole `tools/list` (lazy disclosure keeps
+    `describe_tools` and withheld tools callable, and builds the full list only for `describe_tools` and for the
+    schema hint on bad arguments);
+  - Windows `get_window_state` makes one process-name query, shares one `IUIAutomation`, and starts the capture
+    beside the UIA walk when a screenshot is certain before the walk (requested, `screenshot_out_file`, `marks`, a
+    vision session). A tree-first read still walks first and captures only if the tree is sparse. The UIA
+    CacheRequest fetches `Is*PatternAvailable` properties instead of pattern objects;
+  - an event-driven tree cache on all three OSes, off unless `DOVE_TREE_CACHE=1`; concurrent read-only calls on the
+    direct stdio transport (Windows default, `DOVE_PARALLEL_READS`); stage timers under `CUA_LOG=dove_perf=debug`;
+    and the `cua-driver-e2e/tests/latency_test.rs` latency gate.
 
 ## nexi-cua (Apache-2.0)
 

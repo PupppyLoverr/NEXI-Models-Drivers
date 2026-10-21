@@ -18,6 +18,11 @@ use crate::tool::ToolRegistry;
 #[async_trait::async_trait]
 pub trait ToolProvider: Send + Sync {
     fn tools_list(&self) -> serde_json::Value;
+    /// Whether `tools_list` names `name`. Providers that keep their inventory
+    /// override this so per-call admission does not copy the whole list.
+    fn has_tool(&self, name: &str) -> bool {
+        crate::mcp_wire::inventory_has_tool(&self.tools_list(), name)
+    }
     async fn invoke_tool(
         &self,
         name: &str,
@@ -29,6 +34,10 @@ pub trait ToolProvider: Send + Sync {
 impl ToolProvider for ToolRegistry {
     fn tools_list(&self) -> serde_json::Value {
         ToolRegistry::tools_list(self)
+    }
+
+    fn has_tool(&self, name: &str) -> bool {
+        crate::policy::is_tool_listable(name) && self.get_def(name).is_some()
     }
 
     async fn invoke_tool(
@@ -889,16 +898,18 @@ async fn handle_request_inner(
         Ok(era) => era,
         Err(response) => return response,
     };
+    let mut perf = crate::perf::StageTimer::new("server_request");
     if req.method == "tools/call" {
-        if let Err(response) = crate::tool_disclosure::Disclosure::from_env().validate_tool_call(
+        if let Err(response) = crate::tool_disclosure::Disclosure::from_env().validate_tool_call_by(
             &req,
             id.clone(),
             era,
-            &provider.tools_list(),
+            |name| provider.has_tool(name),
         ) {
             return response;
         }
     }
+    perf.mark("validate");
     let method = req.method.clone();
     let response =
         if let Some(response) = crate::mcp_wire::handle_metadata_request(&req, id.clone()) {
@@ -906,6 +917,7 @@ async fn handle_request_inner(
         } else {
             dispatch_request(req, id, provider, transport_session, era).await
         };
+    perf.mark("dispatch");
     crate::mcp_wire::finish_response(era, &method, response)
 }
 
@@ -931,13 +943,12 @@ async fn dispatch_request(
             Ok(mut call) => {
                 crate::tool_args::sanitize_reserved_args(&mut call.args);
                 let disclosure = crate::tool_disclosure::Disclosure::from_env();
-                let full_list = disclosure.is_lazy().then(|| provider.tools_list());
-                if let Some(full_list) = full_list.as_ref() {
-                    if let Some(result) =
-                        disclosure.intercept_call(full_list, &call.name, &call.args)
-                    {
-                        return Response::ok(id, result);
-                    }
+                if disclosure.owns_call(&call.name, |name| provider.has_tool(name)) {
+                    let full_list = provider.tools_list();
+                    return Response::ok(
+                        id,
+                        crate::tool_disclosure::describe_tools(&full_list, &call.args),
+                    );
                 }
                 if let Err(error) = authorize_tool_call(&call.name, &call.args) {
                     return Response::ok(
@@ -984,13 +995,16 @@ async fn dispatch_request(
                 // Both arms answer through the shared boundary, so a tool
                 // payload and an invocation failure are held to the same
                 // advertised `outputSchema`.
+                let mut perf = crate::perf::StageTimer::new("server_tools_call");
                 let result = match provider.invoke_tool(&call.name, call.args).await {
                     Ok(result) => result,
                     Err(error) => tool_error_result(error, serde_json::json!({"exit_code": 1})),
                 };
+                perf.mark("invoke");
                 let mut result = conforming_tool_result(&call.name, result);
-                if let Some(full_list) = full_list.as_ref() {
-                    disclosure.annotate_result(full_list, &call.name, &mut result);
+                perf.mark("conform");
+                if disclosure.annotates(&result) {
+                    disclosure.annotate_result(&provider.tools_list(), &call.name, &mut result);
                 }
                 Response::ok(id, result)
             }

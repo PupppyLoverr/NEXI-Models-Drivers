@@ -110,29 +110,50 @@ impl Disclosure {
         era: crate::mcp_wire::ProtocolEra,
         full: &Value,
     ) -> Result<(), crate::protocol::Response> {
-        let owns_call = self.is_lazy()
-            && req.method == "tools/call"
-            && req
-                .tool_call()
-                .is_ok_and(|call| call.name == DESCRIBE_TOOLS);
-        if owns_call {
-            let inventory = json!({"tools": [{"name": DESCRIBE_TOOLS}]});
-            return crate::mcp_wire::validate_tool_call(req, id, era, &inventory);
-        }
-        crate::mcp_wire::validate_tool_call(req, id, era, full)
+        self.validate_tool_call_by(req, id, era, |name| {
+            crate::mcp_wire::inventory_has_tool(full, name)
+        })
+    }
+
+    /// [`Self::validate_tool_call`] against a name lookup, so a caller need
+    /// not build the full tool list per call (Dove W4). Withheld tools stay
+    /// callable: lazy mode only shortens what `tools/list` shows.
+    pub fn validate_tool_call_by(
+        self,
+        req: &crate::protocol::Request,
+        id: Value,
+        era: crate::mcp_wire::ProtocolEra,
+        has_tool: impl Fn(&str) -> bool,
+    ) -> Result<(), crate::protocol::Response> {
+        let lazy = self.is_lazy();
+        crate::mcp_wire::validate_tool_call_by(req, id, era, |name| {
+            (lazy && name == DESCRIBE_TOOLS) || has_tool(name)
+        })
     }
 
     /// Answer a `describe_tools` call here, at the MCP boundary, when lazy
     /// mode owns that name. `None` means dispatch the call as usual.
     pub fn intercept_call(self, full: &Value, tool: &str, args: &Value) -> Option<Value> {
-        (self.is_lazy() && tool == DESCRIBE_TOOLS && find_tool(full, DESCRIBE_TOOLS).is_none())
+        self.owns_call(tool, |name| find_tool(full, name).is_some())
             .then(|| describe_tools(full, args))
+    }
+
+    /// Whether [`Self::intercept_call`] answers `tool`, from a name lookup,
+    /// so the full list is built only for the call that needs it.
+    pub fn owns_call(self, tool: &str, has_tool: impl Fn(&str) -> bool) -> bool {
+        self.is_lazy() && tool == DESCRIBE_TOOLS && !has_tool(DESCRIBE_TOOLS)
+    }
+
+    /// Whether [`Self::annotate_result`] would add a schema to `result`, so
+    /// the full list is built only for a bad-arguments error.
+    pub fn annotates(self, result: &Value) -> bool {
+        self.is_lazy() && is_bad_arguments(result)
     }
 
     /// Put the tool's input schema into a bad-arguments error, so a caller
     /// that never saw the schema can correct the call in one step.
     pub fn annotate_result(self, full: &Value, tool: &str, result: &mut Value) {
-        if !self.is_lazy() || !is_bad_arguments(result) {
+        if !self.annotates(result) {
             return;
         }
         let Some(schema) = find_tool(full, tool).and_then(|entry| entry.get("inputSchema")) else {
@@ -498,6 +519,49 @@ mod tests {
         let before = other.clone();
         Disclosure::Lazy.annotate_result(&full, "click", &mut other);
         assert_eq!(other, before);
+    }
+
+    #[test]
+    fn name_lookup_admission_matches_the_full_list() {
+        let full = full_list();
+        let has_tool = |name: &str| crate::mcp_wire::inventory_has_tool(&full, name);
+        let call = |name: &str| -> crate::protocol::Request {
+            serde_json::from_value(json!({
+                "jsonrpc": "2.0", "id": 1, "method": "tools/call",
+                "params": {"name": name, "arguments": {}}
+            }))
+            .unwrap()
+        };
+        let era = crate::mcp_wire::ProtocolEra::Modern;
+        for mode in [Disclosure::Eager, Disclosure::Lazy] {
+            for name in ["click", "type_text", DESCRIBE_TOOLS, "nope"] {
+                let by_list = mode
+                    .validate_tool_call(&call(name), json!(1), era, &full)
+                    .is_ok();
+                let by_name = mode
+                    .validate_tool_call_by(&call(name), json!(1), era, has_tool)
+                    .is_ok();
+                assert_eq!(by_list, by_name, "{mode:?} {name}");
+            }
+        }
+        // Withheld tools stay callable; describe_tools exists only when lazy.
+        assert!(Disclosure::Lazy
+            .validate_tool_call_by(&call("type_text"), json!(1), era, has_tool)
+            .is_ok());
+        assert!(Disclosure::Lazy
+            .validate_tool_call_by(&call(DESCRIBE_TOOLS), json!(1), era, has_tool)
+            .is_ok());
+        assert!(Disclosure::Eager
+            .validate_tool_call_by(&call(DESCRIBE_TOOLS), json!(1), era, has_tool)
+            .is_err());
+        assert!(Disclosure::Lazy.owns_call(DESCRIBE_TOOLS, has_tool));
+        assert!(!Disclosure::Lazy.owns_call("click", has_tool));
+        assert!(!Disclosure::Lazy.owns_call(DESCRIBE_TOOLS, |_| true));
+        assert!(!Disclosure::Eager.owns_call(DESCRIBE_TOOLS, has_tool));
+        let bad = json!({"isError": true, "structuredContent": {"code": "invalid_arguments"}});
+        assert!(Disclosure::Lazy.annotates(&bad));
+        assert!(!Disclosure::Eager.annotates(&bad));
+        assert!(!Disclosure::Lazy.annotates(&json!({"isError": false})));
     }
 
     #[test]
