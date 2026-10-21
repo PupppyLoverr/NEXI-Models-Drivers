@@ -1,0 +1,496 @@
+# dove-driver cross-platform CI (ROADMAP W7, plus the R0.2 side-by-side check).
+#
+# Source of truth: dove-driver's ci/github-workflows/dove-driver-ci.yml.
+# GitHub only runs workflows from a repository's root .github/workflows/, and
+# dove-driver lives in the dove-driver/ folder of PupppyLoverr/NEXI-Models-Drivers,
+# so scripts/dove/publish-folder.sh copies this file to
+# .github/workflows/dove-driver-ci.yml in the same commit that refreshes the
+# folder. Edit the fork's copy, never the root copy.
+#
+# Jobs (each one uploads its evidence as an artifact):
+#   windows      Spectre libs (R0.5), parity check, build, unit tests, shared
+#                contract tests, WinUI3 fixture UIA e2e, gate slots.
+#   macos        build, unit + contract tests, SwiftUI fixture AX e2e through a
+#                TCC-seeded CuaDriver.app daemon, gate slots.
+#   linux-x11    build, unit + contract tests, GTK3 fixture AT-SPI e2e on Xvfb,
+#                gate slots.
+#   linux-sway   GTK3 fixture AT-SPI e2e in a headless native Wayland Sway session.
+#   side-by-side R0.2 on all three OSes: dove-driver and a stock cua-driver
+#                (built from dove-driver/upstream) run together with separate state.
+#   result       the one check to require in branch protection.
+#
+# Gate slots: ci/dove/run-gate.sh latency (W4.5) and grounder (W9). A slot
+# passes with a notice until its ci/dove/gates/<name>.sh exists. The grounder
+# gate runs only when weights are available (ci/dove/grounder-weights.sh).
+
+name: "dove-driver CI"
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "dove-driver/**"
+      - ".github/workflows/dove-driver-*.yml"
+  pull_request:
+    paths:
+      - "dove-driver/**"
+      - ".github/workflows/dove-driver-*.yml"
+  workflow_dispatch:
+  # The release workflow (R0.6) calls this as its gate.
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dove-driver-ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  CARGO_NET_RETRY: "10"
+  CARGO_HTTP_TIMEOUT: "120"
+  CARGO_HTTP_MULTIPLEXING: "false"
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: "1"
+  # Nothing run here sends usage telemetry (stock cua-driver defaults it on).
+  CUA_TELEMETRY: "0"
+  DO_NOT_TRACK: "1"
+  CUA_DRIVER_RS_TELEMETRY_ENABLED: "false"
+
+defaults:
+  run:
+    shell: bash
+    working-directory: dove-driver
+
+jobs:
+  windows:
+    name: "Windows / build, unit, WinUI3 e2e, parity"
+    runs-on: windows-2025
+    timeout-minutes: 150
+    env:
+      DOVE_CI_OS: windows
+      DOVE_CI_ARTIFACTS: ${{ github.workspace }}/dove-driver/artifacts/windows
+      DOVE_CI_DRIVER_BIN: ${{ github.workspace }}/dove-driver/rust/target/release/dove-driver.exe
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+
+      - name: MSVC Spectre-mitigated libs (R0.5)
+        shell: pwsh
+        run: ./ci/dove/windows/ensure-spectre-libs.ps1
+
+      - name: Parity with upstream + Dove changes
+        run: |
+          fork="$(cygpath -u "$RUNNER_TEMP")/fork"
+          bash ci/dove/fork-tree.sh "$fork"
+          cd "$fork"
+          bash scripts/dove/parity-check.sh
+
+      - uses: dtolnay/rust-toolchain@4716b85f2fac3e324e64fa2810f6b5c3905760a5 # 1.97.1
+      - uses: Swatinem/rust-cache@9d47c6ad4b02e050fd481d890b2ea34778fd09d6 # v2
+        with:
+          workspaces: "dove-driver/rust -> target"
+          key: dove-windows
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build dove-driver
+        working-directory: dove-driver/rust
+        run: cargo build --release --locked -p cua-driver -p cua-driver-uia
+
+      - name: Unit tests
+        working-directory: dove-driver/rust
+        run: |
+          mapfile -t skips < <(bash ../ci/dove/known-failures.sh windows)
+          cargo test --locked -p cua-driver-core --lib
+          cargo test --locked -p platform-windows --lib
+          cargo test --locked -p cua-driver --bin dove-driver -- "${skips[@]}"
+
+      - name: Shared contract tests
+        working-directory: dove-driver/rust
+        run: |
+          cargo test --locked -p cua-driver-contract
+          cargo test --locked -p cua-driver-e2e --test cross_platform_behavior_test
+
+      - name: Build the WinUI3 fixture
+        shell: pwsh
+        run: ./tests/fixtures/build/windows.ps1 -Targets winui3
+
+      - name: WinUI3 UIA e2e
+        working-directory: dove-driver/rust
+        env:
+          CUA_TEST_WORKSPACE_ROOT: ${{ github.workspace }}/dove-driver/rust
+          CUA_TEST_DRIVER_BIN: ${{ github.workspace }}/dove-driver/rust/target/release/dove-driver.exe
+          CUA_TEST_APPS_ROOT: ${{ github.workspace }}/dove-driver/rust/test-apps
+          CUA_TEST_REQUIRE_FIXTURES: "1"
+          CUA_TEST_REQUIRE_DRIVER_BIN: "1"
+          CUA_TEST_DRIVER_STDERR: "1"
+          CUA_E2E_UNRESTRICTED_GUI: "1"
+          CUA_REQUIRE_GUI: "1"
+          CUA_E2E_FORBID_SKIPS: "1"
+          CUA_E2E_DECLARATIONS_FILE: ${{ github.workspace }}/dove-driver/artifacts/windows/cases.jsonl
+          CUA_E2E_RESULTS_FILE: ${{ github.workspace }}/dove-driver/artifacts/windows/results.jsonl
+          CUA_E2E_ENVIRONMENT_FILE: ${{ github.workspace }}/dove-driver/artifacts/windows/environment.jsonl
+        run: |
+          mkdir -p "$(cygpath -u "$DOVE_CI_ARTIFACTS")"
+          cargo test --locked -p cua-driver-e2e --test harness_winui3_test -- \
+            --ignored --nocapture --test-threads=1
+
+      - name: Latency gate slot (W4.5)
+        run: bash ci/dove/run-gate.sh latency
+
+      - id: weights
+        name: Grounder weights (W9)
+        env:
+          WEIGHTS_URL: ${{ vars.DOVE_GROUNDER_WEIGHTS_URL }}
+          WEIGHTS_SHA256: ${{ vars.DOVE_GROUNDER_WEIGHTS_SHA256 }}
+        run: bash ci/dove/grounder-weights.sh "$(cygpath -u "$RUNNER_TEMP")/grounder"
+
+      - name: Grounder gate slot (W9)
+        if: steps.weights.outputs.available == 'true'
+        env:
+          DOVE_CI_GROUNDER_WEIGHTS: ${{ steps.weights.outputs.path }}
+        run: bash ci/dove/run-gate.sh grounder
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.2
+        with:
+          name: dove-driver-windows
+          path: dove-driver/artifacts
+          if-no-files-found: ignore
+          retention-days: 14
+
+  macos:
+    name: "macOS / build, unit, SwiftUI AX e2e"
+    # Seeding TCC edits the runner's system database. Disposable hosted VMs
+    # only, and never for pull requests from forks.
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: macos-26
+    timeout-minutes: 120
+    env:
+      DOVE_CI_OS: macos
+      DOVE_CI_ARTIFACTS: ${{ github.workspace }}/dove-driver/artifacts/macos
+      DOVE_CI_DRIVER_BIN: ${{ github.workspace }}/dove-driver/rust/target/release/dove-driver
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@4716b85f2fac3e324e64fa2810f6b5c3905760a5 # 1.97.1
+      - uses: Swatinem/rust-cache@9d47c6ad4b02e050fd481d890b2ea34778fd09d6 # v2
+        with:
+          workspaces: "dove-driver/rust -> target"
+          key: dove-macos
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build dove-driver
+        working-directory: dove-driver/rust
+        run: cargo build --release --locked -p cua-driver
+
+      - name: Unit tests
+        working-directory: dove-driver/rust
+        run: |
+          mapfile -t skips < <(bash ../ci/dove/known-failures.sh macos)
+          cargo test --locked -p cua-driver-core --lib
+          cargo test --locked -p cua-driver --bin dove-driver -- "${skips[@]}"
+
+      - name: Shared contract tests
+        working-directory: dove-driver/rust
+        run: |
+          cargo test --locked -p cua-driver-contract
+          cargo test --locked -p cua-driver-e2e --test cross_platform_behavior_test
+
+      - name: Build the SwiftUI fixture
+        run: bash tests/fixtures/build/macos.sh --only swiftui
+
+      - name: Start the TCC-authorized daemon
+        run: bash ci/dove/macos/ax-daemon.sh start "$DOVE_CI_DRIVER_BIN" "$DOVE_CI_ARTIFACTS/ax-daemon"
+
+      - name: SwiftUI AX e2e
+        working-directory: dove-driver/rust
+        env:
+          CUA_TEST_WORKSPACE_ROOT: ${{ github.workspace }}/dove-driver/rust
+          CUA_TEST_DRIVER_BIN: ${{ github.workspace }}/dove-driver/rust/target/release/dove-driver
+          CUA_TEST_APPS_ROOT: ${{ github.workspace }}/dove-driver/rust/test-apps
+          CUA_TEST_REQUIRE_FIXTURES: "1"
+          CUA_TEST_REQUIRE_DRIVER_BIN: "1"
+          CUA_TEST_DRIVER_STDERR: "1"
+          CUA_E2E_UNRESTRICTED_GUI: "1"
+          CUA_REQUIRE_GUI: "1"
+          CUA_E2E_FORBID_SKIPS: "1"
+          CUA_E2E_DECLARATIONS_FILE: ${{ github.workspace }}/dove-driver/artifacts/macos/cases.jsonl
+          CUA_E2E_RESULTS_FILE: ${{ github.workspace }}/dove-driver/artifacts/macos/results.jsonl
+          CUA_E2E_ENVIRONMENT_FILE: ${{ github.workspace }}/dove-driver/artifacts/macos/environment.jsonl
+        run: |
+          CUA_E2E_MACOS_DAEMON_SOCKET="${DOVE_CI_MACOS_SOCKET:?ax-daemon.sh did not export the socket}"
+          export CUA_E2E_MACOS_DAEMON_SOCKET
+          cargo test --locked -p cua-driver-e2e --test harness_swiftui_test -- \
+            --ignored --nocapture --test-threads=1
+
+      - name: Stop the daemon
+        if: always()
+        run: bash ci/dove/macos/ax-daemon.sh stop "$DOVE_CI_ARTIFACTS/ax-daemon"
+
+      - name: Latency gate slot (W4.5)
+        run: bash ci/dove/run-gate.sh latency
+
+      - id: weights
+        name: Grounder weights (W9)
+        env:
+          WEIGHTS_URL: ${{ vars.DOVE_GROUNDER_WEIGHTS_URL }}
+          WEIGHTS_SHA256: ${{ vars.DOVE_GROUNDER_WEIGHTS_SHA256 }}
+        run: bash ci/dove/grounder-weights.sh "$RUNNER_TEMP/grounder"
+
+      - name: Grounder gate slot (W9)
+        if: steps.weights.outputs.available == 'true'
+        env:
+          DOVE_CI_GROUNDER_WEIGHTS: ${{ steps.weights.outputs.path }}
+        run: bash ci/dove/run-gate.sh grounder
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.2
+        with:
+          name: dove-driver-macos
+          path: dove-driver/artifacts
+          if-no-files-found: ignore
+          retention-days: 14
+
+  linux-x11:
+    name: "Linux / build, unit, GTK3 AT-SPI e2e on Xvfb"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      DOVE_CI_OS: linux-x11
+      DOVE_CI_ARTIFACTS: ${{ github.workspace }}/dove-driver/artifacts/linux-x11
+      DOVE_CI_DRIVER_BIN: ${{ github.workspace }}/dove-driver/rust/target/release/dove-driver
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - name: Install desktop and build dependencies
+        run: bash ci/dove/linux/apt-deps.sh x11
+      - uses: dtolnay/rust-toolchain@4716b85f2fac3e324e64fa2810f6b5c3905760a5 # 1.97.1
+      - uses: Swatinem/rust-cache@9d47c6ad4b02e050fd481d890b2ea34778fd09d6 # v2
+        with:
+          workspaces: "dove-driver/rust -> target"
+          key: dove-linux
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build dove-driver
+        working-directory: dove-driver/rust
+        run: cargo build --release --locked -p cua-driver
+
+      - name: Unit tests
+        working-directory: dove-driver/rust
+        run: |
+          mapfile -t skips < <(bash ../ci/dove/known-failures.sh linux)
+          cargo test --locked -p cua-driver-core --lib
+          cargo test --locked -p platform-linux --lib
+          cargo test --locked -p cua-driver --bin dove-driver -- "${skips[@]}"
+
+      - name: Shared contract tests
+        working-directory: dove-driver/rust
+        run: |
+          cargo test --locked -p cua-driver-contract
+          cargo test --locked -p cua-driver-e2e --test cross_platform_behavior_test
+
+      - name: Build the GTK3 fixture
+        run: bash tests/fixtures/build/linux.sh --only gtk3
+
+      - name: GTK3 AT-SPI e2e (Xvfb + openbox)
+        working-directory: dove-driver/rust
+        env:
+          CUA_TEST_WORKSPACE_ROOT: ${{ github.workspace }}/dove-driver/rust
+          CUA_TEST_DRIVER_BIN: ${{ github.workspace }}/dove-driver/rust/target/release/dove-driver
+          CUA_TEST_APPS_ROOT: ${{ github.workspace }}/dove-driver/rust/test-apps
+          CUA_TEST_REQUIRE_FIXTURES: "1"
+          CUA_TEST_REQUIRE_DRIVER_BIN: "1"
+          CUA_TEST_DRIVER_STDERR: "1"
+          CUA_E2E_UNRESTRICTED_GUI: "1"
+          CUA_REQUIRE_GUI: "1"
+          CUA_E2E_FORBID_SKIPS: "1"
+          CUA_E2E_COMPOSITOR: openbox-x11
+          CUA_E2E_INPUT_BACKENDS: atspi,xsend-event,xtest
+          CUA_E2E_DECLARATIONS_FILE: ${{ github.workspace }}/dove-driver/artifacts/linux-x11/cases.jsonl
+          CUA_E2E_RESULTS_FILE: ${{ github.workspace }}/dove-driver/artifacts/linux-x11/results.jsonl
+          CUA_E2E_ENVIRONMENT_FILE: ${{ github.workspace }}/dove-driver/artifacts/linux-x11/environment.jsonl
+        run: |
+          mkdir -p "$DOVE_CI_ARTIFACTS"
+          bash ../ci/dove/linux/x11-session.sh \
+            cargo test --locked -p cua-driver-e2e --test harness_gtk3_test -- \
+              --ignored --nocapture --test-threads=1
+
+      - name: Latency gate slot (W4.5)
+        run: bash ci/dove/linux/x11-session.sh bash ci/dove/run-gate.sh latency
+
+      - id: weights
+        name: Grounder weights (W9)
+        env:
+          WEIGHTS_URL: ${{ vars.DOVE_GROUNDER_WEIGHTS_URL }}
+          WEIGHTS_SHA256: ${{ vars.DOVE_GROUNDER_WEIGHTS_SHA256 }}
+        run: bash ci/dove/grounder-weights.sh "$RUNNER_TEMP/grounder"
+
+      - name: Grounder gate slot (W9)
+        if: steps.weights.outputs.available == 'true'
+        env:
+          DOVE_CI_GROUNDER_WEIGHTS: ${{ steps.weights.outputs.path }}
+        run: bash ci/dove/linux/x11-session.sh bash ci/dove/run-gate.sh grounder
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.2
+        with:
+          name: dove-driver-linux-x11
+          path: dove-driver/artifacts
+          if-no-files-found: ignore
+          retention-days: 14
+
+  linux-sway:
+    name: "Linux / GTK3 AT-SPI e2e on headless Sway (Wayland)"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      DOVE_CI_OS: linux-sway
+      DOVE_CI_ARTIFACTS: ${{ github.workspace }}/dove-driver/artifacts/linux-sway
+      DOVE_CI_DRIVER_BIN: ${{ github.workspace }}/dove-driver/rust/target/release/dove-driver
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - name: Install Sway and build dependencies
+        run: bash ci/dove/linux/apt-deps.sh sway
+      - uses: dtolnay/rust-toolchain@4716b85f2fac3e324e64fa2810f6b5c3905760a5 # 1.97.1
+      - uses: Swatinem/rust-cache@9d47c6ad4b02e050fd481d890b2ea34778fd09d6 # v2
+        with:
+          workspaces: "dove-driver/rust -> target"
+          key: dove-linux
+          save-if: false
+
+      - name: Build dove-driver
+        working-directory: dove-driver/rust
+        run: cargo build --release --locked -p cua-driver
+
+      - name: Build the GTK3 fixture
+        run: bash tests/fixtures/build/linux.sh --only gtk3
+
+      - name: GTK3 AT-SPI e2e (Sway headless)
+        working-directory: dove-driver/rust
+        env:
+          CUA_TEST_WORKSPACE_ROOT: ${{ github.workspace }}/dove-driver/rust
+          CUA_TEST_DRIVER_BIN: ${{ github.workspace }}/dove-driver/rust/target/release/dove-driver
+          CUA_TEST_APPS_ROOT: ${{ github.workspace }}/dove-driver/rust/test-apps
+          CUA_TEST_REQUIRE_FIXTURES: "1"
+          CUA_TEST_REQUIRE_DRIVER_BIN: "1"
+          CUA_TEST_DRIVER_STDERR: "1"
+          CUA_E2E_UNRESTRICTED_GUI: "1"
+          CUA_REQUIRE_GUI: "1"
+          CUA_E2E_FORBID_SKIPS: "1"
+          CUA_E2E_DECLARATIONS_FILE: ${{ github.workspace }}/dove-driver/artifacts/linux-sway/cases.jsonl
+          CUA_E2E_RESULTS_FILE: ${{ github.workspace }}/dove-driver/artifacts/linux-sway/results.jsonl
+          CUA_E2E_ENVIRONMENT_FILE: ${{ github.workspace }}/dove-driver/artifacts/linux-sway/environment.jsonl
+        run: |
+          mkdir -p "$DOVE_CI_ARTIFACTS"
+          bash ../ci/dove/linux/sway-session.sh \
+            cargo test --locked -p cua-driver-e2e --test harness_gtk3_test -- \
+              --ignored --nocapture --test-threads=1
+
+      - name: Latency gate slot (W4.5)
+        run: bash ci/dove/linux/sway-session.sh bash ci/dove/run-gate.sh latency
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.2
+        with:
+          name: dove-driver-linux-sway
+          path: dove-driver/artifacts
+          if-no-files-found: ignore
+          retention-days: 14
+
+  side-by-side:
+    name: "R0.2 / dove-driver beside stock cua-driver (${{ matrix.os }})"
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2025, macos-26, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - name: MSVC Spectre-mitigated libs (R0.5)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./ci/dove/windows/ensure-spectre-libs.ps1
+      - name: Install build dependencies
+        if: runner.os == 'Linux'
+        run: bash ci/dove/linux/apt-deps.sh build
+
+      - name: Check out stock upstream (dove-driver/upstream)
+        working-directory: .
+        run: |
+          git fetch --no-tags --depth=1 origin refs/heads/dove-driver/upstream
+          git worktree add --detach dove-driver-stock FETCH_HEAD
+          bash dove-driver/ci/dove/prepare-stock-tree.sh dove-driver-stock
+
+      - uses: dtolnay/rust-toolchain@4716b85f2fac3e324e64fa2810f6b5c3905760a5 # 1.97.1
+      - uses: Swatinem/rust-cache@9d47c6ad4b02e050fd481d890b2ea34778fd09d6 # v2
+        with:
+          workspaces: |
+            dove-driver/rust -> target
+            dove-driver-stock/rust -> target
+          key: side-by-side
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build dove-driver
+        working-directory: dove-driver/rust
+        run: cargo build --release --locked -p cua-driver
+      - name: Build stock cua-driver
+        working-directory: dove-driver-stock/rust
+        run: cargo build --release -p cua-driver
+
+      - name: Side by side with separate state
+        run: |
+          exe=""
+          [[ "$RUNNER_OS" == Windows ]] && exe=.exe
+          py="$(command -v python3 || command -v python)"
+          "$py" ci/dove/side_by_side.py \
+            --dove "rust/target/release/dove-driver$exe" \
+            --stock "../dove-driver-stock/rust/target/release/cua-driver$exe" \
+            --work "$RUNNER_TEMP/side-by-side"
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.2
+        with:
+          name: dove-driver-side-by-side-${{ matrix.os }}
+          path: ${{ runner.temp }}/side-by-side/*.log
+          if-no-files-found: ignore
+          retention-days: 14
+
+  result:
+    name: "dove-driver CI / result"
+    if: always()
+    needs: [windows, macos, linux-x11, linux-sway, side-by-side]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Evaluate jobs
+        working-directory: .
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+          FORK_PR: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
+        run: |
+          # macOS is skipped (by design) only for pull requests from forks.
+          bad=$(jq -r --argjson fork_pr "$FORK_PR" 'to_entries[]
+            | select(.value.result != "success")
+            | select(.key != "macos" or .value.result != "skipped" or ($fork_pr | not))
+            | "\(.key)=\(.value.result)"' <<< "$NEEDS")
+          if [[ -n "$bad" ]]; then
+            echo "::error::dove-driver CI jobs not green: $bad"
+            exit 1
+          fi
+          echo "All dove-driver CI jobs passed." | tee -a "$GITHUB_STEP_SUMMARY"

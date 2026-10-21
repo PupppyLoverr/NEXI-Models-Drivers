@@ -1,0 +1,1 @@
+# Known pre-existing failures on macOS (none recorded). Format: see windows.txt.

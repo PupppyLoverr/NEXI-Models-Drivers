@@ -1,0 +1,10 @@
+# Known pre-existing failures of `cargo test -p cua-driver --bin dove-driver`
+# on Windows, skipped by ci/dove/known-failures.sh. One exact test path per
+# line, then `# reason`. Each must also fail on the `upstream` branch.
+#
+# TODO(W7): the shared session rules name two path-separator tests in
+# extension_manager and the load-sensitive
+# protocol_tools_call_test::launch_unknown_app_is_bounded_and_keeps_mcp_session_responsive
+# (an integration test, not run by the unit step). The two extension_manager
+# names are not recorded yet: take them from the first Windows CI run and add
+# them here, with the upstream run that shows the same failure.

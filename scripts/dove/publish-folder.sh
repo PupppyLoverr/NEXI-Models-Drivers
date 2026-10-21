@@ -8,10 +8,15 @@
 # 2. Through the GitHub API, adds a merge commit to its `main` whose tree is that
 #    branch's tree with dove-driver/ set to this fork's `main` tree, and whose
 #    parents are its `main` and this fork's `main`, so the fork's history stays
-#    attached. Nothing else in the repository changes, and none of it is
-#    downloaded here.
+#    attached. The same commit places the fork's CI workflows at the
+#    repository root, where GitHub runs them: every
+#    ci/github-workflows/dove-driver-*.yml becomes
+#    .github/workflows/dove-driver-*.yml, and a root dove-driver-*.yml the fork
+#    no longer has is removed. Nothing else in the repository changes, and none
+#    of it is downloaded here.
 #
-# Requires `gh` signed in with push access. Run from a clean `main` that passes
+# Requires `gh` signed in with push access, and with the `workflow` scope when
+# the root workflows change (GitHub refuses workflow edits without it). Run from a clean `main` that passes
 # scripts/dove/parity-check.sh.
 set -euo pipefail
 
@@ -36,17 +41,50 @@ fork_tree="$(git rev-parse 'main^{tree}')"
 base_commit="$(gh api "repos/$repo/git/ref/heads/main" --jq .object.sha)"
 base_tree="$(gh api "repos/$repo/git/commits/$base_commit" --jq .tree.sha)"
 current="$(gh api "repos/$repo/git/trees/$base_tree" --jq ".tree[] | select(.path == \"$folder\") | .sha")"
-if [ "$current" = "$fork_tree" ]; then
-  echo "$repo main already has $folder/ at ${fork_commit:0:7}"
+
+# Root workflows: wanted (from the fork's ci/github-workflows/) against present
+# (dove-driver-*.yml in the root .github/workflows/). Both as "name sha" lines.
+wanted_workflows="$(git ls-tree main ci/github-workflows/ |
+  awk '$2 == "blob" && $4 ~ /\/dove-driver-[^\/]*\.yml$/ { sub(".*/", "", $4); print $4, $3 }' | sort)"
+subtree() {  # subtree <tree sha> <name>: sha of that child tree, or nothing
+  gh api "repos/$repo/git/trees/$1" --jq ".tree[] | select(.path == \"$2\" and .type == \"tree\") | .sha"
+}
+present_workflows=""
+github_tree="$(subtree "$base_tree" .github)"
+workflows_tree=""
+[ -n "$github_tree" ] && workflows_tree="$(subtree "$github_tree" workflows)"
+[ -n "$workflows_tree" ] && present_workflows="$(gh api "repos/$repo/git/trees/$workflows_tree" \
+    --jq '.tree[] | select(.type == "blob" and (.path | test("^dove-driver-.*[.]yml$"))) | "\(.path) \(.sha)"' |
+  sort)"
+
+if [ "$current" = "$fork_tree" ] && [ "$wanted_workflows" = "$present_workflows" ]; then
+  echo "$repo main already has $folder/ at ${fork_commit:0:7} and its workflows"
   exit 0
 fi
+if [ "$wanted_workflows" != "$present_workflows" ] &&
+   ! gh api -i user 2>/dev/null | grep -i '^x-oauth-scopes:' | grep -qw workflow; then
+  echo "the root workflows change, but gh's token lacks the 'workflow' scope;" >&2
+  echo "run: gh auth refresh -s workflow" >&2
+  exit 1
+fi
 
-new_tree="$(printf '{"base_tree":"%s","tree":[{"path":"%s","mode":"040000","type":"tree","sha":"%s"}]}' \
-    "$base_tree" "$folder" "$fork_tree" |
+entries="$(printf '{"path":"%s","mode":"040000","type":"tree","sha":"%s"}' "$folder" "$fork_tree")"
+while read -r name sha; do
+  [ -n "$name" ] || continue
+  entries="$entries,$(printf '{"path":".github/workflows/%s","mode":"100644","type":"blob","sha":"%s"}' "$name" "$sha")"
+done <<< "$wanted_workflows"
+while read -r name _; do
+  [ -n "$name" ] || continue
+  grep -q "^$name " <<< "$wanted_workflows" ||
+    entries="$entries,$(printf '{"path":".github/workflows/%s","mode":"100644","type":"blob","sha":null}' "$name")"
+done <<< "$present_workflows"
+
+new_tree="$(printf '{"base_tree":"%s","tree":[%s]}' "$base_tree" "$entries" |
   gh api "repos/$repo/git/trees" --input - --jq .sha)"
 
 verb="Add"
 [ -n "$current" ] && verb="Update"
+[ "$current" = "$fork_tree" ] && verb="Refresh workflows of"
 message="$verb $folder/ (dove-driver $(cat rust/VERSION), fork ${fork_commit:0:7})
 
 dove-driver is Dove's computer-use driver: a fork of trycua/cua
