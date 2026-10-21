@@ -106,6 +106,11 @@ and W8 reports round trips per task.
 
 **Goal:** a harness sees a tiny tool list until it needs more.
 
+**Status: built and tested on Linux (2026-10-21), patch `0004-lazy-tool-disclosure.patch`.** W5.1 and W5.2 are done
+in `cua-driver-core/src/tool_disclosure.rs`, wired into the core dispatcher and the `mcp` proxy. W5.3 is done for the
+MCP server instructions and the served `cua-driver` `SKILL.md`; the `dove-computer` skill does not exist yet (R0.2).
+Remaining: run `tool_disclosure_test` on Windows and measure the lazy size there, and the W8 success-rate check.
+
 | # | Work item | Files |
 |---|---|---|
 | W5.1 | `DOVE_TOOL_DISCLOSURE=lazy`: `tools/list` returns full schemas for `list_windows`, `get_window_state`, `run_steps`, `verify_state` and `describe_tools` only, and names plus one-line descriptions for the rest. | `cua-driver-core/src/server.rs` (`tools_list`), `tool.rs`, `tool_schema.rs`, `mcp_wire.rs`; `cua-driver/src/serve.rs`, `mcp_envelope.rs` |
