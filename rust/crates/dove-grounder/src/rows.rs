@@ -154,6 +154,29 @@ fn checked(role: &str, row: &Value) -> Option<bool> {
     from_value.or_else(|| row.get("selected").and_then(Value::as_bool))
 }
 
+/// `nexi_role`, made exact with the row's own actions where the role name is
+/// ambiguous. `text` is an editable entry on AT-SPI but a static label on
+/// Windows UIA (control type `Text`), so it is a text field only when the row
+/// can take a value; otherwise typing would target a field's label.
+fn row_role(raw_role: &str, row: &Value) -> &'static str {
+    let role = nexi_role(raw_role);
+    let folded: String = raw_role
+        .chars()
+        .filter(|c| c.is_ascii_alphanumeric())
+        .map(|c| c.to_ascii_lowercase())
+        .collect();
+    if role == "textfield" && folded == "text" {
+        let editable = row
+            .get("actions")
+            .and_then(Value::as_array)
+            .is_some_and(|a| a.iter().any(|v| v.as_str() == Some("set_value")));
+        if !editable {
+            return "statictext";
+        }
+    }
+    role
+}
+
 /// One snapshot row as a nexi element, plus its token.
 pub struct Row {
     pub index: u64,
@@ -193,7 +216,7 @@ pub fn observation(rows: &[Value], goal: &str) -> (Observation, HashMap<String, 
             continue;
         };
         let raw_role = row.get("role").and_then(Value::as_str).unwrap_or("");
-        let role = nexi_role(raw_role);
+        let role = row_role(raw_role, row);
         let text = |key: &str| {
             row.get(key)
                 .and_then(Value::as_str)
@@ -266,6 +289,15 @@ pub fn observation(rows: &[Value], goal: &str) -> (Observation, HashMap<String, 
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn a_text_row_is_a_field_only_when_it_takes_a_value() {
+        let label = serde_json::json!({"role": "Text", "actions": ["text"]});
+        let entry = serde_json::json!({"role": "text", "actions": ["set_value", "text"]});
+        assert_eq!(row_role("Text", &label), "statictext");
+        assert_eq!(row_role("text", &entry), "textfield");
+        assert_eq!(row_role("Edit", &label), "textfield");
+    }
 
     #[test]
     fn roles_from_every_platform_fold_to_nexi_roles() {
