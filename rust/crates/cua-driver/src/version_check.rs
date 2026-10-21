@@ -84,6 +84,10 @@ pub const NIGHTLY_RELEASE_TAG_PREFIX: &str = "nightly-cua-driver-rs-v";
 /// - `CARGO_PKG_VERSION` has a pre-release suffix (source / dev build —
 ///   nothing on GitHub will be "newer" in a meaningful way)
 pub fn maybe_announce_update() {
+    // Dove fork: Dove updates the driver, so there is nothing to announce.
+    if crate::dove_env::UPDATES_MANAGED_BY_DOVE {
+        return;
+    }
     if !is_enabled() {
         tracing::debug!(target: "cua_driver::version_check",
                         "update check skipped (opt-out / pre-release build)");
@@ -197,6 +201,13 @@ fn install_one_liner() -> String {
 /// `UpdateState.error` with a non-empty `current_version` so consumers
 /// always get a well-formed payload they can branch on.
 pub fn check_update_state(no_cache: bool) -> UpdateState {
+    if crate::dove_env::UPDATES_MANAGED_BY_DOVE {
+        // Dove fork: report the externally managed state (no upstream cache,
+        // channel, release or install command) with Dove's reason.
+        let mut state = check_update_state_with_ownership(no_cache, true);
+        state.error = Some(crate::dove_env::UPDATES_MESSAGE.to_owned());
+        return state;
+    }
     check_update_state_with_ownership(no_cache, crate::updater::is_pacman_managed())
 }
 

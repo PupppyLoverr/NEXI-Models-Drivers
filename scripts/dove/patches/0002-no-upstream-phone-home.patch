@@ -136,10 +136,35 @@ index 65a7bfe..8912370 100644
  }
  
 diff --git a/rust/crates/cua-driver/src/version_check.rs b/rust/crates/cua-driver/src/version_check.rs
-index 06893c8..6bc3459 100644
+index 06893c8..2dcc4cc 100644
 --- a/rust/crates/cua-driver/src/version_check.rs
 +++ b/rust/crates/cua-driver/src/version_check.rs
-@@ -756,6 +756,11 @@ pub fn fetch_latest_version() -> Result<String, crate::release_source::FetchErro
+@@ -84,6 +84,10 @@ pub const NIGHTLY_RELEASE_TAG_PREFIX: &str = "nightly-cua-driver-rs-v";
+ /// - `CARGO_PKG_VERSION` has a pre-release suffix (source / dev build —
+ ///   nothing on GitHub will be "newer" in a meaningful way)
+ pub fn maybe_announce_update() {
++    // Dove fork: Dove updates the driver, so there is nothing to announce.
++    if crate::dove_env::UPDATES_MANAGED_BY_DOVE {
++        return;
++    }
+     if !is_enabled() {
+         tracing::debug!(target: "cua_driver::version_check",
+                         "update check skipped (opt-out / pre-release build)");
+@@ -197,6 +201,13 @@ fn install_one_liner() -> String {
+ /// `UpdateState.error` with a non-empty `current_version` so consumers
+ /// always get a well-formed payload they can branch on.
+ pub fn check_update_state(no_cache: bool) -> UpdateState {
++    if crate::dove_env::UPDATES_MANAGED_BY_DOVE {
++        // Dove fork: report the externally managed state (no upstream cache,
++        // channel, release or install command) with Dove's reason.
++        let mut state = check_update_state_with_ownership(no_cache, true);
++        state.error = Some(crate::dove_env::UPDATES_MESSAGE.to_owned());
++        return state;
++    }
+     check_update_state_with_ownership(no_cache, crate::updater::is_pacman_managed())
+ }
+ 
+@@ -756,6 +767,11 @@ pub fn fetch_latest_version() -> Result<String, crate::release_source::FetchErro
  pub fn fetch_latest_version_for(
      channel: crate::release_channel::ReleaseChannel,
  ) -> Result<String, crate::release_source::FetchError> {
@@ -151,3 +176,76 @@ index 06893c8..6bc3459 100644
      if crate::updater::is_pacman_managed() {
          return Err(crate::release_source::FetchError::Other(
              crate::updater::PACMAN_UPDATE_GUIDANCE.to_owned(),
+diff --git a/rust/crates/cua-driver/tests/release_channel_cli_test.rs b/rust/crates/cua-driver/tests/release_channel_cli_test.rs
+index f899085..ee15dd0 100644
+--- a/rust/crates/cua-driver/tests/release_channel_cli_test.rs
++++ b/rust/crates/cua-driver/tests/release_channel_cli_test.rs
+@@ -225,30 +225,48 @@ mod pacman {
+         );
+         let state: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+         assert_eq!(state["selected_channel"], "stable");
+-        // A young cache written by this exact build is honoured; the cache is
+-        // bound to the build that wrote it, so seed it as such.
++        // Dove fork: Dove installs and updates dove-driver, so the check reports
++        // that and never advertises an upstream release, even from a young cache
++        // that this exact build wrote in dove-driver's own home.
+         let now = std::time::SystemTime::now()
+             .duration_since(std::time::UNIX_EPOCH)
+             .unwrap()
+             .as_secs();
+-        std::fs::write(
+-            root.path().join(".cua-driver/version_check.json"),
+-            serde_json::json!({
+-                "latest_version": "999.0.0",
+-                "channel": "stable",
+-                "last_checked_unix": now,
+-                "checked_by_version": env!("CARGO_PKG_VERSION"),
+-            })
+-            .to_string(),
+-        )
+-        .unwrap();
+-        let output = command(&executable, root.path(), &["check-update", "--json"]);
+-        assert!(output.status.success());
+-        let state: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+-        assert_eq!(state["update_available"], true);
+-        assert_eq!(state["cache_hit"], true);
+-        assert_eq!(state["latest_version"], "999.0.0");
+-        assert!(state["error"].is_null());
++        let cache_path = root.path().join(".dove-driver/version_check.json");
++        std::fs::create_dir(cache_path.parent().unwrap()).unwrap();
++        let cache = serde_json::json!({
++            "latest_version": "999.0.0",
++            "channel": "stable",
++            "last_checked_unix": now,
++            "checked_by_version": env!("CARGO_PKG_VERSION"),
++        })
++        .to_string();
++        std::fs::write(&cache_path, &cache).unwrap();
++        for args in [
++            vec!["check-update", "--json"],
++            vec!["check-update", "--json", "--no-cache"],
++        ] {
++            let output = command(&executable, root.path(), &args);
++            assert!(!output.status.success());
++            let state: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
++            assert_eq!(state["update_available"], false);
++            assert_eq!(state["cache_hit"], false);
++            for field in [
++                "latest_version",
++                "selected_channel",
++                "install_command",
++                "release_notes_url",
++            ] {
++                assert!(state[field].is_null(), "{state}");
++            }
++            let error = state["error"].as_str().unwrap();
++            assert!(
++                error.contains("dove-driver does not update itself"),
++                "{state}"
++            );
++            assert!(!error.contains("sudo pacman -Syu"), "{state}");
++            assert_eq!(std::fs::read_to_string(&cache_path).unwrap(), cache);
++        }
+         assert!(!root.path().join("fake-pacman-called").exists());
+     }
+ 

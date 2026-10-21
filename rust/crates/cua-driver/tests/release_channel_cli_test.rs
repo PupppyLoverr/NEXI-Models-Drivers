@@ -225,30 +225,48 @@ mod pacman {
         );
         let state: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
         assert_eq!(state["selected_channel"], "stable");
-        // A young cache written by this exact build is honoured; the cache is
-        // bound to the build that wrote it, so seed it as such.
+        // Dove fork: Dove installs and updates dove-driver, so the check reports
+        // that and never advertises an upstream release, even from a young cache
+        // that this exact build wrote in dove-driver's own home.
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_secs();
-        std::fs::write(
-            root.path().join(".cua-driver/version_check.json"),
-            serde_json::json!({
-                "latest_version": "999.0.0",
-                "channel": "stable",
-                "last_checked_unix": now,
-                "checked_by_version": env!("CARGO_PKG_VERSION"),
-            })
-            .to_string(),
-        )
-        .unwrap();
-        let output = command(&executable, root.path(), &["check-update", "--json"]);
-        assert!(output.status.success());
-        let state: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
-        assert_eq!(state["update_available"], true);
-        assert_eq!(state["cache_hit"], true);
-        assert_eq!(state["latest_version"], "999.0.0");
-        assert!(state["error"].is_null());
+        let cache_path = root.path().join(".dove-driver/version_check.json");
+        std::fs::create_dir(cache_path.parent().unwrap()).unwrap();
+        let cache = serde_json::json!({
+            "latest_version": "999.0.0",
+            "channel": "stable",
+            "last_checked_unix": now,
+            "checked_by_version": env!("CARGO_PKG_VERSION"),
+        })
+        .to_string();
+        std::fs::write(&cache_path, &cache).unwrap();
+        for args in [
+            vec!["check-update", "--json"],
+            vec!["check-update", "--json", "--no-cache"],
+        ] {
+            let output = command(&executable, root.path(), &args);
+            assert!(!output.status.success());
+            let state: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+            assert_eq!(state["update_available"], false);
+            assert_eq!(state["cache_hit"], false);
+            for field in [
+                "latest_version",
+                "selected_channel",
+                "install_command",
+                "release_notes_url",
+            ] {
+                assert!(state[field].is_null(), "{state}");
+            }
+            let error = state["error"].as_str().unwrap();
+            assert!(
+                error.contains("dove-driver does not update itself"),
+                "{state}"
+            );
+            assert!(!error.contains("sudo pacman -Syu"), "{state}");
+            assert_eq!(std::fs::read_to_string(&cache_path).unwrap(), cache);
+        }
         assert!(!root.path().join("fake-pacman-called").exists());
     }
 
