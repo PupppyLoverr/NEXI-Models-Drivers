@@ -42,6 +42,20 @@ mkdir -p "$telemetry/data"
 cp -r "$work/x/libs/cua/crates/cua-telemetry/." "$telemetry/"
 cp "$work/x/LICENSE.md" "$tree/LICENSE"
 
+# Upstream's "<mode> <blob>\t<path here>" for every imported file, so that the
+# import does not depend on the host keeping file modes (see below).
+expected="$work/expected"
+upstream_entries() {  # <upstream path> <its path here>
+  git -C "$clone" ls-tree -r -z "$commit" -- "$1" |
+    while IFS= read -r -d '' entry; do
+      meta="${entry%%$'\t'*}" path="${entry#*$'\t'}"
+      printf '%s %s\t%s\0' "${meta%% *}" "${meta##* }" "$2${path#"$1"}"
+    done >> "$expected"
+}
+upstream_entries libs/cua-driver/ ""
+upstream_entries libs/cua/crates/cua-telemetry/ rust/crates/cua-telemetry/
+upstream_entries LICENSE.md LICENSE
+
 # Resolve each out-of-crate embed against the crate's upstream location
 # (libs/cua/crates/cua-telemetry/<dir>/) and copy it into data/.
 crate_dir="libs/cua/crates/cua-telemetry"
@@ -57,11 +71,32 @@ for dir in src tests; do
           exit 1
         fi
         git -C "$clone" -c core.autocrlf=false show "$commit:$src" > "$dst"
+        upstream_entries "$src" "rust/crates/cua-telemetry/data/$(basename "$src")"
         echo "embedded: $src -> rust/crates/cua-telemetry/data/$(basename "$src")"
       done
 done
 
 git -C "$tree" add -A
+# Set each file's mode from upstream: on a host without exec bits (Windows,
+# core.filemode=false) `git add` records every file as 100644.
+if grep -qzv -e '^100644 ' -e '^100755 ' "$expected"; then
+  echo "upstream has entries this copy cannot reproduce (symlinks or submodules):" >&2
+  grep -zv -e '^100644 ' -e '^100755 ' "$expected" | tr '\0' '\n' >&2
+  exit 1
+fi
+for mode_flag in 100755:+x 100644:-x; do
+  { grep -z "^${mode_flag%:*} " "$expected" || true; } | sed -z 's/^[^\t]*\t//' |
+    git -C "$tree" update-index --chmod="${mode_flag#*:}" -z --stdin
+done
+# The index must now be exactly upstream's files: same paths, blobs and modes.
+LC_ALL=C sort -zu "$expected" -o "$expected"
+git -C "$tree" ls-files -s -z | sed -zE 's/^([0-7]+) ([0-9a-f]+) 0\t/\1 \2\t/' |
+  LC_ALL=C sort -z > "$work/actual"
+if ! cmp -s "$expected" "$work/actual"; then
+  echo "the import differs from $tag (< upstream, > import):" >&2
+  diff <(tr '\0' '\n' < "$expected") <(tr '\0' '\n' < "$work/actual") >&2 || true
+  exit 1
+fi
 git -C "$tree" -c core.autocrlf=false commit --quiet -m "Import trycua/cua libs/cua-driver at $tag (${commit:0:7})
 
 Snapshot of https://github.com/trycua/cua/tree/$tag/libs/cua-driver
