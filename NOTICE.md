@@ -59,9 +59,9 @@ Feature patches (`scripts/dove/patches/`, applied by the same script):
   - the update check (startup banner, `check_for_update`, `dove-driver update`) never queries trycua releases, and
     the updater never runs Cua's install script. Dove's plugin manager owns installs and updates.
 - `0004-lazy-tool-disclosure.patch`. With `DOVE_TOOL_DISCLOSURE=lazy` (or `DOVE_DRIVER_TOOL_DISCLOSURE` /
-  `CUA_DRIVER_TOOL_DISCLOSURE`), MCP `tools/list` keeps full entries only for `list_windows`, `get_window_state`,
-  `run_steps`, `verify_state`, `act` (if registered) and the new `describe_tools`, and lists every other tool with a
-  one-line description and `{"type":"object"}`. `describe_tools {names}` returns the full entries, withheld tools
+  `CUA_DRIVER_TOOL_DISCLOSURE`), MCP `tools/list` keeps full input schemas only for `list_windows`, `get_window_state`,
+  `run_steps`, `verify_state`, `act` (if registered) and the new `describe_tools`, with the first paragraph of their
+  descriptions, and lists every other tool with a one-line description and `{"type":"object"}`. `describe_tools {names}` returns the full entries, withheld tools
   still run, and a bad-arguments error carries the tool's input schema. The initialize instructions and the served
   `SKILL.md` gain one note on `describe_tools`. Unset, the tool list, instructions and skill resources are
   upstream's byte for byte (`rust/crates/cua-driver-core/src/tool_disclosure.rs`).

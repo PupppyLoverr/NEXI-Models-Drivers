@@ -2,24 +2,24 @@ W5 lazy tool disclosure (Dove fork). git apply ignores this preamble.
 
 DOVE_TOOL_DISCLOSURE=lazy (also CUA_DRIVER_TOOL_DISCLOSURE, which
 DOVE_DRIVER_TOOL_DISCLOSURE aliases to) shrinks the MCP tools/list. These
-tools keep their full entry (description, input schema, annotations):
-list_windows, get_window_state, run_steps, verify_state, act (if registered)
-and describe_tools. Every other tool is listed with a one-line description and
-{"type":"object"}. describe_tools {names} returns the full entries. Withheld
-tools still run, and in lazy mode a bad-arguments error carries the tool's
-input schema. The initialize instructions and the served SKILL.md resource
-gain one note on describe_tools. Unset, behaviour is upstream's. Applied on the
-core dispatcher (direct stdio and the daemon's HTTP transport) and on the mcp
-proxy, which reads its own environment; the stdio adapters' per-request tool
-check admits describe_tools only in lazy mode.
+tools keep their full input schema and annotations, with the first paragraph
+of their description: list_windows, get_window_state, run_steps,
+verify_state, act (if registered) and describe_tools. Every other tool is
+listed with a one-line description and {"type":"object"}. describe_tools
+{names} returns the full entries. Withheld tools still run, and in lazy mode a
+bad-arguments error carries the tool's input schema. The initialize
+instructions and the served SKILL.md resource gain one note on describe_tools.
+Unset, behaviour is upstream's. Applied on the core dispatcher (direct stdio
+and the daemon's HTTP transport) and on the mcp proxy, which reads its own
+environment; the stdio adapters' per-request tool check admits describe_tools
+only in lazy mode.
 
 Size (user decision 2026-10-20, option A): on Linux the eager list is 229,910
-bytes for 66 tools and the lazy list 31,789 bytes; the test limit
-(LAZY_TOOLS_LIST_LIMIT_BYTES in tool_disclosure_test.rs) is 33 KB. About 22 KB
-of that is the five full entries, mostly the long descriptions of
-get_window_state and run_steps; the 62 withheld tools take 9 KB. Every tool
-stays listed so clients such as Claude Code, which only call listed tools, can
-call all of them, so the 3 KB first planned is out of reach.
+bytes for 66 tools and the lazy list 24,257 bytes; the test limit
+(LAZY_TOOLS_LIST_LIMIT_BYTES in tool_disclosure_test.rs) is 26 KB. About
+15 KB of that is the five core entries; the 62 withheld tools take 9 KB.
+Every tool stays listed so clients such as Claude Code, which only call listed
+tools, can call all of them, so the 3 KB first planned is out of reach.
 
 diff --git a/rust/crates/cua-driver-core/src/lib.rs b/rust/crates/cua-driver-core/src/lib.rs
 index f341320..b1809e9 100644
@@ -263,16 +263,17 @@ index 7c85f09..78dbdb6 100644
  
 diff --git a/rust/crates/cua-driver-core/src/tool_disclosure.rs b/rust/crates/cua-driver-core/src/tool_disclosure.rs
 new file mode 100644
-index 0000000..fbf020e
+index 0000000..3098605
 --- /dev/null
 +++ b/rust/crates/cua-driver-core/src/tool_disclosure.rs
-@@ -0,0 +1,514 @@
+@@ -0,0 +1,563 @@
 +//! Dove fork: lazy tool disclosure (ROADMAP W5).
 +//!
 +//! With `DOVE_TOOL_DISCLOSURE=lazy` (or `CUA_DRIVER_TOOL_DISCLOSURE=lazy`,
 +//! which `DOVE_DRIVER_TOOL_DISCLOSURE` aliases to), the MCP `tools/list`
 +//! result keeps the full input schema only for the core loop tools in
-+//! [`FULL_SCHEMA_TOOLS`] and [`DESCRIBE_TOOLS`]. Every other tool is listed
++//! [`FULL_SCHEMA_TOOLS`] and [`DESCRIBE_TOOLS`]; the core tools' long usage
++//! descriptions are cut to their first paragraph. Every other tool is listed
 +//! by name with a one-line description and the minimal valid schema
 +//! `{"type":"object"}`, so a harness sees a small tool list until it needs
 +//! more. `describe_tools {names}` returns the full entries on demand, a
@@ -307,6 +308,12 @@ index 0000000..fbf020e
 +
 +/// Longest one-line description kept for a withheld tool, in characters.
 +const SHORT_DESCRIPTION_CHARS: usize = 100;
++
++/// Longest description kept for a [`FULL_SCHEMA_TOOLS`] entry, in characters.
++/// Upstream's `get_window_state` and `run_steps` descriptions are about
++/// 4.5 KB each; their first paragraph says what the tool is for and how to
++/// use it, and `describe_tools` returns the rest.
++const CORE_DESCRIPTION_CHARS: usize = 800;
 +
 +/// Error codes the dispatch seam uses for arguments the tool rejected.
 +const BAD_ARGUMENT_CODES: [&str; 2] = ["invalid_arguments", "invalid_args"];
@@ -524,13 +531,13 @@ index 0000000..fbf020e
 +
 +/// The lazy line added to the MCP server instructions.
 +pub fn instructions_line() -> &'static str {
-+    "Most tools are listed by name only: call `describe_tools({names:[...]})` for their argument schemas before first use."
++    "Most tools are listed by name only: call `describe_tools({names:[...]})` for full schemas and descriptions before first use."
 +}
 +
 +/// The lazy note added to the served SKILL.md, after the line that opens
 +/// its "Efficient loop" section.
 +pub fn skill_note() -> &'static str {
-+    "\nThis server lists most tools by name only. `list_windows`, `get_window_state`, `run_steps` and `verify_state` carry full schemas; call `describe_tools({names:[...]})` for any other tool's arguments before first use. Every listed tool can be called, and a call with bad arguments returns that tool's schema in the error.\n"
++    "\nThis server lists most tools by name only. `list_windows`, `get_window_state`, `run_steps` and `verify_state` carry full schemas and short descriptions; call `describe_tools({names:[...]})` for any other tool's arguments before first use, or for a full description. Every listed tool can be called, and a call with bad arguments returns that tool's schema in the error.\n"
 +}
 +
 +/// SKILL.md as served in lazy mode: [`skill_note`] after the first line of
@@ -555,6 +562,11 @@ index 0000000..fbf020e
 +                entry.insert(key.to_owned(), value.clone());
 +            }
 +        }
++        if name != DESCRIBE_TOOLS {
++            if let Some(Value::String(description)) = entry.get_mut("description") {
++                *description = first_paragraph(description);
++            }
++        }
 +        return Value::Object(entry);
 +    }
 +    json!({
@@ -562,6 +574,25 @@ index 0000000..fbf020e
 +        "description": one_line(tool["description"].as_str().unwrap_or_default()),
 +        "inputSchema": {"type": "object"},
 +    })
++}
++
++/// The first paragraph, cut at a sentence end to at most
++/// [`CORE_DESCRIPTION_CHARS`].
++fn first_paragraph(description: &str) -> String {
++    let paragraph = description
++        .trim()
++        .split("\n\n")
++        .next()
++        .unwrap_or_default()
++        .trim();
++    if paragraph.chars().count() <= CORE_DESCRIPTION_CHARS {
++        return paragraph.to_owned();
++    }
++    let cut: String = paragraph.chars().take(CORE_DESCRIPTION_CHARS).collect();
++    match cut.rfind(". ") {
++        Some(end) => cut[..=end].to_owned(),
++        None => format!("{}...", cut.trim_end()),
++    }
 +}
 +
 +/// The first sentence of the first line, at most [`SHORT_DESCRIPTION_CHARS`].
@@ -689,6 +720,10 @@ index 0000000..fbf020e
 +            tools[0]["inputSchema"],
 +            full_list()["tools"][0]["inputSchema"]
 +        );
++        assert_eq!(
++            tools[0]["description"],
++            "Do list_windows in the background. More detail follows."
++        );
 +        assert!(tools[0].get("outputSchema").is_none());
 +        assert_eq!(tools[2]["inputSchema"], json!({"type": "object"}));
 +        assert_eq!(tools[2]["description"], "Do click in the background.");
@@ -767,6 +802,20 @@ index 0000000..fbf020e
 +        let before = other.clone();
 +        Disclosure::Lazy.annotate_result(&full, "click", &mut other);
 +        assert_eq!(other, before);
++    }
++
++    #[test]
++    fn core_descriptions_keep_the_first_paragraph() {
++        assert_eq!(
++            first_paragraph("Use it. Then this.\n\nMore."),
++            "Use it. Then this."
++        );
++        let long = format!("{}\n\nRest.", "One sentence here. ".repeat(80));
++        let cut = first_paragraph(&long);
++        assert!(cut.chars().count() <= CORE_DESCRIPTION_CHARS);
++        assert!(cut.ends_with("here."), "{cut}");
++        let unbroken = first_paragraph(&"x".repeat(2 * CORE_DESCRIPTION_CHARS));
++        assert!(unbroken.ends_with("..."));
 +    }
 +
 +    #[test]
@@ -973,10 +1022,10 @@ index 02b4498..9ca3fb0 100644
  
 diff --git a/rust/crates/cua-driver/tests/tool_disclosure_test.rs b/rust/crates/cua-driver/tests/tool_disclosure_test.rs
 new file mode 100644
-index 0000000..db168c4
+index 0000000..507121e
 --- /dev/null
 +++ b/rust/crates/cua-driver/tests/tool_disclosure_test.rs
-@@ -0,0 +1,328 @@
+@@ -0,0 +1,337 @@
 +//! Dove fork (ROADMAP W5): lazy tool disclosure over real MCP transports.
 +//!
 +//! `DOVE_TOOL_DISCLOSURE=lazy` shrinks `tools/list` to full schemas for the
@@ -996,14 +1045,15 @@ index 0000000..db168c4
 +
 +/// Ceiling for the lazy `tools/list` result, serialized compactly: the
 +/// measured lazy size plus a small margin. Measured on Linux (66 tools):
-+/// 31,789 bytes lazy against 229,910 eager. About 22 KB of the lazy list is
-+/// the full entries of `list_windows`, `get_window_state`, `run_steps`,
-+/// `verify_state` and `describe_tools`; the other 62 tools take 9 KB. Every
-+/// tool stays listed (with a one-line description) so clients such as
-+/// Claude Code, which only call listed tools, can still call all of them;
-+/// that rules out the 3 KB first planned, since 59 bare
-+/// `{name, inputSchema:{"type":"object"}}` entries alone are 3.4 KB.
-+const LAZY_TOOLS_LIST_LIMIT_BYTES: usize = 33 * 1024;
++/// 24,257 bytes lazy against 229,910 eager. About 15 KB of the lazy list is
++/// the entries of `list_windows`, `get_window_state`, `run_steps`,
++/// `verify_state` and `describe_tools` (full input schemas, descriptions cut
++/// to their first paragraph); the other 62 tools take 9 KB. Every tool stays
++/// listed (with a one-line description) so clients such as Claude Code,
++/// which only call listed tools, can still call all of them; that rules out
++/// the 3 KB first planned, since 59 bare `{name, inputSchema:{"type":"object"}}`
++/// entries alone are 3.4 KB. The margin also covers Windows, not measured yet.
++const LAZY_TOOLS_LIST_LIMIT_BYTES: usize = 26 * 1024;
 +
 +fn tools_list(driver: &mut RawDriver) -> Value {
 +    driver.send(&json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}));
@@ -1129,6 +1179,14 @@ index 0000000..db168c4
 +                listed["inputSchema"],
 +                entry(&eager, &name)["inputSchema"],
 +                "{name} must keep its full input schema"
++            );
++            let short = listed["description"].as_str().unwrap_or_default();
++            let full = entry(&eager, &name)["description"]
++                .as_str()
++                .unwrap_or_default();
++            assert!(
++                !short.is_empty() && full.starts_with(short.trim_end_matches("...")),
++                "{name}: the lazy description must open the full one, got {short:?}"
 +            );
 +        } else {
 +            assert_eq!(listed["inputSchema"], json!({"type": "object"}), "{name}");

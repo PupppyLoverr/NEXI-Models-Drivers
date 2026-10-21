@@ -106,7 +106,7 @@ and W8 reports round trips per task.
 
 **Goal:** a harness sees a tiny tool list until it needs more.
 
-**Status: built and tested on Linux (2026-10-21), patch `0004-lazy-tool-disclosure.patch`.** W5.1 and W5.2 are done
+**Status: built and tested on Linux, type-checked for Windows (2026-10-21), patch `0004-lazy-tool-disclosure.patch`.** W5.1 and W5.2 are done
 in `cua-driver-core/src/tool_disclosure.rs`, wired into the core dispatcher and the `mcp` proxy. W5.3 is done for the
 MCP server instructions and the served `cua-driver` `SKILL.md`; the `dove-computer` skill does not exist yet (R0.2).
 Remaining: run `tool_disclosure_test` on Windows and measure the lazy size there, and the W8 success-rate check.
@@ -117,13 +117,14 @@ Remaining: run `tool_disclosure_test` on Windows and measure the lazy size there
 | W5.2 | `describe_tools {names: [...]}` returns full input schemas on demand. Calling a tool whose schema was withheld still works, and a bad call returns the schema in the error. | `cua-driver-core/src/tool.rs`; each platform's `tools/mod.rs` (`build_registry`) |
 | W5.3 | MCP server instructions (the "efficient loop") and the bundled `dove-computer` skill describe the lazy flow. | `cua-driver-core/src/mcp_skills.rs`, `/rust/Skills/` |
 
-**Done when:** the `tools/list` payload in lazy mode stays under 33 KB (`LAZY_TOOLS_LIST_LIMIT_BYTES` in
-`tool_disclosure_test.rs`: 31,789 bytes measured on Linux plus a small margin, against 229,910 bytes eager), and W8
+**Done when:** the `tools/list` payload in lazy mode stays under 26 KB (`LAZY_TOOLS_LIST_LIMIT_BYTES` in
+`tool_disclosure_test.rs`: 24,257 bytes measured on Linux plus a small margin, against 229,910 bytes eager), and W8
 shows no success-rate loss against eager mode. The 3 KB first planned is not reachable because every tool must stay
 listed, with a one-line description, so that clients such as Claude Code, which only call listed tools, can still
-call all of them: 59 bare name-only entries already take 3.4 KB (user decision 2026-10-20, option A). About 22 KB of
-the lazy list is the five full entries; most of that is the long usage descriptions of `get_window_state` and
-`run_steps`, which lazy mode keeps. Windows size still to be measured.
+call all of them: 59 bare name-only entries already take 3.4 KB (user decision 2026-10-20, option A). About 15 KB of
+the lazy list is the five core entries: full input schemas, with descriptions cut to their first paragraph
+(`describe_tools` returns the rest; upstream's `get_window_state` and `run_steps` descriptions are about 4.5 KB
+each). The other 62 tools take 9 KB. Windows size still to be measured.
 
 ## W6. Safety
 

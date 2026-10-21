@@ -17,14 +17,15 @@ use serde_json::{json, Value};
 
 /// Ceiling for the lazy `tools/list` result, serialized compactly: the
 /// measured lazy size plus a small margin. Measured on Linux (66 tools):
-/// 31,789 bytes lazy against 229,910 eager. About 22 KB of the lazy list is
-/// the full entries of `list_windows`, `get_window_state`, `run_steps`,
-/// `verify_state` and `describe_tools`; the other 62 tools take 9 KB. Every
-/// tool stays listed (with a one-line description) so clients such as
-/// Claude Code, which only call listed tools, can still call all of them;
-/// that rules out the 3 KB first planned, since 59 bare
-/// `{name, inputSchema:{"type":"object"}}` entries alone are 3.4 KB.
-const LAZY_TOOLS_LIST_LIMIT_BYTES: usize = 33 * 1024;
+/// 24,257 bytes lazy against 229,910 eager. About 15 KB of the lazy list is
+/// the entries of `list_windows`, `get_window_state`, `run_steps`,
+/// `verify_state` and `describe_tools` (full input schemas, descriptions cut
+/// to their first paragraph); the other 62 tools take 9 KB. Every tool stays
+/// listed (with a one-line description) so clients such as Claude Code,
+/// which only call listed tools, can still call all of them; that rules out
+/// the 3 KB first planned, since 59 bare `{name, inputSchema:{"type":"object"}}`
+/// entries alone are 3.4 KB. The margin also covers Windows, not measured yet.
+const LAZY_TOOLS_LIST_LIMIT_BYTES: usize = 26 * 1024;
 
 fn tools_list(driver: &mut RawDriver) -> Value {
     driver.send(&json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}));
@@ -150,6 +151,14 @@ fn lazy_tools_list_is_small_and_keeps_core_schemas() {
                 listed["inputSchema"],
                 entry(&eager, &name)["inputSchema"],
                 "{name} must keep its full input schema"
+            );
+            let short = listed["description"].as_str().unwrap_or_default();
+            let full = entry(&eager, &name)["description"]
+                .as_str()
+                .unwrap_or_default();
+            assert!(
+                !short.is_empty() && full.starts_with(short.trim_end_matches("...")),
+                "{name}: the lazy description must open the full one, got {short:?}"
             );
         } else {
             assert_eq!(listed["inputSchema"], json!({"type": "object"}), "{name}");

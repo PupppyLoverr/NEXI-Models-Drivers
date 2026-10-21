@@ -3,7 +3,8 @@
 //! With `DOVE_TOOL_DISCLOSURE=lazy` (or `CUA_DRIVER_TOOL_DISCLOSURE=lazy`,
 //! which `DOVE_DRIVER_TOOL_DISCLOSURE` aliases to), the MCP `tools/list`
 //! result keeps the full input schema only for the core loop tools in
-//! [`FULL_SCHEMA_TOOLS`] and [`DESCRIBE_TOOLS`]. Every other tool is listed
+//! [`FULL_SCHEMA_TOOLS`] and [`DESCRIBE_TOOLS`]; the core tools' long usage
+//! descriptions are cut to their first paragraph. Every other tool is listed
 //! by name with a one-line description and the minimal valid schema
 //! `{"type":"object"}`, so a harness sees a small tool list until it needs
 //! more. `describe_tools {names}` returns the full entries on demand, a
@@ -38,6 +39,12 @@ pub const FULL_SCHEMA_TOOLS: [&str; 5] = [
 
 /// Longest one-line description kept for a withheld tool, in characters.
 const SHORT_DESCRIPTION_CHARS: usize = 100;
+
+/// Longest description kept for a [`FULL_SCHEMA_TOOLS`] entry, in characters.
+/// Upstream's `get_window_state` and `run_steps` descriptions are about
+/// 4.5 KB each; their first paragraph says what the tool is for and how to
+/// use it, and `describe_tools` returns the rest.
+const CORE_DESCRIPTION_CHARS: usize = 800;
 
 /// Error codes the dispatch seam uses for arguments the tool rejected.
 const BAD_ARGUMENT_CODES: [&str; 2] = ["invalid_arguments", "invalid_args"];
@@ -255,13 +262,13 @@ fn bad_describe_arguments() -> Value {
 
 /// The lazy line added to the MCP server instructions.
 pub fn instructions_line() -> &'static str {
-    "Most tools are listed by name only: call `describe_tools({names:[...]})` for their argument schemas before first use."
+    "Most tools are listed by name only: call `describe_tools({names:[...]})` for full schemas and descriptions before first use."
 }
 
 /// The lazy note added to the served SKILL.md, after the line that opens
 /// its "Efficient loop" section.
 pub fn skill_note() -> &'static str {
-    "\nThis server lists most tools by name only. `list_windows`, `get_window_state`, `run_steps` and `verify_state` carry full schemas; call `describe_tools({names:[...]})` for any other tool's arguments before first use. Every listed tool can be called, and a call with bad arguments returns that tool's schema in the error.\n"
+    "\nThis server lists most tools by name only. `list_windows`, `get_window_state`, `run_steps` and `verify_state` carry full schemas and short descriptions; call `describe_tools({names:[...]})` for any other tool's arguments before first use, or for a full description. Every listed tool can be called, and a call with bad arguments returns that tool's schema in the error.\n"
 }
 
 /// SKILL.md as served in lazy mode: [`skill_note`] after the first line of
@@ -286,6 +293,11 @@ fn lazy_entry(tool: &Value) -> Value {
                 entry.insert(key.to_owned(), value.clone());
             }
         }
+        if name != DESCRIBE_TOOLS {
+            if let Some(Value::String(description)) = entry.get_mut("description") {
+                *description = first_paragraph(description);
+            }
+        }
         return Value::Object(entry);
     }
     json!({
@@ -293,6 +305,25 @@ fn lazy_entry(tool: &Value) -> Value {
         "description": one_line(tool["description"].as_str().unwrap_or_default()),
         "inputSchema": {"type": "object"},
     })
+}
+
+/// The first paragraph, cut at a sentence end to at most
+/// [`CORE_DESCRIPTION_CHARS`].
+fn first_paragraph(description: &str) -> String {
+    let paragraph = description
+        .trim()
+        .split("\n\n")
+        .next()
+        .unwrap_or_default()
+        .trim();
+    if paragraph.chars().count() <= CORE_DESCRIPTION_CHARS {
+        return paragraph.to_owned();
+    }
+    let cut: String = paragraph.chars().take(CORE_DESCRIPTION_CHARS).collect();
+    match cut.rfind(". ") {
+        Some(end) => cut[..=end].to_owned(),
+        None => format!("{}...", cut.trim_end()),
+    }
 }
 
 /// The first sentence of the first line, at most [`SHORT_DESCRIPTION_CHARS`].
@@ -420,6 +451,10 @@ mod tests {
             tools[0]["inputSchema"],
             full_list()["tools"][0]["inputSchema"]
         );
+        assert_eq!(
+            tools[0]["description"],
+            "Do list_windows in the background. More detail follows."
+        );
         assert!(tools[0].get("outputSchema").is_none());
         assert_eq!(tools[2]["inputSchema"], json!({"type": "object"}));
         assert_eq!(tools[2]["description"], "Do click in the background.");
@@ -498,6 +533,20 @@ mod tests {
         let before = other.clone();
         Disclosure::Lazy.annotate_result(&full, "click", &mut other);
         assert_eq!(other, before);
+    }
+
+    #[test]
+    fn core_descriptions_keep_the_first_paragraph() {
+        assert_eq!(
+            first_paragraph("Use it. Then this.\n\nMore."),
+            "Use it. Then this."
+        );
+        let long = format!("{}\n\nRest.", "One sentence here. ".repeat(80));
+        let cut = first_paragraph(&long);
+        assert!(cut.chars().count() <= CORE_DESCRIPTION_CHARS);
+        assert!(cut.ends_with("here."), "{cut}");
+        let unbroken = first_paragraph(&"x".repeat(2 * CORE_DESCRIPTION_CHARS));
+        assert!(unbroken.ends_with("..."));
     }
 
     #[test]
