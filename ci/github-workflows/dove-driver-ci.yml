@@ -120,21 +120,24 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends "${packages[@]}"
       - name: Build dove-driver
+        id: build
         working-directory: dove-driver/rust
         run: |
           cargo build --locked -p cua-driver
           "$DOVE_CI_DRIVER_BIN" --version
       - name: Unit tests
-        if: matrix.display == 'x11'
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && (matrix.display == 'x11') }}
         working-directory: dove-driver/rust
-        run: |
-          cargo test --locked --workspace --exclude cua-driver-e2e --exclude cua-telemetry --no-fail-fast
-          # Dove vendors cua-telemetry with its sender off, so upstream's
-          # loopback-sender test would wait forever; test the crate as upstream
-          # does (network forbidden except loopback).
-          cargo test --locked -p cua-telemetry --features http --no-fail-fast
+        run: cargo test --locked --workspace --exclude cua-driver-e2e --exclude cua-telemetry --no-fail-fast
+      # Dove vendors cua-telemetry with its sender off, so upstream's
+      # loopback-sender test would wait forever; test the crate as upstream
+      # does (network forbidden except loopback).
+      - name: cua-telemetry tests
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && (matrix.display == 'x11') }}
+        working-directory: dove-driver/rust
+        run: cargo test --locked -p cua-telemetry --features http --no-fail-fast
       - name: Contract tests
-        if: matrix.display == 'x11'
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && (matrix.display == 'x11') }}
         working-directory: dove-driver/rust
         run: |
           cargo run --locked -p cua-driver-contract --bin cua-contract-gen -- all --check
@@ -142,11 +145,12 @@ jobs:
       # The upstream import lost the scripts' executable bits, so the
       # Electron build script runs through bash rather than from linux.sh.
       - name: Stage the GTK3 and Electron fixtures
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: |
           bash tests/fixtures/build/linux.sh --only gtk3
           bash tests/fixtures/apps/cross-platform/electron/build.sh
       - name: GTK3 AT-SPI e2e (Xvfb)
-        if: matrix.display == 'x11'
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && (matrix.display == 'x11') }}
         env:
           CUA_E2E_UNRESTRICTED_GUI: "1"
           CUA_REQUIRE_GUI: "1"
@@ -156,7 +160,7 @@ jobs:
             cargo test --locked -p cua-driver-e2e --test harness_gtk3_test -- --ignored --nocapture --test-threads=1 &&
             cargo test --locked -p cua-driver-e2e --test desktop_scope_linux_test -- --ignored --nocapture --test-threads=1'
       - name: GTK3 AT-SPI e2e (headless Sway)
-        if: matrix.display == 'sway'
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && (matrix.display == 'sway') }}
         env:
           CUA_AT_SPI_BUS_LAUNCHER: /usr/libexec/at-spi-bus-launcher
           CUA_E2E_UNRESTRICTED_GUI: "1"
@@ -166,7 +170,8 @@ jobs:
             cd rust &&
             cargo test --locked -p cua-driver-e2e --test harness_gtk3_test -- --ignored --nocapture --test-threads=1'
       - name: Build stock cua-driver (dove-driver/upstream)
-        if: matrix.display == 'x11'
+        id: stock
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && (matrix.display == 'x11') }}
         env:
           CARGO_TARGET_DIR: ${{ runner.temp }}/stock-target
         run: |
@@ -178,7 +183,7 @@ jobs:
           cargo build -p cua-driver --manifest-path "$RUNNER_TEMP/stock/rust/Cargo.toml"
           "$CARGO_TARGET_DIR/debug/cua-driver" --version
       - name: "R0.2: dove-driver and stock cua-driver side by side"
-        if: matrix.display == 'x11'
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.stock.outcome == 'success' && (matrix.display == 'x11') }}
         run: |
           python3 ci/dove/side_by_side.py \
             --dove "$DOVE_CI_DRIVER_BIN" \
@@ -192,9 +197,10 @@ jobs:
           mkdir -p "$DOVE_CI_ARTIFACTS/side-by-side"
           cp "$RUNNER_TEMP"/sbs/*.log "$DOVE_CI_ARTIFACTS/side-by-side/" 2>/dev/null || true
       - name: "Gate: W4.5 latency"
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: bash ci/dove/run-gate.sh latency
       - name: "Gate: W9 grounder"
-        if: vars.DOVE_GROUNDER_WEIGHTS_URL != ''
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && (vars.DOVE_GROUNDER_WEIGHTS_URL != '') }}
         env:
           WEIGHTS_URL: ${{ vars.DOVE_GROUNDER_WEIGHTS_URL }}
           WEIGHTS_SHA256: ${{ vars.DOVE_GROUNDER_WEIGHTS_SHA256 }}
@@ -232,34 +238,40 @@ jobs:
         with:
           node-version: "22"
       - name: Build dove-driver
+        id: build
         working-directory: dove-driver/rust
         run: |
           cargo build --locked -p cua-driver
           "$DOVE_CI_DRIVER_BIN" --version
       - name: Unit tests
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         working-directory: dove-driver/rust
-        run: |
-          cargo test --locked --workspace --exclude cua-driver-e2e --exclude cua-telemetry --no-fail-fast
-          # Dove vendors cua-telemetry with its sender off, so upstream's
-          # loopback-sender test would wait forever; test the crate as upstream
-          # does (network forbidden except loopback).
-          cargo test --locked -p cua-telemetry --features http --no-fail-fast
+        run: cargo test --locked --workspace --exclude cua-driver-e2e --exclude cua-telemetry --no-fail-fast
+      # Dove vendors cua-telemetry with its sender off, so upstream's
+      # loopback-sender test would wait forever; test the crate as upstream
+      # does (network forbidden except loopback).
+      - name: cua-telemetry tests
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        working-directory: dove-driver/rust
+        run: cargo test --locked -p cua-telemetry --features http --no-fail-fast
       - name: Contract tests
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         working-directory: dove-driver/rust
         run: |
           cargo run --locked -p cua-driver-contract --bin cua-contract-gen -- all --check
           cargo test --locked -p cua-driver-e2e --test cross_platform_behavior_test
       - name: Build the SwiftUI and Electron fixtures
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: |
           bash tests/fixtures/build/macos.sh --only swiftui
           bash tests/fixtures/apps/cross-platform/electron/build.sh
       # Seeding TCC edits the runner's system database, which upstream allows
       # only for trusted events; pull requests skip the AX e2e.
       - name: Start a TCC-authorized dove-driver daemon
-        if: github.event_name != 'pull_request'
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && (github.event_name != 'pull_request') }}
         run: bash ci/dove/macos/ax-daemon.sh start "$DOVE_CI_DRIVER_BIN" "$DOVE_CI_ARTIFACTS/ax-daemon"
       - name: SwiftUI AX e2e
-        if: github.event_name != 'pull_request'
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && (github.event_name != 'pull_request') }}
         working-directory: dove-driver/rust
         env:
           CUA_E2E_UNRESTRICTED_GUI: "1"
@@ -274,6 +286,8 @@ jobs:
         if: github.event_name == 'pull_request'
         run: echo "::notice title=dove-driver macOS::AX e2e runs on push and workflow_dispatch only (TCC seeding)"
       - name: Build stock cua-driver (dove-driver/upstream)
+        id: stock
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         env:
           CARGO_TARGET_DIR: ${{ runner.temp }}/stock-target
         run: |
@@ -284,6 +298,7 @@ jobs:
           cargo build -p cua-driver --manifest-path "$RUNNER_TEMP/stock/rust/Cargo.toml"
           "$CARGO_TARGET_DIR/debug/cua-driver" --version
       - name: "R0.2: dove-driver and stock cua-driver side by side"
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.stock.outcome == 'success' }}
         run: |
           python3 ci/dove/side_by_side.py \
             --dove "$DOVE_CI_DRIVER_BIN" \
@@ -297,9 +312,10 @@ jobs:
           mkdir -p "$DOVE_CI_ARTIFACTS/side-by-side"
           cp "$RUNNER_TEMP"/sbs/*.log "$DOVE_CI_ARTIFACTS/side-by-side/" 2>/dev/null || true
       - name: "Gate: W4.5 latency"
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: bash ci/dove/run-gate.sh latency
       - name: "Gate: W9 grounder"
-        if: vars.DOVE_GROUNDER_WEIGHTS_URL != ''
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && (vars.DOVE_GROUNDER_WEIGHTS_URL != '') }}
         env:
           WEIGHTS_URL: ${{ vars.DOVE_GROUNDER_WEIGHTS_URL }}
           WEIGHTS_SHA256: ${{ vars.DOVE_GROUNDER_WEIGHTS_SHA256 }}
@@ -341,38 +357,46 @@ jobs:
         with:
           node-version: "22"
       - name: Build dove-driver
+        id: build
         working-directory: dove-driver/rust
         run: |
           cargo build --locked -p cua-driver
           "$DOVE_CI_DRIVER_BIN" --version
       - name: Unit tests
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         working-directory: dove-driver/rust
-        run: |
-          cargo test --locked --workspace --exclude cua-driver-e2e --exclude cua-telemetry --no-fail-fast
-          # Dove vendors cua-telemetry with its sender off, so upstream's
-          # loopback-sender test would wait forever; test the crate as upstream
-          # does (network forbidden except loopback).
-          cargo test --locked -p cua-telemetry --features http --no-fail-fast
+        run: cargo test --locked --workspace --exclude cua-driver-e2e --exclude cua-telemetry --no-fail-fast
+      # Dove vendors cua-telemetry with its sender off, so upstream's
+      # loopback-sender test would wait forever; test the crate as upstream
+      # does (network forbidden except loopback).
+      - name: cua-telemetry tests
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        working-directory: dove-driver/rust
+        run: cargo test --locked -p cua-telemetry --features http --no-fail-fast
       - name: Contract tests
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         working-directory: dove-driver/rust
         run: |
           cargo run --locked -p cua-driver-contract --bin cua-contract-gen -- all --check
           cargo test --locked -p cua-driver-e2e --test cross_platform_behavior_test
       - name: Build the WinUI3 and Electron fixtures
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         shell: pwsh
         run: |
           dotnet --list-sdks
           ./tests/fixtures/build/windows.ps1 -Targets winui3,electron
       - name: WinUI3 UIA e2e
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         working-directory: dove-driver/rust
         env:
           CUA_E2E_UNRESTRICTED_GUI: "1"
           CUA_REQUIRE_GUI: "1"
         run: cargo test --locked -p cua-driver-e2e --test harness_winui3_test -- --ignored --nocapture --test-threads=1
       - name: "Gate: W4.5 latency"
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: bash ci/dove/run-gate.sh latency
       - name: "Gate: W9 grounder"
-        if: vars.DOVE_GROUNDER_WEIGHTS_URL != ''
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && (vars.DOVE_GROUNDER_WEIGHTS_URL != '') }}
         env:
           WEIGHTS_URL: ${{ vars.DOVE_GROUNDER_WEIGHTS_URL }}
           WEIGHTS_SHA256: ${{ vars.DOVE_GROUNDER_WEIGHTS_SHA256 }}
