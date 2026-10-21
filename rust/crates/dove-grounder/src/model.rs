@@ -120,7 +120,7 @@ impl Model {
         for (row, out) in rows.iter().zip(data.chunks_mut(TEXT_PROJ)) {
             self.project(row, out);
         }
-        Ok(Tensor::from_shape(&[rows.len(), TEXT_PROJ], &data)?)
+        Tensor::from_shape(&[rows.len(), TEXT_PROJ], &data)
     }
 
     /// Run the network: `(logits, correctness logits)`, one per candidate.

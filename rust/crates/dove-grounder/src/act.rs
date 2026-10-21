@@ -91,7 +91,7 @@ pub fn plan_decision(decision: Decision, by_id: &HashMap<String, Row>) -> Ground
     let row = action.element_id.as_deref().and_then(|id| by_id.get(id));
     match plan_action(&action, row) {
         Ok(plan) => Grounding {
-            target: row.map(|r| describe(r)),
+            target: row.map(describe),
             decision,
             plan,
             candidates: Vec::new(),
@@ -162,7 +162,7 @@ pub fn plan_action(action: &Action, row: Option<&Row>) -> Result<Plan, String> {
             let keys: Vec<String> = action.keys.iter().map(|k| driver_key(k)).collect();
             let mut args = Map::new();
             match keys.as_slice() {
-                [] => return Err("no key to press".into()),
+                [] => Err("no key to press".into()),
                 [key] if !key.starts_with('\u{0}') => {
                     args.insert("key".into(), json!(key));
                     tool("press_key", args)

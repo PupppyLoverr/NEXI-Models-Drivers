@@ -918,7 +918,7 @@ fn thousands(n: i64) -> String {
     let digits = n.to_string();
     let mut out = String::new();
     for (k, c) in digits.chars().enumerate() {
-        if k > 0 && (digits.len() - k) % 3 == 0 {
+        if k > 0 && (digits.len() - k).is_multiple_of(3) {
             out.push(',');
         }
         out.push(c);
