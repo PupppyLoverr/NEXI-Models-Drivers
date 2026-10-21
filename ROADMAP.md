@@ -143,7 +143,14 @@ places it at the NEXI root as `.github/workflows/dove-driver-ci.yml`; it has not
 on GitHub. Run locally on Linux: build, unit tests (2789 pass, 1 fails as above under R0.2), `cua-telemetry` 53/53
 (with `--features http`, since Dove compiles its sender out and upstream's loopback test would hang), contract
 tests, GTK3 AT-SPI e2e 37/37 under Xvfb (`ci/dove/linux/x11-session.sh`) and 37/37 under headless Sway, desktop
-scope 5/5, R0.2 side by side, and the parity job via `ci/dove/fork-tree.sh`. macOS and Windows jobs are unrun.
+scope 5/5, R0.2 side by side, and the parity job via `ci/dove/fork-tree.sh`.
+
+Published 2026-10-21 (NEXI `main` `8700279`). CI run 1: parity and Linux/sway (GTK3 e2e under Sway) green; the
+unit-test step failed on Linux/x11 (the R0.2 pacman test), macOS (`cua-driver-sdk --lib`: 3 socket-transport
+tests get EINVAL) and Windows (two `extension_manager` assertions hard-code `/`; the `dove-driver-uia` test binary
+cannot start, error 740, because its upstream manifest sets `uiAccess="true"`). All are upstream test behaviour,
+not Dove changes. Run 1 skipped everything after unit tests; the workflow now runs each step whenever the build
+succeeded, so the next run reports contract, e2e and R0.2 on macOS and Windows.
 The upstream import lost most scripts' executable bits, so CI runs fixture scripts through `bash`.
 
 ## W8. Benchmarks published per release
