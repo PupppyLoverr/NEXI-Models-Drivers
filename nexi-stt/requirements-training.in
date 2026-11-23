@@ -1,3 +1,0 @@
--r requirements.in
-transformers==4.57.1
-safetensors==0.6.2
