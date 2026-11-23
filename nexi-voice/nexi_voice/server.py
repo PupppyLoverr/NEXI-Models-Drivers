@@ -19,6 +19,9 @@ from . import vad
 
 def wav_bytes(pcm_f32, sr: int) -> bytes:
     import numpy as np
+    if not isinstance(pcm_f32, np.ndarray):
+        pcm_f32 = pcm_f32.detach().cpu().numpy()  # torch Tensor from TTS
+    pcm_f32 = np.asarray(pcm_f32, dtype="float32").reshape(-1)
     buf = io.BytesIO()
     with wave.open(buf, "wb") as w:
         w.setnchannels(1)

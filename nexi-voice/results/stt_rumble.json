@@ -1,0 +1,8 @@
+{
+  "engine": "rumble",
+  "n": 15,
+  "load_s": 11.85,
+  "wer_mean": 0.0405,
+  "rtf_mean": 7.25,
+  "rtf_p90": 8.659
+}

@@ -34,6 +34,18 @@ parquet, first 40 clips, decoded via soundfile (not torchcodec).
 | `fw-tiny` (tiny.en) | 505 MB | 13.3%  | 0.076    | 0.133   | 0.5 s |
 | `fw-base` (base.en) | 627 MB | 13.4%  | 0.132    | 0.232   | 2.8 s |
 
+Challenger: **Rumble-2-Flash** (Reson8, 0.5B Qwen3-ASR, transformers-native,
+fp32 on CPU), same corpus, n=15:
+
+| Engine   | Peak RSS | WER (n=15) | RTF mean | RTF p90 | Load |
+|----------|----------|------------|----------|---------|------|
+| `rumble` | 3,540 MB | 4.05%      | 7.25     | 8.66    | 11.9 s |
+
+**Rumble verdict:** transcription quality is real (4% WER vs 13% whisper) but
+it is **7x slower than real-time** on this CPU box and eats 3.5 GB — it cannot
+serve the calling product. It stays in the driver as a non-realtime
+high-accuracy profile; `fw-tiny` remains the real-time default.
+
 **Reading:** base.en buys nothing on this set — same WER, +122 MB, ~2x RTF.
 `fw-tiny` is the current STT driver default. Both are far past real-time on
 CPU. These are utterance-level engines, not true streaming: the calling path

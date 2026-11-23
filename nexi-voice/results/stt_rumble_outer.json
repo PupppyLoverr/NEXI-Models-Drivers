@@ -1,0 +1,15 @@
+{
+  "command": [
+    ".venv/bin/python",
+    "nexi-voice/bench_stt.py",
+    "--engine",
+    "rumble",
+    "--n",
+    "15",
+    "--json",
+    "nexi-voice/results/stt_rumble_inner.json"
+  ],
+  "wall_seconds": 18.095,
+  "peak_rss_mb": 1082.6,
+  "exit_code": 1
+}
