@@ -1,0 +1,10 @@
+.venv/
+*.gguf
+*.bin
+*.safetensors
+*.onnx
+*.wav
+*.mp3
+__pycache__/
+models/
+*.ckpt
