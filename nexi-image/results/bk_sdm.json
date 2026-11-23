@@ -1,0 +1,12 @@
+{
+  "engine": "bk-sdm",
+  "size": 256,
+  "steps": 15,
+  "load_s": 45.6,
+  "s_per_img_mean": 168.6,
+  "s_per_img": [
+    164.5,
+    165.9,
+    175.4
+  ]
+}
