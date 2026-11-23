@@ -16,6 +16,20 @@ Merged with `common/train/merge_lora.py`; weights stay local (gitignored).
 Eval process peak RSS: 10.97 GB — on a "4 GB tier" target, inference must
 ship as GGUF (planned ~1.2 GB q4), not the fp32 HF path used for training.
 
+## GGUF export — measured (llama.cpp, Q4_K_M)
+
+| Metric | Value |
+|--------|-------|
+| GGUF file | 1.29 GB (`nexi-4-Q4_K_M.gguf`) |
+| Load | 1.2 s |
+| Peak RSS | 1.97 GB |
+| Decode speed | 18.2 tok/s (8 threads) |
+
+The 4 GB tier claim is real: a tuned 2B NEXI model at **~2 GB RAM and
+18 tok/s on CPU**. Caveat: an ad-hoc tool-call prompt through the GGUF
+refused the call — tuned behavior is prompt/template-sensitive and the
+20% held-out score stands as the honest capability bound tonight.
+
 ## Reading — honest
 
 - **The pipeline works end-to-end**: data mix -> CPU LoRA -> merge -> eval.
