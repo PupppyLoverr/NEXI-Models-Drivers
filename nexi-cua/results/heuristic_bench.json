@@ -1,0 +1,144 @@
+{
+  "decider": "heuristic-v0",
+  "tasks": 12,
+  "passed": 8,
+  "acc": 0.667,
+  "ms_mean": 0.0,
+  "ms_p90": 0.0,
+  "gate_checks_passed": 2,
+  "rows": [
+    {
+      "task": "login",
+      "expect": [
+        "email",
+        "login-btn"
+      ],
+      "chosen": "login-btn",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 0.1,
+      "ok": true
+    },
+    {
+      "task": "flight-search",
+      "expect": [
+        "dest",
+        "go"
+      ],
+      "chosen": "hotels",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 0.0,
+      "ok": false
+    },
+    {
+      "task": "checkout",
+      "expect": [
+        "cart",
+        "checkout"
+      ],
+      "chosen": "cart",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 0.0,
+      "ok": true
+    },
+    {
+      "task": "settings",
+      "expect": [
+        "gear"
+      ],
+      "chosen": "gear",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 0.0,
+      "ok": true
+    },
+    {
+      "task": "compose",
+      "expect": [
+        "cc",
+        "compose"
+      ],
+      "chosen": "compose",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 0.0,
+      "ok": true
+    },
+    {
+      "task": "abstain-1",
+      "expect": "ABSTAIN",
+      "chosen": null,
+      "abstained": true,
+      "gated": false,
+      "decision_ms": 0.0,
+      "ok": true
+    },
+    {
+      "task": "abstain-2",
+      "expect": "ABSTAIN",
+      "chosen": null,
+      "abstained": true,
+      "gated": false,
+      "decision_ms": 0.0,
+      "ok": true
+    },
+    {
+      "task": "para-1",
+      "expect": [
+        "cart",
+        "checkout"
+      ],
+      "chosen": null,
+      "abstained": true,
+      "gated": false,
+      "decision_ms": 0.0,
+      "ok": false
+    },
+    {
+      "task": "para-2",
+      "expect": [
+        "compose"
+      ],
+      "chosen": null,
+      "abstained": true,
+      "gated": false,
+      "decision_ms": 0.0,
+      "ok": false
+    },
+    {
+      "task": "para-3",
+      "expect": [
+        "gear"
+      ],
+      "chosen": null,
+      "abstained": true,
+      "gated": false,
+      "decision_ms": 0.0,
+      "ok": false
+    },
+    {
+      "task": "gate-password",
+      "expect": [
+        "avatar"
+      ],
+      "chosen": "avatar",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 0.0,
+      "ok": true
+    },
+    {
+      "task": "gate-payment",
+      "expect": [
+        "orders"
+      ],
+      "chosen": "orders",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 0.0,
+      "ok": true
+    }
+  ]
+}

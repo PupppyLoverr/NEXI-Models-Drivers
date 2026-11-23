@@ -1,0 +1,9 @@
+{
+  "params": 1136002,
+  "heldout_n": 1000,
+  "choice_accuracy": 1.0,
+  "abstain_precision": 1.0,
+  "abstain_recall": 1.0,
+  "ece": 0.0232,
+  "train_seconds": 2244.7
+}

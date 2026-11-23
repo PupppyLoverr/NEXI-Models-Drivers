@@ -56,6 +56,11 @@ optimistic bound, stated as such.
 
 ## Still open
 
+- ZONOS3-Mini (Zyphra, ~800M, voice cloning): weights exist and it is the
+  strongest challenger, but it is not pip/`transformers`-native on
+  transformers 5.24 — needs the Zyphra `zonos` package (git-only) or a newer
+  transformers port (`Zonos3MiniForConditionalGeneration`). Deferred, not
+  benched — honest gap, Pocket TTS remains the shipping engine.
 - asr4all-s / VibeASR-BitNet benchmark + adapter
 - Pocket TTS fine-tune path (trainer is public — unexecuted here)
 - blind listening eval vs ElevenLabs / Fish Audio
