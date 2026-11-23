@@ -1,0 +1,24 @@
+{
+  "mix": "mix.jsonl",
+  "sha256": "1e292f76f11d81f47bf1b46cd88374f8340ce6943eaeb6e373a3f07baae764ad",
+  "total_rows": 2400,
+  "seed": 7,
+  "sources": {
+    "tool_calling": {
+      "rows": 600,
+      "origin": "synthetic"
+    },
+    "chat": {
+      "rows": 600,
+      "origin": "HuggingFaceH4/no_robots"
+    },
+    "code": {
+      "rows": 600,
+      "origin": "ise-uiuc/Magicoder-Evol-Instruct-110K"
+    },
+    "cua_decision": {
+      "rows": 600,
+      "origin": "synthetic"
+    }
+  }
+}

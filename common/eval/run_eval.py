@@ -69,7 +69,8 @@ def main() -> int:
         for row in rows:
             ids = tok.apply_chat_template(row["prompt_messages"],
                                           add_generation_prompt=True,
-                                          return_tensors="pt")
+                                          return_dict=True,
+                                          return_tensors="pt")["input_ids"]
             t0 = time.time()
             with torch.no_grad():
                 out = model.generate(ids, max_new_tokens=a.max_new,

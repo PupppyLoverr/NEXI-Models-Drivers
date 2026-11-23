@@ -1,0 +1,26 @@
+{
+  "variant": "english_18m_2026-10",
+  "voice": "alba",
+  "load_seconds": 1.56,
+  "sample_rate": 24000,
+  "runs": [
+    {
+      "ttfa_ms": 94.3,
+      "wall_s": 1.03,
+      "audio_s": 5.92,
+      "rtf": 0.174
+    },
+    {
+      "ttfa_ms": 60.5,
+      "wall_s": 1.06,
+      "audio_s": 6.32,
+      "rtf": 0.168
+    },
+    {
+      "ttfa_ms": 61.6,
+      "wall_s": 1.06,
+      "audio_s": 6.24,
+      "rtf": 0.17
+    }
+  ]
+}

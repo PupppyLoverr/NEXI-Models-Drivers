@@ -1,0 +1,15 @@
+{
+  "command": [
+    ".venv/bin/python",
+    "nexi-voice/bench_stt.py",
+    "--engine",
+    "fw-tiny",
+    "--n",
+    "40",
+    "--json",
+    "nexi-voice/results/stt_fw_tiny_inner.json"
+  ],
+  "wall_seconds": 16.401,
+  "peak_rss_mb": 505.1,
+  "exit_code": 0
+}

@@ -1,0 +1,13 @@
+{
+  "command": [
+    ".venv/bin/python",
+    "nexi-voice/bench_tts.py",
+    "--reps",
+    "3",
+    "--json",
+    "nexi-voice/results/tts_pocket_inner.json"
+  ],
+  "wall_seconds": 4.441,
+  "peak_rss_mb": 378.9,
+  "exit_code": 1
+}

@@ -1,0 +1,26 @@
+{
+  "variant": "english_2026-10",
+  "voice": "alba",
+  "load_seconds": 3.72,
+  "sample_rate": 24000,
+  "runs": [
+    {
+      "ttfa_ms": 198.0,
+      "wall_s": 3.03,
+      "audio_s": 6.48,
+      "rtf": 0.468
+    },
+    {
+      "ttfa_ms": 178.5,
+      "wall_s": 2.87,
+      "audio_s": 6.16,
+      "rtf": 0.465
+    },
+    {
+      "ttfa_ms": 167.2,
+      "wall_s": 2.67,
+      "audio_s": 5.84,
+      "rtf": 0.457
+    }
+  ]
+}

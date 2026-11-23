@@ -24,7 +24,7 @@ SOURCES = {
     "chat": {
         "repo": "HuggingFaceH4/no_robots",
         "config": None,
-        "split": "train_sft",
+        "split": "train",
         "mapper": "no_robots",
     },
     "code": {
@@ -54,7 +54,7 @@ def map_no_robots(row: dict) -> dict | None:
 
 
 def map_magicoder(row: dict) -> dict | None:
-    problem, solution = row.get("problem"), row.get("solution")
+    problem, solution = row.get("instruction"), row.get("response")
     if not problem or not solution:
         return None
     return {"messages": [

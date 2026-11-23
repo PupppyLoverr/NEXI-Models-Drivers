@@ -1,0 +1,26 @@
+{
+  "variant": "english_2m_2026-10",
+  "voice": "alba",
+  "load_seconds": 1.85,
+  "sample_rate": 24000,
+  "runs": [
+    {
+      "ttfa_ms": 48.8,
+      "wall_s": 0.46,
+      "audio_s": 5.68,
+      "rtf": 0.081
+    },
+    {
+      "ttfa_ms": 33.6,
+      "wall_s": 0.58,
+      "audio_s": 6.0,
+      "rtf": 0.097
+    },
+    {
+      "ttfa_ms": 25.7,
+      "wall_s": 0.75,
+      "audio_s": 6.24,
+      "rtf": 0.119
+    }
+  ]
+}

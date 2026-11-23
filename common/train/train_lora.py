@@ -66,6 +66,7 @@ def main() -> int:
         bf16=False, fp16=False,
         dataloader_num_workers=0,
         use_cpu=True,
+        remove_unused_columns=False,
     )
 
     def collate(batch):

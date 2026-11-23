@@ -1,0 +1,8 @@
+{
+  "engine": "fw-tiny",
+  "n": 40,
+  "load_s": 0.46,
+  "wer_mean": 0.1325,
+  "rtf_mean": 0.076,
+  "rtf_p90": 0.133
+}

@@ -1,0 +1,15 @@
+{
+  "command": [
+    ".venv/bin/python",
+    "nexi-voice/bench_tts.py",
+    "--variant",
+    "english_2m_2026-10",
+    "--reps",
+    "3",
+    "--json",
+    "nexi-voice/results/tts_english_2m_2026-10_inner.json"
+  ],
+  "wall_seconds": 8.874,
+  "peak_rss_mb": 603.0,
+  "exit_code": 0
+}

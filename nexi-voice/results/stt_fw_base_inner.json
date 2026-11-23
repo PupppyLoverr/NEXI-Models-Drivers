@@ -1,0 +1,8 @@
+{
+  "engine": "fw-base",
+  "n": 40,
+  "load_s": 2.77,
+  "wer_mean": 0.1342,
+  "rtf_mean": 0.132,
+  "rtf_p90": 0.232
+}

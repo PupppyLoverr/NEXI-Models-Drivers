@@ -11,14 +11,17 @@ RAM on ≤16 GB machines, ~75% above that, because the OS and apps share memory.
 
 | Base | Sizes | Why it matters for NEXI | Watch-outs |
 |---|---|---|---|
-| Qwen3.5 (Alibaba, Apache-2.0) | 0.8B, 2B, 4B, 9B dense | Best benchmark-per-GB in class; hybrid Gated-DeltaNet + attention architecture | No first-party GGUF — community quants (unsloth, bartowski) only; needs a recent llama.cpp build |
-| Qwen3-VL (Alibaba, Apache-2.0) | 2B, 4B, 8B | Same family, native image + video input — the multimodal bases for NEXI-8/16 | Vision tower adds RAM; verify GGUF vision support per llama.cpp build |
-| Qwen3.6-35B-A3B (MoE) | 35B total, ~3B active | Flagship-class quality at small-model CPU speed; ~20.5 GB Q4 | MoE quant quality varies — measure, don't assume |
-| Qwen3.8-27B | 27B dense | Prior flagship; UD-Q4_K_XL peaked ~20.4 GB RSS | Dense = slow generation (~2 tok/s on 8 vCPU) |
-| Gemma 4 (Google) | E2B, E4B, 12B, 26B-A4B | First-party GGUF; 26B-A4B MoE is a strong 20 GB pick (~14.6 GB Q4) | Gemma license is not OSI-approved; check terms before shipping derivative weights |
-| IBM Granite 4.2 | 3B, 8B | First-party signed GGUF, full quant ladder, Apache-2.0 | Benchmarks trail Qwen3.5 at equal size |
+| **WePocketModel 1.0 (Tencent/WeChat AI, Nov 16)** | 2B, 4B (first-party GGUF) | Newest on-device family: one VL backbone does **generation + embedding + JEV-style typed decisions** (option/score/binary); 4B ranks #1 in all three families, 2B leads typed-decision among 2Bs (55.8 vs 35.6) — gives NEXI-4 multimodality + a built-in S1 head | License ambiguity: LICENSE.txt says Apache-2.0, model card says "pending confirmation" — verify before shipping derivatives |
+| **Nemotron 3.5 Bolt E4B 4GB (NVIDIA, Oct 23 / paper Nov 16)** | E4B, ~4 GB footprint | Built for exactly the 4 GB tier: post-trained from Gemma-4-E4B, beats Gemma-4-E4B and Qwen3.5-4B on 21 benchmarks with fewest output tokens; DFlash drafter → 2.74× decode | OpenMDW license; nvidia/NVIDIA-Nemotron-3.5-Bolt-E4B-4GB + GGUF |
+| **Inkling 2 Mini (Thinking Machines, Nov 20, Apache-2.0)** | 26.4B total / 3.4B active, ~20 GB | Looped-MoE multimodal (text+image): leads **every open-weights <100B model** on DeepSWE 48.2 / Vals 46.5; ~20 GB native footprint — the flagship that already hits the "shrink to ~21 GB" goal | Weights are NVFP4/MXFP8; GGUF builds exist (unsloth, ggml-org) — CPU inference speed on looped arch unproven, measure |
+| **Nemotron 3.5 Bolt 74B-A9B (NVIDIA)** | 74B / 9B active | Bigger flagship option: nvidia's 24GB build = 24.1 GB RSS at 2-bit | 2-bit quant quality needs eval; OpenMDW license |
+| Qwen3.5 (Alibaba, Apache-2.0) | 0.8B, 2B, 4B, 9B dense | Prior best benchmark-per-GB; hybrid Gated-DeltaNet + attention | Qwen3.5-2B is hybrid linear-attention — HF fallback kernels are slow on CPU; community GGUF only |
+| Qwen3-VL (Alibaba, Apache-2.0) | 2B, 4B, 8B | Native image + video input — multimodal base for NEXI-16 | Vision tower adds RAM; verify GGUF vision support per llama.cpp build |
+| **Qwen 4 status** | — | Announced Sep 22, in training. Only Qwen4-Max (2.4T/71B-active) shipped Nov 16 — **API-only, no weights**. Small Qwen4 opens "eventually", no date | Do NOT block the lineup on it; re-check at each release |
+| Qwen3.6-35B-A3B (MoE) | 35B total, ~3B active | Flagship-class quality at small-model CPU speed; ~20.5 GB Q4 | Superseded by Inkling 2 Mini for NEXI-28/32 unless Inkling's CPU path fails |
+| Gemma 4 (Google) | E2B, E4B, 12B, 26B-A4B | First-party GGUF; 26B-A4B MoE strong 20 GB pick | Gemma license is not OSI-approved |
 | gpt-oss-20b (OpenAI) | 20B MoE | ~12 GB Q4, permissive, strong reasoning | MoE; validate tool-call behavior before adopting |
-| Others to track | Phi-4-mini, LFM3-1.7B, SmolLM3 | Fallbacks if licensing blocks a pick | — |
+| Others to track | MiniMax-M3.1-Flash (agent/CU, ~428B), DeepSeek-V4.1-Flash, Mistral Large 4, LFM3-1.7B | Big-model context; too large for our tiers | — |
 
 Multimodal options for the small tiers: Qwen3-VL (2B/4B/8B, image+video),
 LFM3-VL-2B and LFM3-Omni-2B (video + audio soundtrack), MiniCPM-V 4.7 (1B,
@@ -38,7 +41,9 @@ pronunciation robustness at 93.2%).
 
 | Candidate | Size | Streaming | Notes |
 |---|---|---|---|
-| **Kyutai Pocket TTS family** | 1.9M–18.2M tiny models + 100M base (Oct 2026) | 80 ms chunks, ~200 ms first audio, real-time on 1–2 CPU threads | MIT code / CC-BY weights; **training code public since Aug 2026** — the only top-tier TTS with a released trainer; 7 languages; voice cloning from a WAV |
+| **Kyutai Pocket TTS family** | 1.9M–18.2M tiny models + 100M base (Oct 2026) | 80 ms chunks, ~200 ms first audio, real-time on 1–2 CPU threads | MIT code / CC-BY weights; **training code public since Aug 2026** — the only top-tier TTS with a released trainer; **measured on this repo's bench: 603–650 MB RSS, RTF 0.10–0.17, TTFA 36–72 ms for the tiny family; flagship 1.18 GB / 0.46 / 181 ms** |
+| **ZONOS3-Mini (Zyphra, Nov 9, Apache-2.0)** | 800M total / 100M active MoE | real-time on-device; <150 ms TTFA (M3), <570 ms (Pixel 9) | Voice cloning + word-level delivery control; runtimes for WebGPU/GGML/vLLM — the quality challenger to Pocket flagship; ~400–800 MB at 4–8 bit |
+| **LFM3-Audio-2B (Liquid, Oct 27)** | 2B unified | live ASR in ~0.96 s chunks; interleaved text+speech output | One checkpoint = ASR + TTS + voice chat — architecturally ideal for calling; LFM Open License v1.0 (not OSI); English-only live modes |
 | Qwen3-TTS (Alibaba) | open weights | 97 ms first audio (vendor figure), HTTP + WebSocket | 9 preset voices, instruction-controlled tone, 10 languages |
 | Kokoro-82M | 326 MB ONNX | per-utterance only | 8 languages, no cloning, quality plateau |
 | Linnet-35M | 83 MB, Rust runtime | 80 ms chunks | English-only, voice cloning, single vendor |
@@ -53,9 +58,11 @@ approach ElevenLabs on a defined conversational set, measured, not asserted.
 
 | Candidate | Size | Streaming | Notes |
 |---|---|---|---|
+| **Rumble-2-Flash (Nov 18, Apache-2.0)** | 0.5B | native transformers + vLLM | Brand-new ASR: 40+ languages, "competes with models 3–60× its size"; GGUF builds already up — **bench vs faster-whisper before picking STT base** |
 | **VibeVoice-ASR-BitNet** (Microsoft VibeASR.cpp) | 1.58 GB total (VAE 0.65 + LM 0.92, hetero-quant) | RTF <1 on 1–4 CPU threads; 2–2.7× whisper.cpp | Qwen2.5-1.5B LM decoder; +1–4% WER vs full-size; real-time multilingual |
 | FUTO asr4all small | 28.1M + 5.3M PCEC | two latency modes from one weight set | RTFx 30–128× on desktop CPU; English only; ethical-use clause |
-| Whisper tiny/base.en via faster-whisper | 78/148 MB | VAD-segmented, not true streaming | proven baseline: ~342–431 MB RSS, 0.46–0.8 s warm on 11 s clip |
+| Whisper tiny/base.en via faster-whisper | 78/148 MB | VAD-segmented, not true streaming | **measured here: tiny.en 505 MB RSS / WER 13.3% / RTF 0.076; base.en 627 MB / 13.4% / 0.132 — base buys nothing on LibriSpeech-clean** |
+| LFM3-Audio-2B (asr mode) | 2B shared | ~0.96 s live chunks | one-model-does-both option; see TTS table |
 | fela-streaming-asr | small FNO-CTC | constant memory, true streaming | early project — evaluate before adopting |
 
 For a calling product the pipeline is VAD → streaming ASR partials (<300 ms) →
@@ -90,11 +97,14 @@ What we're competing against:
 - **Vercel agent-desktop / agent-browser**: accessibility-tree → JSON with
   stable `ref`s, observe-act-verify loop, CLI + C library, no model inside.
   The clean reference architecture.
-- **Open agent/model families**: Agent S4 (Simular — open 27B from 5.6% to
-  21.3% on OSWorld 2.0), UI-TARS Desktop, OpenCUA (fully open
-  weights+data+tools), Holo3-35B-A3B / Holo4 (H Company),
-  ScaleCUA-Qwen3.5-9B (68.7% OSWorld-Verified), Mage-VL-Cowork-4B (66.0%).
-- OSWorld-Verified top is now ~90% (agentic framework) / ~86% (single model).
+- **Open agent/model families (Nov 2026 bar)**: **NorthCUA** (Nov 3 — open
+  family, Nano 9B 26.5% / Mini 35B on OSWorld-Verified, beats closed
+  trillion-param APIs); **CUA-Master-27B** (Nov 2 — 80.2 OSWorld-Verified,
+  best hybrid GUI+CLI: 43.9 WeaveBench / 25.0 ALE; Qwen-CUA-397B still leads
+  GUI-only at 84.0); **Qwen-UI-Agent 27B** (ScreenSpot-v2 top);
+  UI-Venus-1.5-30B-A3B; MiniMax-M3.1-Flash (agent+CU-tuned, weights followed).
+- OSWorld-Verified top is now ~84–90%; the open-weight bar for a single
+  model is ~80 (CUA-Master) and ~84 (Qwen-CUA-397B).
 
 Design direction: tree-first observation (AX/AT-SPI/UIA + DOM, not
 screenshot-first), NEXI-S1 as the fast decision layer with an LLM tier behind

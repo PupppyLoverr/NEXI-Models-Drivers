@@ -1,0 +1,26 @@
+{
+  "variant": "english_7m_2026-10",
+  "voice": "alba",
+  "load_seconds": 1.69,
+  "sample_rate": 24000,
+  "runs": [
+    {
+      "ttfa_ms": 83.9,
+      "wall_s": 0.84,
+      "audio_s": 6.8,
+      "rtf": 0.123
+    },
+    {
+      "ttfa_ms": 52.8,
+      "wall_s": 0.83,
+      "audio_s": 6.48,
+      "rtf": 0.128
+    },
+    {
+      "ttfa_ms": 48.1,
+      "wall_s": 0.74,
+      "audio_s": 6.08,
+      "rtf": 0.122
+    }
+  ]
+}

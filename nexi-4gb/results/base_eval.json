@@ -1,0 +1,23 @@
+{
+  "model": "Qwen/Qwen3.5-2B",
+  "results": {
+    "tool_call": {
+      "n": 30,
+      "passed": 0,
+      "accuracy": 0.0,
+      "avg_gen_seconds": 9.36
+    },
+    "cua": {
+      "n": 30,
+      "passed": 28,
+      "accuracy": 0.9333,
+      "avg_gen_seconds": 3.12
+    },
+    "ifeval": {
+      "n": 30,
+      "passed": 12,
+      "accuracy": 0.4,
+      "avg_gen_seconds": 2.21
+    }
+  }
+}
