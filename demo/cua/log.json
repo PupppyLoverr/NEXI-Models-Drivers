@@ -1,0 +1,30 @@
+[
+  {
+    "goal": "search for wireless headphones",
+    "ms": 869.7,
+    "abstained": false,
+    "acted": "search",
+    "vetoed": []
+  },
+  {
+    "goal": "add the headphones to my cart",
+    "ms": 947.9,
+    "abstained": false,
+    "acted": "gear",
+    "vetoed": []
+  },
+  {
+    "goal": "view my order history",
+    "ms": 867.8,
+    "abstained": true,
+    "acted": null,
+    "vetoed": []
+  },
+  {
+    "goal": "check out the danger zone",
+    "ms": 1006.4,
+    "abstained": false,
+    "acted": "buy-1",
+    "vetoed": []
+  }
+]

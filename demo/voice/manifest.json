@@ -1,0 +1,218 @@
+[
+  {
+    "file": "demo/voice/pocket-2m_intro.wav",
+    "variant": "pocket-2m",
+    "tag": "intro",
+    "text": "Hi, I'm NEXI \u2014 a fully local voice. No cloud, no subscription, and I'm running on a laptop CPU right now.",
+    "audio_s": 5.92,
+    "gen_s": 2.11,
+    "rtf": 0.356
+  },
+  {
+    "file": "demo/voice/pocket-2m_question.wav",
+    "variant": "pocket-2m",
+    "tag": "question",
+    "text": "Would you like me to book the table for seven o'clock, or would eight work better for you?",
+    "audio_s": 4.24,
+    "gen_s": 2.86,
+    "rtf": 0.675
+  },
+  {
+    "file": "demo/voice/pocket-2m_excited.wav",
+    "variant": "pocket-2m",
+    "tag": "excited",
+    "text": "That's amazing \u2014 the results just came in and we actually did it!",
+    "audio_s": 3.76,
+    "gen_s": 1.54,
+    "rtf": 0.409
+  },
+  {
+    "file": "demo/voice/pocket-2m_calm.wav",
+    "variant": "pocket-2m",
+    "tag": "calm",
+    "text": "Take a slow breath. Everything is on track, and there's nothing to worry about.",
+    "audio_s": 4.56,
+    "gen_s": 3.28,
+    "rtf": 0.72
+  },
+  {
+    "file": "demo/voice/pocket-2m_numbers.wav",
+    "variant": "pocket-2m",
+    "tag": "numbers",
+    "text": "Your order total is forty-two dollars and ninety-nine cents, arriving Thursday, March the twelfth.",
+    "audio_s": 5.52,
+    "gen_s": 3.09,
+    "rtf": 0.56
+  },
+  {
+    "file": "demo/voice/pocket-2m_long.wav",
+    "variant": "pocket-2m",
+    "tag": "long",
+    "text": "NEXI is a family of open models designed to run entirely on your own device. The voice you're hearing was synthesized in real time on consumer hardware, at a fraction of the memory a cloud model would need \u2014 and it never sends a single byte off this machine.",
+    "audio_s": 13.36,
+    "gen_s": 5.88,
+    "rtf": 0.44
+  },
+  {
+    "file": "demo/voice/pocket-7m_intro.wav",
+    "variant": "pocket-7m",
+    "tag": "intro",
+    "text": "Hi, I'm NEXI \u2014 a fully local voice. No cloud, no subscription, and I'm running on a laptop CPU right now.",
+    "audio_s": 7.84,
+    "gen_s": 4.73,
+    "rtf": 0.604
+  },
+  {
+    "file": "demo/voice/pocket-7m_question.wav",
+    "variant": "pocket-7m",
+    "tag": "question",
+    "text": "Would you like me to book the table for seven o'clock, or would eight work better for you?",
+    "audio_s": 4.16,
+    "gen_s": 3.02,
+    "rtf": 0.726
+  },
+  {
+    "file": "demo/voice/pocket-7m_excited.wav",
+    "variant": "pocket-7m",
+    "tag": "excited",
+    "text": "That's amazing \u2014 the results just came in and we actually did it!",
+    "audio_s": 3.84,
+    "gen_s": 2.9,
+    "rtf": 0.756
+  },
+  {
+    "file": "demo/voice/pocket-7m_calm.wav",
+    "variant": "pocket-7m",
+    "tag": "calm",
+    "text": "Take a slow breath. Everything is on track, and there's nothing to worry about.",
+    "audio_s": 4.16,
+    "gen_s": 2.24,
+    "rtf": 0.538
+  },
+  {
+    "file": "demo/voice/pocket-7m_numbers.wav",
+    "variant": "pocket-7m",
+    "tag": "numbers",
+    "text": "Your order total is forty-two dollars and ninety-nine cents, arriving Thursday, March the twelfth.",
+    "audio_s": 5.44,
+    "gen_s": 5.24,
+    "rtf": 0.964
+  },
+  {
+    "file": "demo/voice/pocket-7m_long.wav",
+    "variant": "pocket-7m",
+    "tag": "long",
+    "text": "NEXI is a family of open models designed to run entirely on your own device. The voice you're hearing was synthesized in real time on consumer hardware, at a fraction of the memory a cloud model would need \u2014 and it never sends a single byte off this machine.",
+    "audio_s": 13.12,
+    "gen_s": 8.75,
+    "rtf": 0.667
+  },
+  {
+    "file": "demo/voice/pocket_intro.wav",
+    "variant": "pocket",
+    "tag": "intro",
+    "text": "Hi, I'm NEXI \u2014 a fully local voice. No cloud, no subscription, and I'm running on a laptop CPU right now.",
+    "audio_s": 6.96,
+    "gen_s": 6.28,
+    "rtf": 0.902
+  },
+  {
+    "file": "demo/voice/pocket_question.wav",
+    "variant": "pocket",
+    "tag": "question",
+    "text": "Would you like me to book the table for seven o'clock, or would eight work better for you?",
+    "audio_s": 4.32,
+    "gen_s": 5.65,
+    "rtf": 1.309
+  },
+  {
+    "file": "demo/voice/pocket_excited.wav",
+    "variant": "pocket",
+    "tag": "excited",
+    "text": "That's amazing \u2014 the results just came in and we actually did it!",
+    "audio_s": 3.04,
+    "gen_s": 4.37,
+    "rtf": 1.437
+  },
+  {
+    "file": "demo/voice/pocket_calm.wav",
+    "variant": "pocket",
+    "tag": "calm",
+    "text": "Take a slow breath. Everything is on track, and there's nothing to worry about.",
+    "audio_s": 3.68,
+    "gen_s": 4.95,
+    "rtf": 1.345
+  },
+  {
+    "file": "demo/voice/pocket_numbers.wav",
+    "variant": "pocket",
+    "tag": "numbers",
+    "text": "Your order total is forty-two dollars and ninety-nine cents, arriving Thursday, March the twelfth.",
+    "audio_s": 5.52,
+    "gen_s": 5.31,
+    "rtf": 0.962
+  },
+  {
+    "file": "demo/voice/pocket_long.wav",
+    "variant": "pocket",
+    "tag": "long",
+    "text": "NEXI is a family of open models designed to run entirely on your own device. The voice you're hearing was synthesized in real time on consumer hardware, at a fraction of the memory a cloud model would need \u2014 and it never sends a single byte off this machine.",
+    "audio_s": 12.24,
+    "gen_s": 16.85,
+    "rtf": 1.377
+  },
+  {
+    "file": "demo/voice/pocket-flagship_intro.wav",
+    "variant": "pocket-flagship",
+    "tag": "intro",
+    "text": "Hi, I'm NEXI \u2014 a fully local voice. No cloud, no subscription, and I'm running on a laptop CPU right now.",
+    "audio_s": 7.28,
+    "gen_s": 21.4,
+    "rtf": 2.939
+  },
+  {
+    "file": "demo/voice/pocket-flagship_question.wav",
+    "variant": "pocket-flagship",
+    "tag": "question",
+    "text": "Would you like me to book the table for seven o'clock, or would eight work better for you?",
+    "audio_s": 4.0,
+    "gen_s": 13.84,
+    "rtf": 3.461
+  },
+  {
+    "file": "demo/voice/pocket-flagship_excited.wav",
+    "variant": "pocket-flagship",
+    "tag": "excited",
+    "text": "That's amazing \u2014 the results just came in and we actually did it!",
+    "audio_s": 3.6,
+    "gen_s": 12.47,
+    "rtf": 3.465
+  },
+  {
+    "file": "demo/voice/pocket-flagship_calm.wav",
+    "variant": "pocket-flagship",
+    "tag": "calm",
+    "text": "Take a slow breath. Everything is on track, and there's nothing to worry about.",
+    "audio_s": 4.08,
+    "gen_s": 12.85,
+    "rtf": 3.149
+  },
+  {
+    "file": "demo/voice/pocket-flagship_numbers.wav",
+    "variant": "pocket-flagship",
+    "tag": "numbers",
+    "text": "Your order total is forty-two dollars and ninety-nine cents, arriving Thursday, March the twelfth.",
+    "audio_s": 5.76,
+    "gen_s": 21.23,
+    "rtf": 3.686
+  },
+  {
+    "file": "demo/voice/pocket-flagship_long.wav",
+    "variant": "pocket-flagship",
+    "tag": "long",
+    "text": "NEXI is a family of open models designed to run entirely on your own device. The voice you're hearing was synthesized in real time on consumer hardware, at a fraction of the memory a cloud model would need \u2014 and it never sends a single byte off this machine.",
+    "audio_s": 13.04,
+    "gen_s": 50.86,
+    "rtf": 3.9
+  }
+]

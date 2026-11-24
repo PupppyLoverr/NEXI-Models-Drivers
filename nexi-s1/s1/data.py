@@ -128,17 +128,20 @@ GOALS += [
 # Goals that have NO serving candidates anywhere: abstain rows are built
 # from these so the model learns "no candidate serves this goal" rather than
 # "this is one of my training goals with wrong elements".
+# NOTE: goals removed when an existing GENERIC/served candidate plausibly
+# serves them (e.g. "print my boarding pass" vs the Print button) — those
+# rows would be mislabeled abstains.
 ABSENT_GOALS = [
     "book a table for dinner", "change my password", "translate this page",
-    "pay with crypto", "print my boarding pass", "rent a car",
+    "pay with crypto", "rent a car",
     "order a pizza", "track my package", "book a haircut",
     "renew my passport", "schedule a dentist appointment",
     "buy concert tickets", "adopt a pet", "file a warranty claim",
     "check the weather tomorrow", "post a job listing",
-    "subscribe to the magazine", "register to vote",
-    "book a taxi", "refund my ticket", "cancel my gym membership",
-    "verify my identity", "upgrade my plan", "download the invoice",
-    "merge the accounts", "export my contacts", "join the webinar",
+    "register to vote",
+    "book a taxi", "refund my ticket",
+    "verify my identity", "upgrade my plan",
+    "merge the accounts", "join the webinar",
 ]
 
 GENERIC = [
@@ -170,6 +173,7 @@ def build(n: int, seed: int = 3) -> list[dict]:
         abstain = rng.random() < 0.28
         cands = []
         answer = -1
+        right_cand = None
         if abstain:
             # unserved goal: candidates come ONLY from served pools +
             # generics — plausible page elements, none serving this goal.
@@ -184,19 +188,18 @@ def build(n: int, seed: int = 3) -> list[dict]:
             g = rng.choice(GOALS)
             goal = rng.choice(g["goal"])
             cid, act, labels = rng.choice(g["right"])
-            cands.append({"id": cid, "action": act,
-                          "label": rng.choice(labels)})
+            right_cand = {"id": cid, "action": act,
+                          "label": rng.choice(labels)}
+            cands.append(right_cand)
             hard = rng.sample(g["hard"], rng.randint(0, 2))
             for hid, act, labels in hard:
                 lab = labels if isinstance(labels, str) else rng.choice(labels)
                 cands.append({"id": hid, "action": act, "label": lab})
             for did, act, lab in rng.sample(GENERIC, rng.randint(1, 3)):
                 cands.append({"id": did, "action": act, "label": lab})
-            right_ids = {c[0] for c in g["right"]}
-            answer = next(j for j, c in enumerate(cands)
-                          if c["id"] in right_ids and c["label"] in sum(
-                              (c2[2] for c2 in g["right"] if c2[0] == c["id"]), []))
         rng.shuffle(cands)
+        if right_cand is not None:
+            answer = cands.index(right_cand)
         rows.append({"goal": goal, "candidates": cands, "answer": answer})
     return rows
 

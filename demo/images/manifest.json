@@ -1,0 +1,53 @@
+[
+  {
+    "file": "gen_apple.png",
+    "kind": "generate",
+    "prompt": "a red apple on a wooden table, studio lighting",
+    "s": 505.9
+  },
+  {
+    "file": "gen_robot.png",
+    "kind": "generate",
+    "prompt": "a small robot reading a book in a library",
+    "s": 474.9
+  },
+  {
+    "file": "gen_lake.png",
+    "kind": "generate",
+    "prompt": "a mountain lake at sunrise, photograph",
+    "s": 484.1
+  },
+  {
+    "file": "edit_winter.png",
+    "kind": "edit",
+    "prompt": "the same mountain lake frozen over in winter, snow",
+    "strength": 0.65,
+    "s": 326.3
+  },
+  {
+    "file": "edit_night.png",
+    "kind": "edit",
+    "prompt": "the same mountain lake at night, moonlight, stars",
+    "strength": 0.65,
+    "s": 346.9
+  },
+  {
+    "file": "edit_paint.png",
+    "kind": "edit",
+    "prompt": "oil painting of a mountain lake at sunrise, thick brush strokes",
+    "strength": 0.55,
+    "s": 296.8
+  },
+  {
+    "file": "key_dawn.png",
+    "kind": "keyframe",
+    "prompt": "a lighthouse on a cliff at dawn, soft pink sky",
+    "s": 484.9
+  },
+  {
+    "file": "key_dusk.png",
+    "kind": "keyframe",
+    "prompt": "a lighthouse on a cliff at dusk, orange sunset",
+    "s": 507.1
+  }
+]

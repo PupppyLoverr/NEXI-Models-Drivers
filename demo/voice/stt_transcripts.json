@@ -1,0 +1,14 @@
+[
+  {
+    "file": "demo/voice/pocket_intro.wav",
+    "engine": "moon-base",
+    "truth": "Hi, I'm NEXI \u2014 a fully local voice. No cloud, no subscription, and I'm running on a laptop CPU right now.",
+    "transcript": "Hi, I'm Nexi, a fully local voice. No cloud, no subscription, and I'm running on a laptop CPU right now."
+  },
+  {
+    "file": "demo/voice/pocket-2m_long.wav",
+    "engine": "moon-base",
+    "truth": "NEXI is a family of open models designed to run entirely on your own device. The voice you're hearing was synthesized in real time on consumer hardware, at a fraction of the memory a cloud model would need \u2014 and it never sends a single byte off this machine.",
+    "transcript": "Next, I is a family of open models designed to run entirely on your own device. The voice you're hearing was synthesized in real time on consumer hardware. At a fraction of the memory a cloud model would need, and it never sends a single bite off this machine."
+  }
+]
