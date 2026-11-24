@@ -29,7 +29,9 @@ def tool_call_set(n: int = 40, seed: int = 13) -> list[dict]:
         rows.append({
             "prompt_messages": [
                 {"role": "system", "content": "You can call tools. Reply with "
-                 "<tool_call>{\"name\": ..., \"arguments\": {...}}</tool_call>."},
+                 "<tool_call>{\"name\": ..., \"arguments\": {...}}</tool_call>.\n"
+                 "<tools>" + json.dumps(
+                     [{"name": name, "arguments": args}]) + "</tools>"},
                 {"role": "user", "content": q},
             ],
             "check": {"type": "tool_call", "name": name, "arguments": args},
