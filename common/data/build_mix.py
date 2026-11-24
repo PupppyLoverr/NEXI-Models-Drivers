@@ -11,14 +11,20 @@ import argparse
 import hashlib
 import json
 import random
+import re
 from pathlib import Path
 
 SOURCES = {
     # name -> (hf repo, config, split, mapper name). Keep slices small: this
     # pipeline targets CPU LoRA, not pretraining.
     "tool_calling": {
-        "repo": "Salesforce/xlam-function-calling-60k",
-        "requires_auth": True,
+        # Salesforce/xlam-function-calling-60k is gated and needs manual
+        # terms acceptance; this is the same 60k rows in Hermes format,
+        # ungated (verified 24 Nov).
+        "repo": "minpeter/xlam-function-calling-60k-hermes",
+        "config": None,
+        "split": "train",
+        "mapper": "xlam_hermes",
         "fallback": "synthetic_tool_calling",
     },
     "chat": {
@@ -44,6 +50,45 @@ def sha256_file(path: Path) -> str:
     h = hashlib.sha256()
     h.update(path.read_bytes())
     return h.hexdigest()
+
+
+def map_xlam_hermes(row: dict) -> dict | None:
+    """Hermes xlam-60k row -> chat-template row in our tool_call contract.
+
+    Keeps xlam's diverse query + tool signatures; rewrites the assistant turn
+    to emit <tool_call> blocks exactly like our eval contract."""
+    convo = row.get("conversations")
+    if not isinstance(convo, list) or len(convo) < 2:
+        return None
+    msgs = []
+    for m in convo:
+        role = {"system": "system", "human": "user", "gpt": "assistant"}.get(
+            m.get("from"))
+        if role is None:
+            return None
+        content = m.get("value", "").strip()
+        if role == "assistant":
+            # normalize: keep only <tool_call> blocks
+            calls = [c.strip() for c in
+                     re.findall(r"<tool_call>(.*?)</tool_call>",
+                                content, re.S)]
+            if not calls:
+                return None
+            content = "".join(f"<tool_call>{c.strip()}</tool_call>"
+                              for c in calls)
+        if role == "system":
+            # swap Hermes preamble for our contract but keep the tools list
+            tools = re.search(r"<tools>(.*?)</tools>", content, re.S)
+            content = ("You can call tools. Reply with "
+                       "<tool_call>{\"name\": ..., \"arguments\": {...}}"
+                       "</tool_call>.")
+            if tools:
+                tl = tools.group(1).strip()
+                if len(tl) > 3000:  # keep CPU-trainable sequence lengths
+                    tl = tl[:3000] + "..."
+                content += "\nAvailable tools: <tools>" + tl + "</tools>"
+        msgs.append({"role": role, "content": content})
+    return {"messages": msgs}
 
 
 def map_no_robots(row: dict) -> dict | None:

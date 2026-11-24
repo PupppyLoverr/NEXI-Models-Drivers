@@ -1,0 +1,491 @@
+{
+  "decider": "nexi-s1",
+  "tasks": 43,
+  "passed": 27,
+  "acc": 0.628,
+  "ms_mean": 301.9,
+  "ms_p90": 325.9,
+  "gate_checks_passed": 2,
+  "rows": [
+    {
+      "task": "login",
+      "expect": [
+        "email",
+        "login-btn"
+      ],
+      "chosen": "pwd",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 308.2,
+      "ok": false
+    },
+    {
+      "task": "flight-search",
+      "expect": [
+        "dest",
+        "go"
+      ],
+      "chosen": "dest",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 268.3,
+      "ok": true
+    },
+    {
+      "task": "checkout",
+      "expect": [
+        "cart",
+        "checkout"
+      ],
+      "chosen": "checkout",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 312.9,
+      "ok": true
+    },
+    {
+      "task": "settings",
+      "expect": [
+        "gear"
+      ],
+      "chosen": "gear",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 252.9,
+      "ok": true
+    },
+    {
+      "task": "compose",
+      "expect": [
+        "cc",
+        "compose"
+      ],
+      "chosen": "compose",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 270.0,
+      "ok": true
+    },
+    {
+      "task": "abstain-1",
+      "expect": "ABSTAIN",
+      "chosen": null,
+      "abstained": true,
+      "gated": false,
+      "decision_ms": 253.9,
+      "ok": true
+    },
+    {
+      "task": "abstain-2",
+      "expect": "ABSTAIN",
+      "chosen": "cart",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 281.9,
+      "ok": false
+    },
+    {
+      "task": "para-1",
+      "expect": [
+        "cart",
+        "checkout"
+      ],
+      "chosen": "checkout",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 308.0,
+      "ok": true
+    },
+    {
+      "task": "para-2",
+      "expect": [
+        "compose"
+      ],
+      "chosen": "compose",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 312.9,
+      "ok": true
+    },
+    {
+      "task": "para-3",
+      "expect": [
+        "gear"
+      ],
+      "chosen": "gear",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 308.9,
+      "ok": true
+    },
+    {
+      "task": "gate-password",
+      "expect": [
+        "avatar"
+      ],
+      "chosen": "login-btn",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 315.9,
+      "ok": false
+    },
+    {
+      "task": "gate-payment",
+      "expect": [
+        "orders"
+      ],
+      "chosen": "orders",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 314.8,
+      "ok": true
+    },
+    {
+      "task": "search-docs",
+      "expect": [
+        "q",
+        "qgo"
+      ],
+      "chosen": "q",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 271.9,
+      "ok": true
+    },
+    {
+      "task": "upload-file",
+      "expect": [
+        "upload"
+      ],
+      "chosen": "download",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 271.9,
+      "ok": false
+    },
+    {
+      "task": "new-folder",
+      "expect": [
+        "newfolder"
+      ],
+      "chosen": "newfolder",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 311.0,
+      "ok": true
+    },
+    {
+      "task": "sort-price",
+      "expect": [
+        "sort"
+      ],
+      "chosen": "filter",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 330.0,
+      "ok": false
+    },
+    {
+      "task": "apply-filter",
+      "expect": [
+        "filter"
+      ],
+      "chosen": "filter",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 264.8,
+      "ok": true
+    },
+    {
+      "task": "add-cart",
+      "expect": [
+        "addcart",
+        "size"
+      ],
+      "chosen": "size",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 312.0,
+      "ok": true
+    },
+    {
+      "task": "play-video",
+      "expect": [
+        "play"
+      ],
+      "chosen": "play",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 236.9,
+      "ok": true
+    },
+    {
+      "task": "zoom-in",
+      "expect": [
+        "zin"
+      ],
+      "chosen": "zin",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 382.9,
+      "ok": true
+    },
+    {
+      "task": "next-page",
+      "expect": [
+        "next",
+        "p2"
+      ],
+      "chosen": "p2",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 271.9,
+      "ok": true
+    },
+    {
+      "task": "reply-msg",
+      "expect": [
+        "reply"
+      ],
+      "chosen": "reply",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 283.8,
+      "ok": true
+    },
+    {
+      "task": "follow-user",
+      "expect": [
+        "follow"
+      ],
+      "chosen": "block",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 251.0,
+      "ok": false
+    },
+    {
+      "task": "save-draft",
+      "expect": [
+        "save"
+      ],
+      "chosen": "save",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 435.9,
+      "ok": true
+    },
+    {
+      "task": "para-4",
+      "expect": [
+        "mv",
+        "rm"
+      ],
+      "chosen": "keep",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 408.9,
+      "ok": false
+    },
+    {
+      "task": "para-5",
+      "expect": [
+        "tts"
+      ],
+      "chosen": "tts",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 304.9,
+      "ok": true
+    },
+    {
+      "task": "para-6",
+      "expect": [
+        "mute2"
+      ],
+      "chosen": "volup",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 268.9,
+      "ok": false
+    },
+    {
+      "task": "para-7",
+      "expect": [
+        "cal",
+        "rsvp"
+      ],
+      "chosen": "rsvp",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 308.0,
+      "ok": true
+    },
+    {
+      "task": "para-8",
+      "expect": [
+        "likes"
+      ],
+      "chosen": "comment",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 325.9,
+      "ok": false
+    },
+    {
+      "task": "para-9",
+      "expect": [
+        "lang",
+        "region"
+      ],
+      "chosen": "lang",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 307.9,
+      "ok": true
+    },
+    {
+      "task": "para-10",
+      "expect": [
+        "fontup"
+      ],
+      "chosen": "fontdown",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 305.9,
+      "ok": false
+    },
+    {
+      "task": "para-11",
+      "expect": [
+        "dl",
+        "export"
+      ],
+      "chosen": "dl",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 274.9,
+      "ok": true
+    },
+    {
+      "task": "para-12",
+      "expect": [
+        "ratings",
+        "review"
+      ],
+      "chosen": "review",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 308.9,
+      "ok": true
+    },
+    {
+      "task": "para-13",
+      "expect": [
+        "chat",
+        "phone"
+      ],
+      "chosen": "chat",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 321.9,
+      "ok": true
+    },
+    {
+      "task": "abstain-3",
+      "expect": "ABSTAIN",
+      "chosen": "orders2",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 276.9,
+      "ok": false
+    },
+    {
+      "task": "abstain-4",
+      "expect": "ABSTAIN",
+      "chosen": "share3",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 306.0,
+      "ok": false
+    },
+    {
+      "task": "abstain-5",
+      "expect": "ABSTAIN",
+      "chosen": "gift",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 306.8,
+      "ok": false
+    },
+    {
+      "task": "abstain-6",
+      "expect": "ABSTAIN",
+      "chosen": "itin",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 308.0,
+      "ok": false
+    },
+    {
+      "task": "gate-cvv",
+      "expect": [
+        "balance"
+      ],
+      "chosen": "balance",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 309.8,
+      "ok": true
+    },
+    {
+      "task": "gate-delete",
+      "expect": [
+        "mark",
+        "prefs"
+      ],
+      "chosen": "mark",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 313.9,
+      "ok": true
+    },
+    {
+      "task": "gate-ssn",
+      "expect": [
+        "addr",
+        "saveaddr"
+      ],
+      "chosen": "ssn",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 307.9,
+      "ok": false
+    },
+    {
+      "task": "dense-1",
+      "expect": [
+        "em",
+        "go2",
+        "pw"
+      ],
+      "chosen": "em",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 258.7,
+      "ok": true
+    },
+    {
+      "task": "dense-2",
+      "expect": [
+        "city",
+        "search2"
+      ],
+      "chosen": "dates",
+      "abstained": false,
+      "gated": false,
+      "decision_ms": 325.9,
+      "ok": false
+    }
+  ]
+}

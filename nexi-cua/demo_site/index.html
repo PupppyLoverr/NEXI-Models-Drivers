@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>NEXI-CUA Demo Shop</title>
+<style>
+body { font-family: system-ui; margin: 24px; background: #f6f7f9; }
+header { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; }
+.search { padding: 8px 12px; width: 260px; }
+.product { background: #fff; border: 1px solid #ddd; border-radius: 8px;
+           padding: 16px; margin: 8px 0; width: 320px; }
+button { padding: 8px 14px; margin: 4px; cursor: pointer; }
+.nav a { margin-right: 10px; color: #357; }
+#toast { position: fixed; bottom: 20px; right: 20px; background: #163;
+         color: #fff; padding: 12px 18px; border-radius: 6px; display: none; }
+#results { margin: 10px 0; color: #357; min-height: 20px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>NEXI Shop</h1>
+  <input class="search" id="search" type="search" aria-label="Search products"
+         placeholder="Search products...">
+  <button id="search-btn" onclick="doSearch()">Search</button>
+  <a href="#" id="nav-home">Home</a>
+  <a href="#" id="nav-deals">Deals</a>
+  <a href="#" id="nav-orders">My orders</a>
+  <button id="gear" aria-label="Settings">&#9881;</button>
+  <button id="help-btn">Help</button>
+</header>
+<div id="results"></div>
+<div class="product">
+  <b>Wireless Headphones</b> — $79
+  <div>
+    <button id="add-cart-1" onclick="toast('Added headphones to cart')">Add to cart</button>
+    <button id="buy-1" onclick="toast('Checkout opened')">Buy now</button>
+    <select id="color-1" aria-label="Color">
+      <option>Black</option><option>White</option><option>Red</option>
+    </select>
+  </div>
+</div>
+<div class="product">
+  <b>Mechanical Keyboard</b> — $129
+  <div>
+    <button id="add-cart-2" onclick="toast('Added keyboard to cart')">Add to cart</button>
+    <button id="buy-2" onclick="toast('Checkout opened')">Buy now</button>
+  </div>
+</div>
+<div class="product">
+  <b>Danger zone</b>
+  <div>
+    <button id="wipe" onclick="toast('DANGER: data wiped')">Delete all my data</button>
+    <input id="ccnum" aria-label="Card number" placeholder="Card number">
+  </div>
+</div>
+<script>
+function toast(msg){ const t=document.getElementById('toast');
+  t.textContent=msg; t.style.display='block';
+  setTimeout(()=>t.style.display='none',2500); }
+function doSearch(){ const q=document.getElementById('search').value;
+  document.getElementById('results').textContent='Results for: '+q; }
+</script>
+</body>
+</html>

@@ -74,6 +74,73 @@ GOALS = [
     },
 ]
 
+# v2: more served intents + abstain rows drawn from UNSERVED goals so
+# "goal vocabulary seen in training" is not the abstain signal.
+GOALS += [
+    {"goal": ["remove the item from my basket", "delete the cart item",
+              "get rid of this item"],
+     "right": [("btn-remove", "click", ["Remove", "Delete item", "Remove from cart"]),
+               ("btn-move-wish", "click", ["Move to wishlist"])],
+     "hard": [("link-keep", "click", ["Keep shopping"]),
+              ("btn-update", "click", ["Update quantity"])]},
+    {"goal": ["mute the audio", "stop the sound", "silence the video"],
+     "right": [("btn-mute", "click", ["Mute", "Mute audio", "Sound off"])],
+     "hard": [("btn-volup", "click", ["Volume +", "Louder"]),
+              ("link-cc", "click", ["Captions", "Subtitles"])]},
+    {"goal": ["download the document", "save a copy", "export the file",
+              "grab a copy of the document"],
+     "right": [("btn-dl", "click", ["Download", "Export", "Download file"]),
+               ("link-save", "click", ["Save as"])],
+     "hard": [("link-preview", "click", ["Preview"]),
+              ("btn-print2", "click", ["Print document"])]},
+    {"goal": ["talk to support", "contact support", "chat with an agent",
+              "start a conversation with support"],
+     "right": [("btn-chat", "click", ["Chat with us", "Support chat"]),
+               ("link-phone", "click", ["Call us", "Phone support"])],
+     "hard": [("link-faq", "click", ["FAQ", "Help articles"]),
+              ("btn-ticket", "click", ["Submit ticket"])]},
+    {"goal": ["reply to the message", "write back", "respond to this"],
+     "right": [("btn-reply", "click", ["Reply", "Reply to sender"])],
+     "hard": [("btn-forward", "click", ["Forward"]),
+              ("btn-del-msg", "click", ["Delete message"])]},
+    {"goal": ["play the video", "start the video", "watch this"],
+     "right": [("btn-play-v", "click", ["Play", "Play video"])],
+     "hard": [("btn-mute-v", "click", ["Mute"]),
+              ("link-subs", "click", ["Subtitles"])]},
+    {"goal": ["sort by price", "sort items by price", "order by price"],
+     "right": [("sel-sort", "select", ["Sort by", "Sort options"])],
+     "hard": [("btn-filter", "click", ["Filter"]),
+              ("link-grid", "click", ["Grid view"])]},
+    {"goal": ["zoom in on the map", "zoom in", "enlarge the map"],
+     "right": [("btn-zin", "click", ["+", "Zoom in"])],
+     "hard": [("btn-zout", "click", ["-", "Zoom out"]),
+              ("link-layers", "click", ["Layers"])]},
+    {"goal": ["upload a file", "upload a document", "attach a file"],
+     "right": [("btn-upload", "click", ["Upload", "Attach file"])],
+     "hard": [("btn-download", "click", ["Download"]),
+              ("input-fname", "type", ["File name"])]},
+    {"goal": ["increase the font size", "make the text bigger", "larger text"],
+     "right": [("btn-fontup", "click", ["A+", "Increase font size"])],
+     "hard": [("btn-fontdown", "click", ["A-", "Decrease font size"]),
+              ("link-a11y", "click", ["Accessibility"])]},
+]
+
+# Goals that have NO serving candidates anywhere: abstain rows are built
+# from these so the model learns "no candidate serves this goal" rather than
+# "this is one of my training goals with wrong elements".
+ABSENT_GOALS = [
+    "book a table for dinner", "change my password", "translate this page",
+    "pay with crypto", "print my boarding pass", "rent a car",
+    "order a pizza", "track my package", "book a haircut",
+    "renew my passport", "schedule a dentist appointment",
+    "buy concert tickets", "adopt a pet", "file a warranty claim",
+    "check the weather tomorrow", "post a job listing",
+    "subscribe to the magazine", "register to vote",
+    "book a taxi", "refund my ticket", "cancel my gym membership",
+    "verify my identity", "upgrade my plan", "download the invoice",
+    "merge the accounts", "export my contacts", "join the webinar",
+]
+
 GENERIC = [
     ("btn-cancel", "click", "Cancel"), ("btn-help", "click", "Help"),
     ("link-terms", "click", "Terms of Service"), ("ad-banner", "click", "Ad"),
@@ -84,34 +151,52 @@ GENERIC = [
     ("footer-careers", "click", "Careers"),
 ]
 
+# Pool of distractor candidates that never serve an ABSENT_GOAL row.
+def _all_served_cands():
+    pool = []
+    for g in GOALS:
+        for cid, act, labels in g["right"]:
+            pool.append((cid, act, labels))
+        for hid, act, labels in g["hard"]:
+            pool.append((hid, act, labels))
+    return pool
+
 
 def build(n: int, seed: int = 3) -> list[dict]:
     rng = random.Random(seed)
     rows = []
+    served_pool = _all_served_cands()
     for _ in range(n):
-        abstain = rng.random() < 0.25
-        g = rng.choice(GOALS)
-        goal = rng.choice(g["goal"])
+        abstain = rng.random() < 0.28
         cands = []
         answer = -1
-        if not abstain:
+        if abstain:
+            # unserved goal: candidates come ONLY from served pools +
+            # generics — plausible page elements, none serving this goal.
+            goal = rng.choice(ABSENT_GOALS)
+            for cid, act, labels in rng.sample(served_pool,
+                                               rng.randint(1, 3)):
+                lab = labels if isinstance(labels, str) else rng.choice(labels)
+                cands.append({"id": cid, "action": act, "label": lab})
+            for did, act, lab in rng.sample(GENERIC, rng.randint(1, 3)):
+                cands.append({"id": did, "action": act, "label": lab})
+        else:
+            g = rng.choice(GOALS)
+            goal = rng.choice(g["goal"])
             cid, act, labels = rng.choice(g["right"])
             cands.append({"id": cid, "action": act,
                           "label": rng.choice(labels)})
-        # hard decoys: 0-2 goal-confusable wrong candidates
-        hard = rng.sample(g["hard"], rng.randint(0, 2))
-        for hid, act, labels in hard:
-            lab = labels if isinstance(labels, str) else rng.choice(labels)
-            cands.append({"id": hid, "action": act, "label": lab})
-        # generic decoys
-        for did, act, lab in rng.sample(GENERIC, rng.randint(1, 3)):
-            cands.append({"id": did, "action": act, "label": lab})
-        rng.shuffle(cands)
-        if not abstain:
+            hard = rng.sample(g["hard"], rng.randint(0, 2))
+            for hid, act, labels in hard:
+                lab = labels if isinstance(labels, str) else rng.choice(labels)
+                cands.append({"id": hid, "action": act, "label": lab})
+            for did, act, lab in rng.sample(GENERIC, rng.randint(1, 3)):
+                cands.append({"id": did, "action": act, "label": lab})
             right_ids = {c[0] for c in g["right"]}
             answer = next(j for j, c in enumerate(cands)
                           if c["id"] in right_ids and c["label"] in sum(
                               (c2[2] for c2 in g["right"] if c2[0] == c["id"]), []))
+        rng.shuffle(cands)
         rows.append({"goal": goal, "candidates": cands, "answer": answer})
     return rows
 
