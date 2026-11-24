@@ -53,3 +53,14 @@ is the honest next step, listed as open work.
 - OSWorld-Verified + WebArena + ScreenSpot harness
 - browser actuator (Playwright/CDP) on top of `loop.run`
 - S1 retrain with harder abstain negatives and real DOM-label distributions
+
+## v3 (S1 retrained on fixed labels, measured 2026-11-24)
+- 43-task suite: S1 30/43 = 69.8% (heuristic-v0 25/43 = 58.1%)
+- S1 v3 heldout: choice 100%, abstain P/R 1.0/1.0 (harder distribution:
+  abstains now drawn from never-served goals)
+- v2 root cause found + fixed: the answer index in s1/data.py was computed
+  before the candidate shuffle, corrupting every non-abstain label.
+- Live demo: real Chromium DOM via Playwright on demo_site/ — S1 observed
+  flattened DOM, decided, passed gates and acted; frames + log in demo/cua/.
+- Remaining fails cluster: abstain-precision on lookalike candidates,
+  paraphrase gaps on goals S1 never saw as served intents.
