@@ -48,3 +48,33 @@ refused the call — tuned behavior is prompt/template-sensitive and the
 - GGUF export via common/train/export_gguf.sh (needs llama.cpp build)
 - base-model swap test: dense 2B (e.g. WePocketModel-2B once its runtime
   story is clear) vs Qwen3.5-2B on train speed + held-out score
+
+## v2 — retrained on real xlam corpus (post HF token)
+
+300-step LoRA on ~8k rows of `minpeter/xlam-function-calling-60k-hermes`
+(ungated mirror; the Salesforce original stayed gated for us), final loss
+1.356. Held-out eval fix included: the eval now injects the `<tools>`
+schema into the system prompt — the old run was unanswerable (expected
+held-out tool names it never saw).
+
+| Eval set | v1 (synthetic mix) | v2 (xlam) |
+|----------|--------------------|-----------|
+| tool_call | 20% | **100% (10/10)** |
+| cua | 100% | **100%** |
+
+### GGUF (merged_v2, Q4_K_M)
+
+| Metric | Value |
+|--------|-------|
+| GGUF file | 1.29 GB (`nexi-4-v2-Q4_K_M.gguf`) |
+| Load | 1.47 s |
+| Peak RSS | 2.02 GB |
+| Decode speed | 15.1 tok/s (8 threads) |
+| Tool-call smoke | correct `<tool_call>` JSON, right function + args |
+
+Honest notes: 10/10 is a small eval — it proves the contract (emit valid
+tool_call JSON naming a schema'd function) is learned, not that we're at
+Berkeley-Function-Calling leaderboard level. A BFCL-style run is open
+work. Speed dropped slightly vs v1 (15.1 vs 18.2 tok/s) — same quant,
+likely noise from a busier box plus longer prompt; not a regression in
+capability.

@@ -1,0 +1,10 @@
+{
+  "base": "Qwen/Qwen3.5-2B",
+  "mix": "common/data/mix_v2/mix.jsonl",
+  "steps": 300,
+  "seq_len": 1536,
+  "rank": 16,
+  "lr": 0.0002,
+  "wall_seconds": 14891.5,
+  "train_loss": null
+}

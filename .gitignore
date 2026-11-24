@@ -9,3 +9,6 @@ __pycache__/
 models/
 *.ckpt
 *.log
+optimizer.pt
+rng_state.pth
+scheduler.pt

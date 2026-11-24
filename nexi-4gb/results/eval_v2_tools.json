@@ -1,0 +1,11 @@
+{
+  "model": "nexi-4gb/merged_v2",
+  "results": {
+    "tool_call": {
+      "n": 10,
+      "passed": 10,
+      "accuracy": 1.0,
+      "avg_gen_seconds": 192.03
+    }
+  }
+}

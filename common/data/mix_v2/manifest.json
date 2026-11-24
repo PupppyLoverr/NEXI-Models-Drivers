@@ -1,0 +1,24 @@
+{
+  "mix": "mix.jsonl",
+  "sha256": "b1db6ca7e7d4e376774a4e39430ab88fa88461339359a7ccfbd3c15f3a8b5bd0",
+  "total_rows": 8000,
+  "seed": 7,
+  "sources": {
+    "tool_calling": {
+      "rows": 2000,
+      "origin": "minpeter/xlam-function-calling-60k-hermes"
+    },
+    "chat": {
+      "rows": 2000,
+      "origin": "HuggingFaceH4/no_robots"
+    },
+    "code": {
+      "rows": 2000,
+      "origin": "ise-uiuc/Magicoder-Evol-Instruct-110K"
+    },
+    "cua_decision": {
+      "rows": 2000,
+      "origin": "synthetic"
+    }
+  }
+}
