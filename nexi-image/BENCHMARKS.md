@@ -36,3 +36,17 @@ fp32 via diffusers 0.43, 256x256, 15 steps, 3 prompts.
   put CPU generation near ~45 s — plausible, untested here
 - quality eval vs published open image models
 - FLUX.2 Klein tier driver for GPU-capable installs
+
+## img2img editing — added (measured)
+`BkSdmEngine.edit()` shares the same weights (no extra RAM). Edits at
+strength 0.55-0.65 keep composition: winter / night / oil-paint variants of
+the lake scene in `demo/images/`, ~same latency as generation (~3 min/img
+under CPU contention).
+
+## Fast-path attempts — honest negatives (measured)
+- LCM-LoRA (sdv1-5): incompatible with BK-SDM's pruned UNet (channel
+  mismatch) — cannot load.
+- LCMScheduler alone, 6 steps: 81.6 s but output collapses to blur stripes.
+- DPMSolverMultistep, 10 steps: 161.9 s — not faster, solver overhead/step.
+Verdict: 15 steps is the floor for this checkpoint. Real speed needs a
+distilled model (sd-turbo class) or GPU offload — documented, not shipped.
