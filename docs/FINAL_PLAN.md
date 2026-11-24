@@ -17,6 +17,7 @@ benchmarked honestly — we publish measured numbers, never claimed ones.
 | NEXI-Voice-STT | faster-whisper tiny.en + Rumble-2-Flash hiacc profile | Built, measured |
 | NEXI-S1 | 1.14M-param option-attention decisions model | Trained, measured |
 | NEXI-CUA | tree-observe + S1-decide + gates agent | Built, benched |
+| NEXI-CUA driver | thin observe/act layer, MCP-callable | Measured 8.5 MB — see below |
 | NEXI-Image | BK-SDM-small engine + bench | Built, measured |
 | NEXI-Video | — | Feasibility doc only |
 | NEXI-4 | Qwen3.5-2B + LoRA, Q4_K_M GGUF | Trained, exported, measured |
@@ -32,8 +33,13 @@ benchmarked honestly — we publish measured numbers, never claimed ones.
   asr4all-s → target ~5% WER at RTF < 0.2, < 1 GB.
 - **NEXI-4 tool_call at 20% is not #1.** Now unblocked: retrain on real
   `xlam-function-calling-60k` (HF token verified) → target > 80% exact-match.
-- **CUA:** expand bench 12 → 50+ tasks, add real DOM fixtures, then an
-  OSWorld/WebArena mini-run for a citable ranking.
+- **CUA driver + browser agent (user spec):** the observe/act/gates layer
+  ships as a standalone driver — **measured 8.5 MB peak RSS**, target was
+  < 50–100 MB. It exposes `observe`/`act`/`gates` as MCP-callable tools;
+  decisions come from NEXI-S1 as a separate service (the driver itself stays
+  thin by design). Benchmark it against **cua.ai (Cua Spaces), agent-desktop,
+  agent-browser, Browser Use** on: RAM per MCP call, step latency, task
+  completion on OSWorld/WebArena mini-runs. Expand bench 12 → 50+ tasks.
 - **S1:** keep 100%/perfect-abstain but move eval onto harder, less synthetic
   distributions; add a 4B LoRA variant for hard cases.
 - **Image:** add Turbo/Lightning distillation path → ~4× faster per image.

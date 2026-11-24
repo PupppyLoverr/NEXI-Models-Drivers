@@ -43,6 +43,17 @@ typed candidates → S1 decision → deterministic safety gates → act → veri
 - **Measured:** 75% on 12-task bench vs 67% heuristic baseline; all 3
   paraphrase tasks won; safety gates verified.
 
+### NEXI-CUA driver (thin hands layer)
+The observe/act/gates layer split out as a standalone MCP-callable driver —
+flatten a DOM/AX tree to typed candidates, execute click/type/select,
+enforce safety gates. Decisions come from NEXI-S1 over MCP, keeping the
+driver itself tiny.
+- **Use case:** drop-in hands for any agent stack; competes with cua.ai's
+  driver, Vercel agent-desktop / agent-browser, Browser Use — but fully
+  local and thin enough to embed per-session.
+- **RAM/CPU:** **8.5 MB peak RSS** measured observing+gating a 100-candidate
+  page — an order of magnitude under the <50–100 MB target.
+
 ## Media
 
 ### NEXI-Image

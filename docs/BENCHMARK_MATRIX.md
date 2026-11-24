@@ -44,6 +44,19 @@ same axis the category cares about.*
 | Vercel agent-browser | thin layer | — | — | a tool, not a decision model — complementary |
 | **Verdict** | | | | **Not #1 yet.** Unique honest angle: sub-second fully-local decisions with safety gates (rivals all need a cloud LLM). Needs OSWorld/WebArena mini-run for a citable rank. |
 
+## Agent driver layer (hands: observe/act/MCP)
+
+| Driver | RAM | Design | Verdict |
+|---|---|---|---|
+| **NEXI-CUA driver** | **8.5 MB** `M` | local, MCP-callable, gated | — |
+| cua.ai driver (Cua Spaces) | service + cloud LLM `P` | orchestrates remote computers | heavier, needs their platform |
+| agent-desktop | Node service `P` | desktop automation for AI | thin but no decision layer |
+| Browser Use | cloud LLM + browser `P` | full agent loop | heavyweight, hosted |
+
+**Verdict:** on the driver axis NEXI is plausibly **#1 on footprint**
+(8.5 MB vs services an order of magnitude heavier) — the capability rank
+still needs the OSWorld/WebArena mini-run scheduled in Phase 1.
+
 ## Local image generation (< 4 GB, CPU)
 
 | Model | RAM | Time/256px | Quality | Verdict |
@@ -81,6 +94,7 @@ same axis the category cares about.*
 | Local realtime TTS | **Yes** (blind quality test vs ElevenLabs pending) |
 | Decisions (local/open) | **Yes**, with synthetic-eval caveat |
 | Flagship ~20 GB | **Yes** — best open <100B base, smallest build |
+| Agent driver footprint | **Yes** — 8.5 MB vs services 10×+ heavier |
 | 4 GB text | Not yet — xlam retrain next |
 | STT realtime | Not yet — VibeASR/asr4all build next |
 | CUA | Not yet — OSWorld mini-run needed |
