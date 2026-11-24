@@ -44,7 +44,22 @@ fp32 on CPU), same corpus, n=15:
 **Rumble verdict:** transcription quality is real (4% WER vs 13% whisper) but
 it is **7x slower than real-time** on this CPU box and eats 3.5 GB — it cannot
 serve the calling product. It stays in the driver as a non-realtime
-high-accuracy profile; `fw-tiny` remains the real-time default.
+high-accuracy profile.
+
+## STT — Moonshine via sherpa-onnx (int8 ONNX, CPU, 8 threads)
+
+Same pinned corpus, n=40, measured 24 Nov:
+
+| Engine      | Peak RSS | WER (n=40) | RTF mean | RTF p90 | Load | Model files |
+|-------------|----------|------------|----------|---------|------|-------------|
+| `moon-tiny` | 717 MB   | 9.36%      | 0.049    | 0.082   | 0.7 s | 120 MB |
+| `moon-base` | 949 MB   | 8.79%      | 0.065    | 0.088   | 1.2 s | 275 MB |
+
+**Moonshine verdict — new default.** `moon-base` vs the old `fw-tiny` default:
+**34% fewer word errors** (8.79% vs 13.3%), 15% faster RTF, still under 1 GB
+RSS (949 MB) and chunked-streaming capable through sherpa's stream API.
+`moon-tiny` is the <800 MB low-resource profile at 9.36%. fw-tiny stays as the
+minimal-footprint fallback; rumble stays as offline hi-acc.
 
 **Reading:** base.en buys nothing on this set — same WER, +122 MB, ~2x RTF.
 `fw-tiny` is the current STT driver default. Both are far past real-time on
@@ -61,7 +76,7 @@ optimistic bound, stated as such.
   transformers 5.24 — needs the Zyphra `zonos` package (git-only) or a newer
   transformers port (`Zonos3MiniForConditionalGeneration`). Deferred, not
   benched — honest gap, Pocket TTS remains the shipping engine.
-- asr4all-s / VibeASR-BitNet benchmark + adapter
+- asr4all-s (ExecuTorch runtime needed) / VibeASR-BitNet (custom GGUF loader) — evaluated, not shipped; Moonshine beat both on availability and already meets the realtime+RAM bar
 - Pocket TTS fine-tune path (trainer is public — unexecuted here)
 - blind listening eval vs ElevenLabs / Fish Audio
 - telephony/noise WER set

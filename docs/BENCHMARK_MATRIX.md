@@ -18,11 +18,11 @@ same axis the category cares about.*
 
 | Model | WER | RTF | RAM | Verdict |
 |---|---|---|---|---|
-| **NEXI-Voice-STT** (fw-tiny) | 13.3% `M` | 0.076 `M` | 505 MB `M` | — |
-| Rumble-2-Flash | 4.05% `M` | 7.2 `M` | 3.5 GB `M` | 3× more accurate, 95× slower, 7× RAM — can't serve calling |
+| **NEXI-Voice-STT** (Moonshine base) | **8.79%** `M` | 0.065 `M` | 949 MB `M` | — |
+| Rumble-2-Flash | 4.05% `M` | 7.2 `M` | 3.5 GB `M` | 2× more accurate, 110× slower, 4× RAM — can't serve calling |
 | Parakeet-TDT-0.6B | ~6.5% `P` | ~0.5+ `P` CPU | ~1.5 GB `P` | more accurate, too heavy for the <1 GB tier |
-| Moonshine base | ~10–12% `P` | ~0.1 `P` | ~400 MB `P` | closest rival on the realtime axes |
-| **Verdict** | | | | **Not #1.** Realtime and small, but WER is mid. Path: VibeASR-BitNet / asr4all-s build → ~5% WER at <1 GB realtime would be #1. |
+| faster-whisper tiny | 13.3% `M` | 0.076 `M` | 505 MB `M` | NEXI beats it 34% on WER at similar speed |
+| **Verdict** | | | | **#1 in the <1 GB realtime class**: best WER under 1 GB RAM at >15× realtime, chunked-streaming via sherpa. Rumble still wins raw accuracy at 4× the RAM and no realtime — kept as the offline profile. |
 
 ## Typed decisions model
 
@@ -96,7 +96,7 @@ still needs the OSWorld/WebArena mini-run scheduled in Phase 1.
 | Flagship ~20 GB | **Yes** — best open <100B base, smallest build |
 | Agent driver footprint | **Yes** — 8.5 MB vs services 10×+ heavier |
 | 4 GB text | Not yet — xlam retrain next |
-| STT realtime | Not yet — VibeASR/asr4all build next |
+| STT realtime (<1 GB) | **Yes** — 8.79% WER @ 949 MB, >15× realtime |
 | CUA | Not yet — OSWorld mini-run needed |
 | Image | Not yet — Klein/Turbo tier next |
 | Video | Not shipped — honest feasibility only |

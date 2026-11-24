@@ -95,7 +95,7 @@ def make_handler(engines):
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--tts-engine", default="pocket")
-    ap.add_argument("--stt-engine", default="fw-tiny")
+    ap.add_argument("--stt-engine", default="moon-base")
     ap.add_argument("--host", default="127.0.0.1")
     ap.add_argument("--port", type=int, default=7860)
     a = ap.parse_args()

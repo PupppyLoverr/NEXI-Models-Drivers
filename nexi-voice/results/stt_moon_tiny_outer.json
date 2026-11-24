@@ -1,0 +1,15 @@
+{
+  "command": [
+    ".venv/bin/python",
+    "nexi-voice/bench_stt.py",
+    "--engine",
+    "moon-tiny",
+    "--n",
+    "40",
+    "--json",
+    "nexi-voice/results/stt_moon_tiny_inner.json"
+  ],
+  "wall_seconds": 13.255,
+  "peak_rss_mb": 716.7,
+  "exit_code": 0
+}

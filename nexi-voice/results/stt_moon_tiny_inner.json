@@ -1,0 +1,8 @@
+{
+  "engine": "moon-tiny",
+  "n": 40,
+  "load_s": 0.69,
+  "wer_mean": 0.0936,
+  "rtf_mean": 0.049,
+  "rtf_p90": 0.082
+}

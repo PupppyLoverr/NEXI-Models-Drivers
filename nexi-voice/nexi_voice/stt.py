@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+from pathlib import Path
 
 
 class FasterWhisperEngine:
@@ -53,6 +54,36 @@ class RumbleEngine:
         return self._proc.decode(gen, return_format="transcription_only")[0]
 
 
+class MoonshineEngine:
+    """Moonshine tiny/base int8 via sherpa-onnx (ONNX, CPU, chunked-streaming)."""
+
+    def __init__(self, model_dir: str):
+        import sherpa_onnx
+        d = Path(model_dir)
+        self._r = sherpa_onnx.OfflineRecognizer.from_moonshine(
+            preprocessor=str(d / "preprocess.onnx"),
+            encoder=str(d / "encode.int8.onnx"),
+            uncached_decoder=str(d / "uncached_decode.int8.onnx"),
+            cached_decoder=str(d / "cached_decode.int8.onnx"),
+            tokens=str(d / "tokens.txt"),
+            num_threads=8, provider="cpu")
+
+    def transcribe_wav_bytes(self, data: bytes) -> list[str]:
+        import soundfile as sf
+        pcm, sr = sf.read(io.BytesIO(data), dtype="float32")
+        return [self.transcribe_pcm(pcm, sr)]
+
+    def transcribe_pcm(self, pcm, sr: int) -> str:
+        if sr != 16000:
+            import numpy as np
+            pcm = np.interp(np.arange(0, len(pcm), sr / 16000),
+                            np.arange(len(pcm)), pcm).astype("float32")
+        s = self._r.create_stream()
+        s.accept_waveform(16000, pcm)
+        self._r.decode_stream(s)
+        return s.result.text.strip()
+
+
 class Asr4AllEngine:
     """FUTO asr4all-s (28M streaming) — loaded via onnxruntime if present."""
     MODEL_URL = ""  # pinned at release
@@ -65,7 +96,13 @@ class Asr4AllEngine:
 ENGINES = {"fw-tiny": lambda: FasterWhisperEngine("tiny.en"),
            "fw-base": lambda: FasterWhisperEngine("base.en"),
            "rumble": RumbleEngine,
-           "asr4all": Asr4AllEngine}
+           "asr4all": Asr4AllEngine,
+           "moon-tiny": lambda: MoonshineEngine(_model_dir("moon-tiny")),
+           "moon-base": lambda: MoonshineEngine(_model_dir("moon-base"))}
+
+
+def _model_dir(name: str) -> str:
+    return str(Path.home() / "models" / name)
 
 
 def load_engine(name: str):

@@ -1,0 +1,8 @@
+{
+  "engine": "moon-base",
+  "n": 40,
+  "load_s": 1.21,
+  "wer_mean": 0.0879,
+  "rtf_mean": 0.065,
+  "rtf_p90": 0.088
+}
