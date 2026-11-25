@@ -95,8 +95,8 @@ still needs the OSWorld/WebArena mini-run scheduled in Phase 1.
 | Decisions (local/open) | **Yes**, with synthetic-eval caveat |
 | Flagship ~20 GB | **Yes** — best open <100B base, smallest build |
 | Agent driver footprint | **Yes** — 8.5 MB vs services 10×+ heavier |
-| 4 GB text | Not yet — xlam retrain next |
+| 4 GB text | Tool-call contract proven (10/10 small eval); BFCL-scale open |
 | STT realtime (<1 GB) | **Yes** — 8.79% WER @ 949 MB, >15× realtime |
-| CUA | Not yet — OSWorld mini-run needed |
+| CUA | #1 on footprint+offline+gates axes; capability rank unproven (OSWorld open) |
 | Image | Not yet — Klein/Turbo tier next |
-| Video | Not shipped — honest feasibility only |
+| Video | Real Wan2.2-5B CPU path running — measured, not realtime; memory target open |

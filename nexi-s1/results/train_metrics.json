@@ -4,6 +4,6 @@
   "choice_accuracy": 0.9991,
   "abstain_precision": 1.0,
   "abstain_recall": 1.0,
-  "ece": 0.0344,
-  "train_seconds": 788.5
+  "ece": 0.0237,
+  "train_seconds": 2243.6
 }

@@ -51,7 +51,9 @@ class S1Decider:
         self._m.eval()
 
     def decide(self, goal: str, cands: list[dict]) -> dict:
-        d = self._m.decide(goal, cands)
+        # served goals cluster 0.1-0.6, absent goals 0.99+ (measured);
+        # 0.8 sits in the wide margin — 0.5 default over-abstains
+        d = self._m.decide(goal, cands, abstain_thresh=0.8)
         probs = d["probs"][:len(cands)]
         ranking = sorted(range(len(cands)), key=lambda i: -probs[i])
         out = {"choice": d["choice"], "score": max(probs, default=0.0),
