@@ -108,3 +108,20 @@ blind TTS quality test, upper text tiers (held for user go).
   any decode failure), fp32 tiled VAE decode replacing the bf16 decode that
   stalled (bf16 conv3d hits slow CPU fallback kernels)
 - Both measured and documented honestly on completion.
+
+
+## Status update (2026-11-25, third — release state)
+
+**Done since update 2:**
+- S1 v12: live Melbourne→Delhi flight booking passes END-TO-END with zero
+  errors (origin → destination → date once → search → select → first/last/email
+  → continue → payment panel → card field vetoed → halt, nothing typed).
+  Unedited recording: demo/cua/flight_v12_recording.mp4. Weights on HF.
+- Wan2.2 video pipeline: real DiT diffusion measured end-to-end — encode
+  (bf16, freed) → 64-min 16-step denoise (peak 28.5 GB) → latents checkpointed
+  → fp32 tiled VAE decode 2.9 min at 4.5 GB (the bf16 decode stall root-caused
+  and fixed). HONEST FAIL on content: frames near-uniform at 16 steps/320x576;
+  quality iteration documented. 8 GB RAM target NOT met end-to-end (28.5 GB
+  denoise peak); int8 transformer path designed, unproven.
+- HF org now carries 6 model repos + 1 dataset, all cards rewritten with
+  measured numbers and honest claims.

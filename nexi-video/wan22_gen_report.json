@@ -1,0 +1,26 @@
+{
+  "model": "Wan2.2-TI2V-5B",
+  "prompt": "Aerial drone shot flying over New York City at golden hour, sweeping past skyscrapers, cinematic, smooth camera motion",
+  "w": 320,
+  "h": 576,
+  "frames": 17,
+  "steps": 16,
+  "phases": [
+    {
+      "denoise": "loaded from checkpoint"
+    },
+    {
+      "decode_min": 2.9,
+      "peak_rss": 4.53
+    }
+  ],
+  "peak_rss_gb": 4.53,
+  "out": "/home/ubuntu/repos/NEXI-Models-Drivers/demo/video/nyc_drone_wan22.mp4",
+  "real_dit": true,
+  "decode_minutes": 2.9,
+  "honest_quality_verdict": "FAIL on content: decoded frames are near-uniform (pixel std 0.17, no scene structure). The pipeline is real end-to-end Wan2.2-5B diffusion (encode -> 16-step DiT denoise -> fp32 tiled VAE decode), but 16 steps at 320x576x17frames does not converge to recognizable content. Next iteration: 40-50 steps, higher resolution, or image-conditioned TI2V \u2014 each denoise costs ~64+ min on 8 CPU cores.",
+  "decode_fix": "fp32 tiled VAE decode: 2.9 min at 4.5GB peak (bf16 non-tiled decode stalled indefinitely on slow CPU fallback kernels)",
+  "denoise_minutes": 64,
+  "denoise_peak_rss_gb": 28.5,
+  "8gb_target_status": "NOT MET end-to-end: denoise phase peaks 28.5GB (bf16 transformer + fp32-upcast activations). Decode phase alone is now 4.5GB. Path to 8GB: int8-dynamic-quantized transformer (design ready, quality/speed unproven on CPU)."
+}
