@@ -67,7 +67,12 @@ class S1(nn.Module):
         # option attention: goal queries candidate keys
         attn = torch.bmm(goal_h.unsqueeze(1), pad.transpose(1, 2)).squeeze(1)
         scores = (attn / (D ** 0.5)).masked_fill(cmask, -1e4)
-        abstain_logit = self.abstain(goal_h).squeeze(-1)
+        # abstention must depend on the candidates too, not just the goal:
+        # mix candidate embeddings by attention so "no candidate serves this"
+        # is distinguishable from "unfamiliar goal text"
+        weights = torch.softmax(scores, dim=-1)
+        mix = torch.bmm(weights.unsqueeze(1), pad).squeeze(1)
+        abstain_logit = self.abstain(goal_h + mix).squeeze(-1)
         return scores, abstain_logit, cmask
 
     @torch.no_grad()

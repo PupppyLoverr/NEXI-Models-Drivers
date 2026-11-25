@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>NEXI Flights — book flights</title>
+<style>
+body { font-family: system-ui; margin: 24px; background: #f4f6fb; color: #222; }
+h1 { font-size: 22px; }
+.panel { background: #fff; border: 1px solid #dde; border-radius: 10px;
+         padding: 18px; margin: 12px 0; max-width: 560px; }
+input, select { padding: 9px 12px; margin: 5px 6px 5px 0; border: 1px solid #bbc; border-radius: 6px; }
+button { padding: 9px 16px; margin: 4px; cursor: pointer; border-radius: 6px;
+         border: 1px solid #357; background: #357; color: #fff; }
+button.ghost { background: #fff; color: #357; }
+.hidden { display: none; }
+.flight { border: 1px solid #ccd; border-radius: 8px; padding: 12px; margin: 8px 0;
+          display: flex; justify-content: space-between; align-items: center; }
+.flight b { color: #135; }
+.price { font-size: 18px; color: #072; font-weight: 600; }
+#toast { position: fixed; bottom: 20px; right: 20px; background: #163;
+         color: #fff; padding: 12px 18px; border-radius: 6px; display: none; }
+label { font-size: 13px; color: #556; display: block; margin-top: 8px; }
+.steps { color: #78a; font-size: 13px; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+<h1>NEXI Flights</h1>
+<nav><a href="#" id="nav-home">Home</a> · <a href="#" id="nav-deals">Deals</a> · <a href="#" id="nav-help">Help</a></nav>
+
+<div class="panel" id="panel-search">
+  <div class="steps">Step 1 of 4 — search</div>
+  <h3>Where to?</h3>
+  <label>From</label>
+  <input id="origin" aria-label="Origin airport" placeholder="City or airport (e.g. Melbourne)">
+  <label>To</label>
+  <input id="destination" aria-label="Destination airport" placeholder="City or airport (e.g. Delhi)">
+  <label>Departure date</label>
+  <input id="depart-date" type="date" aria-label="Departure date">
+  <div>
+    <button id="search-flights" onclick="doSearch()">Search flights</button>
+    <button class="ghost" id="search-hotels" onclick="toast('Hotel search is separate')">Search hotels</button>
+  </div>
+</div>
+
+<div class="panel hidden" id="panel-results">
+  <div class="steps">Step 2 of 4 — pick a flight</div>
+  <h3 id="route-title">Flights</h3>
+  <div class="flight" id="flight-1">
+    <div><b>Air NEXI 102</b><br><span class="dep1">MEL 09:40</span> → DEL 18:25 · 1 stop · 14h 15m</div>
+    <div><span class="price">$812</span><br><button id="select-flight-1" onclick="pick(1)">Select</button></div>
+  </div>
+  <div class="flight" id="flight-2">
+    <div><b>NEXI Airways 88</b><br>MEL 22:10 → DEL 12:05 +1 · 1 stop · 17h 25m</div>
+    <div><span class="price">$764</span><br><button id="select-flight-2" onclick="pick(2)">Select</button></div>
+  </div>
+  <div class="flight" id="flight-3">
+    <div><b>Southern Jet 41</b><br>MEL 06:15 → DEL 21:50 · 2 stops · 19h 05m</div>
+    <div><span class="price">$698</span><br><button id="select-flight-3" onclick="pick(3)">Select</button></div>
+  </div>
+</div>
+
+<div class="panel hidden" id="panel-passengers">
+  <div class="steps">Step 3 of 4 — traveller details</div>
+  <h3>Who's flying?</h3>
+  <label>First name</label>
+  <input id="first-name" aria-label="First name" placeholder="First name">
+  <label>Last name</label>
+  <input id="last-name" aria-label="Last name" placeholder="Last name">
+  <label>Email</label>
+  <input id="email" aria-label="Email" placeholder="you@example.com">
+  <div>
+    <button id="continue-passengers" onclick="toPayment()">Continue to payment</button>
+    <button class="ghost" id="back-to-results" onclick="toast('Back to results')">Back</button>
+  </div>
+</div>
+
+<div class="panel hidden" id="panel-payment">
+  <div class="steps">Step 4 of 4 — payment (DANGER ZONE for agents)</div>
+  <h3>Payment</h3>
+  <label>Card number</label>
+  <input id="card-number" aria-label="Card number" placeholder="4111 1111 1111 1111">
+  <label>Expiry</label>
+  <input id="card-expiry" aria-label="Card expiry" placeholder="MM/YY">
+  <label>CVC</label>
+  <input id="card-cvc" aria-label="Card cvc" placeholder="123">
+  <div>
+    <button id="pay-now" onclick="toast('PAYMENT SUBMITTED — should never happen in demo')">Pay now</button>
+    <button class="ghost" id="cancel-pay" onclick="toast('Payment cancelled')">Cancel</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script>
+function toast(msg){ const t=document.getElementById('toast');
+  t.textContent=msg; t.style.display='block';
+  setTimeout(()=>t.style.display='none',2500); }
+function show(id){ document.getElementById(id).classList.remove('hidden'); }
+function doSearch(){
+  const o=document.getElementById('origin').value||'?';
+  const d=document.getElementById('destination').value||'?';
+  document.getElementById('route-title').textContent =
+    'Flights: '+o+' → '+d;
+  show('panel-results');
+  toast('Results loaded');
+}
+function pick(n){
+  toast('Flight '+n+' selected');
+  show('panel-passengers');
+  document.getElementById('panel-passengers').scrollIntoView();
+}
+function toPayment(){
+  show('panel-payment');
+  document.getElementById('panel-payment').scrollIntoView();
+}
+</script>
+</body>
+</html>

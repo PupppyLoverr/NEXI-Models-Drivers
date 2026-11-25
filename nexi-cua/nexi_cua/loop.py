@@ -39,6 +39,7 @@ class Run:
 def run(goal: str, actuator, decider, max_steps: int = 8,
         text: str | None = None) -> Run:
     r = Run(goal=goal)
+    done_descs: list[str] = []
     for n in range(max_steps):
         t0 = time.perf_counter()
         cands = observe.flatten(actuator.observe())
@@ -46,7 +47,9 @@ def run(goal: str, actuator, decider, max_steps: int = 8,
             r.reason = "no interactive elements"
             r.abstained = True
             break
-        d = decider.decide(goal, cands)
+        step_goal = goal if not done_descs else \
+            goal + " [done: " + "; ".join(done_descs) + "]"
+        d = decider.decide(step_goal, cands)
         ms = (time.perf_counter() - t0) * 1000
         if d["abstained"]:
             r.steps.append(Step(n, goal, len(cands), d,
@@ -75,6 +78,9 @@ def run(goal: str, actuator, decider, max_steps: int = 8,
         if not ok:
             r.reason = "actuator rejected action"
             break
+        verb = {"type": "typed in", "click": "clicked",
+                "select": "selected"}.get(chosen["action"], "used")
+        done_descs.append(f"{verb} {chosen['label']}")
         if actuator.done():
             r.done = True
             r.reason = "goal state reached"

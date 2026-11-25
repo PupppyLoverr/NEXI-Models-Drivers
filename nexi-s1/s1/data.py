@@ -144,6 +144,76 @@ ABSENT_GOALS = [
     "merge the accounts", "join the webinar",
 ]
 
+# Multi-step episodes: sequences of (id, action, [labels], done-description).
+# Rows built from these carry step history in the goal string, e.g.
+#   "search for flights [done: typed in search box]"
+# and the COMPLETED elements are the hard decoys — teaching the model that
+# an element matching the goal but already used is WRONG. This is the exact
+# failure mode the live browser test exposed (re-clicking the search input
+# after typing, picking swatches instead of add-to-cart).
+EPISODES = [
+    {"goal": ["search for flights", "find flights", "look up plane tickets"],
+     "steps": [("input-search", "type", ["Search box", "Flight search field"], "typed the query in the search box"),
+               ("btn-search", "click", ["Search button", "Find flights button"], "clicked search")]},
+    {"goal": ["search the shop", "search for a product", "find wireless headphones"],
+     "steps": [("input-q", "type", ["Search input", "Search the store"], "typed the query in the search input"),
+               ("btn-go", "click", ["Search button", "Go"], "submitted the search")]},
+    {"goal": ["add the item to cart", "add this to my cart", "put it in the basket"],
+     "steps": [("swatch-color", "click", ["Red color swatch", "Colour option"], "picked the color"),
+               ("btn-add-cart", "click", ["Add to cart", "Add to basket"], "added it to the cart")],
+     "extra_hard": [("btn-buy-now", "click", ["Buy now"]), ("link-wish", "click", ["Add to wishlist"])]},
+    {"goal": ["check out", "proceed to checkout", "pay for my order"],
+     "steps": [("btn-cart", "click", ["Cart icon", "Shopping cart"], "opened the cart"),
+               ("btn-checkout", "click", ["Checkout button", "Proceed to checkout"], "went to checkout"),
+               ("btn-continue-pay", "click", ["Continue to payment", "Next: payment"], "continued to payment")],
+     "extra_hard": [("btn-empty", "click", ["Empty cart"]), ("link-cont-shop", "click", ["Continue shopping"])]},
+    {"goal": ["book the flight", "book this flight", "complete the flight booking"],
+     "steps": [("input-origin", "type", ["Origin field", "From airport"], "typed the origin"),
+               ("input-dest", "type", ["Destination field", "To airport"], "typed the destination"),
+               ("input-date", "type", ["Departure date", "Travel date field"], "picked the dates"),
+               ("btn-fsearch", "click", ["Search flights", "Find flights"], "searched flights"),
+               ("card-flight", "click", ["First flight result", "Flight option card"], "picked the flight"),
+               ("btn-passengers", "click", ["Continue to passengers", "Next: traveller details"], "continued to passenger details")],
+     "extra_hard": [("link-deals", "click", ["Flight deals"]), ("btn-hotel", "click", ["Search hotels"])]},
+    {"goal": ["view my orders", "open my orders", "see my order history"],
+     "steps": [("link-orders", "click", ["My orders", "Order history"], "opened orders")],
+     "extra_hard": [("link-account", "click", ["My account"]), ("link-returns", "click", ["Returns"])]},
+]
+
+
+def _episode_rows(rng, n):
+    rows = []
+    for _ in range(n):
+        ep = rng.choice(EPISODES)
+        goal = rng.choice(ep["goal"])
+        k = rng.randrange(len(ep["steps"]))
+        cid, act, labels, done_desc = ep["steps"][k]
+        right = {"id": cid, "action": act, "label": rng.choice(labels)}
+        cands = [right]
+        done = []
+        # completed steps become decoys + history text
+        for j in range(k):
+            did, dact, dlabels, ddesc = ep["steps"][j]
+            done.append(ddesc)
+            cands.append({"id": did, "action": dact, "label": rng.choice(dlabels)})
+        # future steps as decoys too (right element is only the NEXT one)
+        for j in range(k + 1, len(ep["steps"])):
+            fid, fact, flabels, _ = ep["steps"][j]
+            if rng.random() < 0.5:
+                cands.append({"id": fid, "action": fact, "label": rng.choice(flabels)})
+        for hid, hact, hlab in ep.get("extra_hard", []):
+            if rng.random() < 0.5:
+                lab = hlab if isinstance(hlab, str) else rng.choice(hlab)
+                cands.append({"id": hid, "action": hact, "label": lab})
+        for did, act2, lab in rng.sample(GENERIC, rng.randint(1, 2)):
+            cands.append({"id": did, "action": act2, "label": lab})
+        gtext = goal if not done else goal + " [done: " + "; ".join(done) + "]"
+        rng.shuffle(cands)
+        rows.append({"goal": gtext, "candidates": cands,
+                     "answer": cands.index(right)})
+    return rows
+
+
 GENERIC = [
     ("btn-cancel", "click", "Cancel"), ("btn-help", "click", "Help"),
     ("link-terms", "click", "Terms of Service"), ("ad-banner", "click", "Ad"),
@@ -169,6 +239,8 @@ def build(n: int, seed: int = 3) -> list[dict]:
     rng = random.Random(seed)
     rows = []
     served_pool = _all_served_cands()
+    n_seq = int(n * 0.35)
+    rows.extend(_episode_rows(rng, n_seq))
     for _ in range(n):
         abstain = rng.random() < 0.28
         cands = []

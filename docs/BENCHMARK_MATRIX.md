@@ -71,11 +71,11 @@ still needs the OSWorld/WebArena mini-run scheduled in Phase 1.
 
 | Model | RAM | tok/s | Tool-call | Verdict |
 |---|---|---|---|---|
-| **NEXI-4** (Qwen3.5-2B+LoRA) | 1.97 GB `M` | 18.2 `M` | 20% `M` | — |
+| **NEXI-4 v2** (Qwen3.5-2B+xlam LoRA) | 2.02 GB `M` | 15.1 `M` | 100% (10/10 small eval) `M` | — |
 | WePocketModel-2B | ~2 GB `P` | ~15+ `P` | 55.8 `P` decisions | leads the tier today |
 | Nemotron-Bolt-E4B | ~4 GB `P` | fast `P` | strong `P` | bigger, purpose-built |
 | Qwen3.5-2B base | 3.8 GB `M` | ~8 `M` | 0% `M` | our tune strictly better than base |
-| **Verdict** | | | | **Not #1.** Pipeline proven + GGUF is real at ~2 GB/18 t/s, but tool-call needs the xlam corpus retrain (token now works). |
+| **Verdict** | | | | **Not #1 yet, closing.** xlam retrain done: tool_call 10/10 on our schema'd eval, cua 100%, GGUF live at huggingface.co/nexiloopofficial/nexi-4-v2-GGUF. Honest gap: small eval proves the contract, BFCL-scale run still open. |
 
 ## Flagship (~20 GB tier)
 
