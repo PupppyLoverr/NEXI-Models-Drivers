@@ -1,0 +1,110 @@
+[
+  {
+    "agent": "agent-shop",
+    "goal": "complete the shopping task",
+    "pick": "search",
+    "label": "Search products",
+    "action": "type",
+    "abstain_prob": 0.0617,
+    "gate": {
+      "allow": true,
+      "reason": null
+    }
+  },
+  {
+    "agent": "agent-flights",
+    "goal": "complete the flight booking",
+    "pick": "origin",
+    "label": "Origin airport",
+    "action": "type",
+    "abstain_prob": 0.49,
+    "gate": {
+      "allow": true,
+      "reason": null
+    }
+  },
+  {
+    "agent": "agent-window",
+    "goal": "set the headphones color to red",
+    "pick": "color-1",
+    "label": "Color",
+    "action": "select",
+    "abstain_prob": 0.005,
+    "gate": {
+      "allow": true,
+      "reason": null
+    }
+  },
+  {
+    "agent": "agent-shop",
+    "goal": "complete the shopping task [done: typed in Search products]",
+    "pick": "search-btn",
+    "label": "Search",
+    "action": "click",
+    "abstain_prob": 0.0001,
+    "gate": {
+      "allow": true,
+      "reason": null
+    }
+  },
+  {
+    "agent": "agent-flights",
+    "goal": "complete the flight booking [done: typed in Origin airport]",
+    "pick": "destination",
+    "label": "Destination airport",
+    "action": "type",
+    "abstain_prob": 0.0091,
+    "gate": {
+      "allow": true,
+      "reason": null
+    }
+  },
+  {
+    "agent": "agent-shop",
+    "goal": "complete the shopping task [done: typed in Search products; clicked Search]",
+    "pick": "add-cart-1",
+    "label": "Add to cart",
+    "action": "click",
+    "abstain_prob": 0.0104,
+    "gate": {
+      "allow": true,
+      "reason": null
+    }
+  },
+  {
+    "agent": "agent-flights",
+    "goal": "complete the flight booking [done: typed in Origin airport; typed in Destination airport]",
+    "pick": "depart-date",
+    "label": "Departure date",
+    "action": "type",
+    "abstain_prob": 0.0002,
+    "gate": {
+      "allow": true,
+      "reason": null
+    }
+  },
+  {
+    "agent": "agent-flights",
+    "goal": "complete the flight booking [done: typed in Origin airport; typed in Destination airport; typed in Departure date]",
+    "pick": "search-flights",
+    "label": "Search flights",
+    "action": "click",
+    "abstain_prob": 0.0003,
+    "gate": {
+      "allow": true,
+      "reason": null
+    }
+  },
+  {
+    "agent": "agent-flights",
+    "goal": "complete the flight booking [done: typed in Origin airport; typed in Destination airport; typed in Departure date; clicked Search flights]",
+    "pick": "select-flight-1",
+    "label": "Select",
+    "action": "click",
+    "abstain_prob": 0.0012,
+    "gate": {
+      "allow": true,
+      "reason": null
+    }
+  }
+]

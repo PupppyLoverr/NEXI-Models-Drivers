@@ -11,6 +11,8 @@ import re
 _PASSWORD = re.compile(r"password|passwd", re.I)
 _PAYMENT = re.compile(r"card number|cvv|cvc|expiry|billing|payment|"
                       r"credit card|debit card", re.I)
+_PAY_SUBMIT = re.compile(r"\bpay\b|place order|confirm (and )?pay|"
+                         r"complete purchase|buy now|purchase", re.I)
 _DESTRUCTIVE = re.compile(r"delete|remove|erase|format|empty|"
                           r"deactivate|terminate|uninstall", re.I)
 _CONFIRM_WORDS = re.compile(r"yes|confirm|sure|go ahead|proceed|"
@@ -30,8 +32,11 @@ def check(goal: str, cand: dict | None) -> dict:
     if cand["action"] == "type" and _PASSWORD.search(label) and not cred_goal:
         return {"allow": False,
                 "reason": "password field outside a credential goal"}
-    # payment fields always hand off unless goal explicitly authorizes
-    if _PAYMENT.search(label) and not _PAYMENT.search(g):
+    # payment fields + payment-submit actions always hand off unless the
+    # goal explicitly authorizes payment ("buy now" in a shopping goal is a
+    # user-intent phrase, so only hard-submit labels hit this gate)
+    if (_PAYMENT.search(label) or _PAY_SUBMIT.search(label)) \
+            and not _PAYMENT.search(g):
         return {"allow": False,
                 "reason": "payment field requires explicit goal"}
     # destructive actions need a confirmation word in the goal

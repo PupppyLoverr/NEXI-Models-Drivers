@@ -16,7 +16,7 @@ AGENT_COLORS = ["#e53935", "#1e88e5", "#43a047", "#fb8c00", "#8e24aa",
                 "#00acc1", "#c0ca33", "#d81b60"]
 
 CURSOR_JS = """
-(agentName, color) => {
+({agentName, color}) => {
   if (document.getElementById('nexi-cursor')) return;
   const cur = document.createElement('div');
   cur.id = 'nexi-cursor';
@@ -67,7 +67,7 @@ class BrowserController:
 
     def _inject(self, ag: Agent):
         try:
-            ag.page.evaluate(CURSOR_JS, [ag.name, ag.color])
+            ag.page.evaluate(CURSOR_JS, {"agentName": ag.name, "color": ag.color})
         except Exception:
             pass
 

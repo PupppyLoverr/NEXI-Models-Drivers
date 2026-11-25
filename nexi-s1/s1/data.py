@@ -134,12 +134,12 @@ GOALS += [
 ABSENT_GOALS = [
     "book a table for dinner", "change my password", "translate this page",
     "pay with crypto", "rent a car",
-    "order a pizza", "track my package", "book a haircut",
+    "order a pizza", "book a haircut",
     "renew my passport", "schedule a dentist appointment",
     "buy concert tickets", "adopt a pet", "file a warranty claim",
     "check the weather tomorrow", "post a job listing",
     "register to vote",
-    "book a taxi", "refund my ticket",
+    "book a taxi",
     "verify my identity", "upgrade my plan",
     "merge the accounts", "join the webinar",
 ]
@@ -167,7 +167,10 @@ EPISODES = [
                ("btn-checkout", "click", ["Checkout button", "Proceed to checkout"], "went to checkout"),
                ("btn-continue-pay", "click", ["Continue to payment", "Next: payment"], "continued to payment")],
      "extra_hard": [("btn-empty", "click", ["Empty cart"]), ("link-cont-shop", "click", ["Continue shopping"])]},
-    {"goal": ["book the flight", "book this flight", "complete the flight booking"],
+    {"goal": ["book the flight", "book this flight", "complete the flight booking",
+              "book a flight", "book a flight from Melbourne to Delhi",
+              "book a flight to Delhi", "book my flight", "book the plane ticket",
+              "book a flight from Sydney to Tokyo"],
      "steps": [("input-origin", "type", ["Origin field", "From airport"], "typed the origin"),
                ("input-dest", "type", ["Destination field", "To airport"], "typed the destination"),
                ("input-date", "type", ["Departure date", "Travel date field"], "picked the dates"),
@@ -175,6 +178,19 @@ EPISODES = [
                ("card-flight", "click", ["First flight result", "Flight option card"], "picked the flight"),
                ("btn-passengers", "click", ["Continue to passengers", "Next: traveller details"], "continued to passenger details")],
      "extra_hard": [("link-deals", "click", ["Flight deals"]), ("btn-hotel", "click", ["Search hotels"])]},
+    {"goal": ["fill in the passenger details", "enter the traveller details",
+              "fill in my details", "complete the passenger form"],
+     "steps": [("input-fname", "type", ["First name field", "First name"], "typed in First name field"),
+               ("input-lname", "type", ["Last name field", "Last name"], "typed in Last name field"),
+               ("input-email-p", "type", ["Email field", "Email address"], "typed in Email field"),
+               ("btn-continue-pay", "click", ["Continue to payment", "Next: payment"], "continued to payment")],
+     "extra_hard": [("btn-back", "click", ["Back"]), ("link-help", "click", ["Help"])]},
+    {"goal": ["complete the flight booking", "book the flight", "book my flight"],
+     "steps": [("input-fname", "type", ["First name", "First name field"], "typed in First name"),
+               ("input-lname", "type", ["Last name", "Last name field"], "typed in Last name"),
+               ("input-email-p", "type", ["Email", "Email address"], "typed in Email"),
+               ("btn-continue-pay", "click", ["Continue to payment", "Continue to passengers"], "continued to payment")],
+     "extra_hard": [("btn-back", "click", ["Back"]), ("input-date", "type", ["Departure date"])]},
     {"goal": ["view my orders", "open my orders", "see my order history"],
      "steps": [("link-orders", "click", ["My orders", "Order history"], "opened orders")],
      "extra_hard": [("link-account", "click", ["My account"]), ("link-returns", "click", ["Returns"])]},
@@ -186,16 +202,21 @@ def _episode_rows(rng, n):
     for _ in range(n):
         ep = rng.choice(EPISODES)
         goal = rng.choice(ep["goal"])
-        k = rng.randrange(len(ep["steps"]))
+        k = 0 if rng.random() < 0.4 else rng.randrange(len(ep["steps"]))
         cid, act, labels, done_desc = ep["steps"][k]
         right = {"id": cid, "action": act, "label": rng.choice(labels)}
         cands = [right]
         done = []
-        # completed steps become decoys + history text
+        # completed steps become decoys + history text, phrased exactly the
+        # way loop.py narrates them at inference time ("typed in <label>" /
+        # "clicked <label>")
         for j in range(k):
             did, dact, dlabels, ddesc = ep["steps"][j]
-            done.append(ddesc)
-            cands.append({"id": did, "action": dact, "label": rng.choice(dlabels)})
+            dlab = rng.choice(dlabels)
+            verb = {"type": "typed in", "click": "clicked",
+                    "select": "selected"}.get(dact, "used")
+            done.append(f"{verb} {dlab}")
+            cands.append({"id": did, "action": dact, "label": dlab})
         # future steps as decoys too (right element is only the NEXT one)
         for j in range(k + 1, len(ep["steps"])):
             fid, fact, flabels, _ = ep["steps"][j]
