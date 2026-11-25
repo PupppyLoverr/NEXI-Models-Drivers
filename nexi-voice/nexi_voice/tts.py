@@ -36,11 +36,30 @@ class KokoroTTS:
             yield audio
 
 
+
+
+class KittenTTS2:
+    """Kitten TTS 2 Mini (KittenML, apache-2.0): 82M params, 82.7 MB int8 ONNX,
+    16 languages, 118 voices. Run in the voice venv (torchaudio-free).
+    NOTE: kittenml's frontend uses a torch BART g2p fallback, so peak RSS is
+    ~0.86 GB on CPU even though the synthesizer itself is tiny. RTF measured
+    0.72-0.91 steady-state (first utterance slower: BART warmup)."""
+    sample_rate = 24000
+
+    def __init__(self, voice: str = "Eleanor"):
+        from kittenml import KittenTTS as _K
+        self._m = _K("KittenML/kitten-tts-2-mini", backend="onnx")
+        self._voice = voice
+
+    def speak_stream(self, text: str):
+        yield self._m.generate(text, voice=self._voice)
+
 ENGINES = {"pocket": PocketTTS,
            "pocket-2m": lambda: PocketTTS("english_2m_2026-10"),
            "pocket-7m": lambda: PocketTTS("english_7m_2026-10"),
            "pocket-flagship": lambda: PocketTTS("english_2026-10"),
-           "kokoro": KokoroTTS}
+           "kokoro": KokoroTTS,
+           "kitten": KittenTTS2}
 
 
 def load_engine(name: str):

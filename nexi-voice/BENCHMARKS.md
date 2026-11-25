@@ -80,3 +80,35 @@ optimistic bound, stated as such.
 - Pocket TTS fine-tune path (trainer is public — unexecuted here)
 - blind listening eval vs ElevenLabs / Fish Audio
 - telephony/noise WER set
+
+## TTS — Kitten TTS 2 Mini (KittenML, apache-2.0) — measured 2026-11-26
+
+82M-param ONNX int8 synthesizer (82.7 MB weights, 16 languages, 118 voices),
+run in a torchaudio-free venv. Emotional utterances (excited/calm/sad) rendered
+with the stock voices — prosody varies by voice, not controllable per-prompt.
+
+| metric | value |
+|---|---|
+| weights size | 82.7 MB (int8) / 47.5 MB (int4 available) |
+| load time | 0.6 s |
+| peak RSS (whole pipeline) | 861 MB |
+| RTF steady-state | 0.72–0.91 (real-time) |
+| first-utterance RTF | 2.76 (BART g2p warmup) |
+
+**Honest RAM note:** the synth is tiny but kittenml's English frontend loads a
+torch BART g2p fallback (~500 MB of the 861 MB peak). Meeting the <500 MB
+target needs the pure-ONNX frontend path (espeak-only g2p) — engineered next.
+Samples in `demo/voice/kitten/`. Emotions: per-voice prosody only, not
+ElevenLabs-style emotional control — Ming-3.0-tts-0.5B (MIT, paralinguistic
+control) is the candidate for that tier, benched next.
+
+## STT RAM reduction — measured floors
+
+| engine | peak RSS | WER |
+|---|---|---|
+| moon-tiny int8 (current small) | 717 MB | (see main table) |
+| moon-base int8 | 949 MB | 8.79% |
+
+The runtime floor is sherpa-onnx+onnxruntime itself, not the model weights
+(moon-tiny weights are ~60 MB). Path to <500 MB: thread-arena caps +
+single-stream decoder config; measurement in progress.
