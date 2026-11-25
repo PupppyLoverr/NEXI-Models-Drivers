@@ -111,5 +111,6 @@
       "s": 7.0,
       "out": "Photon"
     }
-  ]
+  ],
+  "scoring_note": "reasoning models scored with final-answer extraction (last json object / final bullet block)"
 }

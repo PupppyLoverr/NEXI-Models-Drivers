@@ -16,23 +16,23 @@ Raw outputs and scorer: `common/eval_text/`.
 
 | Model | Total | Coding | Math | Format | Knowledge | Speed |
 |---|---|---|---|---|---|---|
-| NEXI-20 (Inkling-2-Mini Q3_K_XL) | **9/12** `M` | **4/4** | **3/3** | 0/3 see caveat | **2/2** | 1.79 tok/s `M` |
+| NEXI-20 (Inkling-2-Mini Q3_K_XL) | **11/12 strict** `M` | **4/4** | **3/3** | 2/3 | **2/2** | 1.79 tok/s contended `M` |
 | NEXI-4 v2 (Qwen3.5-2B+xlam, Q4_K_M) | **9/12** `M` | 3/4 | 1/3 | **3/3** | **2/2** | ~15 tok/s uncontended `M` |
 
-**Caveat on Inkling format scores — measured, then explained:** Inkling is a
-reasoning model that emits long thinking before the answer; with the suite's
-512-token cap the thinking consumed the entire budget on all 3 format tasks
-(the raw outputs show correct reasoning, truncated before the answer). This
-is a harness artifact, not a capability zero. Re-run with a fair token
-budget reported below when complete. What IS honestly proven by the suite:
-Inkling sweeps coding 4/4 (including the CSV-parsing task the 2B failed by
-treating CSV text as a filename) and math 3/3 (the 2B got 1/3) — the class
-gap between a 26B looped-MoE and a 2B specialist is real and visible in
-execution-verified outputs, not vibes.
-
-nexi-4 v2 detail: fails multi-step arithmetic/percentage reasoning (1/3 math)
-but is perfect on JSON/tool-call format (3/3) — consistent with its design
-as a tool-calling specialist, not a reasoner.
+**Scoring honesty notes (all raw outputs in results json):**
+- Inkling is a reasoning model: it thinks before answering. Naive scoring of
+  the raw output failed it 0/3 on format; with a fair token budget (3072) and
+  standard final-answer extraction it passes 2/3 strictly. The one strict
+  fail (fmt-bullets) is itself an extraction artifact — the final answer in
+  the raw output IS exactly 3 correct bullets, but the reasoning above it
+  also contains a draft list, so strict mechanical counting fails. Human
+  reading: the capability is there. Reported strictly anyway: 11/12.
+- nexi-4 v2's profile is exactly its design: perfect format/tool-calling
+  (3/3), decent coding (3/4 — fails by treating CSV text as a file path),
+  weak multi-step math (1/3). It is a specialist, not a reasoner.
+- Inkling swept everything execution-verified: 4/4 coding incl. the CSV task
+  the 2B failed, 3/3 math incl. the problems the 2B failed. The class gap is
+  real and measured, not vibes.
 | NEXI-4 v2 (Qwen3.5-2B+xlam, Q4_K_M) | _running_ | | | | | ~15 tok/s `M` |
 
 This is a small suite — it ranks our own models against each other and
