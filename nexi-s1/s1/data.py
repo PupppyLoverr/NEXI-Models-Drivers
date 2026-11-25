@@ -175,7 +175,7 @@ EPISODES = [
                ("input-dest", "type", ["Destination field", "To airport"], "typed the destination"),
                ("input-date", "type", ["Departure date", "Travel date field"], "picked the dates"),
                ("btn-fsearch", "click", ["Search flights", "Find flights"], "searched flights"),
-               ("card-flight", "click", ["First flight result", "Flight option card"], "picked the flight"),
+               ("card-flight", "click", ["Select", "First flight result", "Flight option card"], "picked the flight"),
                ("btn-passengers", "click", ["Continue to passengers", "Next: traveller details"], "continued to passenger details")],
      "extra_hard": [("link-deals", "click", ["Flight deals"]), ("btn-hotel", "click", ["Search hotels"])]},
     {"goal": ["fill in the passenger details", "enter the traveller details",
@@ -204,7 +204,9 @@ def _episode_rows(rng, n):
         goal = rng.choice(ep["goal"])
         k = 0 if rng.random() < 0.4 else rng.randrange(len(ep["steps"]))
         cid, act, labels, done_desc = ep["steps"][k]
-        right = {"id": cid, "action": act, "label": rng.choice(labels)}
+        right = {"id": cid, "action": act,
+                   "label": labels[0] if rng.random() < 0.8 else rng.choice(labels)}
+        variant_of = {}  # element id -> chosen label, consistent within row
         cands = [right]
         done = []
         # completed steps become decoys + history text, phrased exactly the
@@ -212,7 +214,10 @@ def _episode_rows(rng, n):
         # "clicked <label>")
         for j in range(k):
             did, dact, dlabels, ddesc = ep["steps"][j]
-            dlab = rng.choice(dlabels)
+            # real loops narrate with the ACTUAL dom label every time — bias
+            # hard toward the first (canonical/real) variant so training
+            # matches inference instead of random synonyms
+            dlab = dlabels[0] if rng.random() < 0.8 else rng.choice(dlabels)
             verb = {"type": "typed in", "click": "clicked",
                     "select": "selected"}.get(dact, "used")
             done.append(f"{verb} {dlab}")

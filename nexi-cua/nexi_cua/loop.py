@@ -60,13 +60,20 @@ def run(goal: str, actuator, decider, max_steps: int = 8,
         # walk the ranked candidates until one passes the gates
         chosen, gate = None, {"allow": False, "reason": "all gated"}
         vetoed = []
-        for idx in d.get("ranking", []):
+        for pos, idx in enumerate(d.get("ranking", [])):
             g = gates.check(goal, cands[idx])
             if g["allow"]:
                 chosen = cands[idx]
                 gate = g
                 break
             vetoed.append({"id": cands[idx]["id"], "reason": g["reason"]})
+            # halt semantics: when the agent's FIRST choice is vetoed for
+            # payment/destructive reasons, its intent IS the dangerous act —
+            # stop the run instead of wandering to lower-ranked safe-looking
+            # controls (the cancel-pay click-through lesson)
+            if pos == 0 and ("payment" in (g["reason"] or "") or
+                             "destructive" in (g["reason"] or "")):
+                break
         d["vetoed"] = vetoed
         r.steps.append(Step(n, goal, len(cands), d, gate, ms))
         if chosen is None:

@@ -81,7 +81,7 @@ class BrowserController:
           .map((e, i) => ({
             id: e.id || e.getAttribute('data-testid') || ('el' + i),
             tag: e.tagName.toLowerCase(),
-            text: (e.innerText || e.value || e.placeholder || '').slice(0, 80),
+            text: (e.getAttribute('aria-label') || e.innerText || e.placeholder || e.value || '').slice(0, 80),
             type: e.type || '',
             href: e.href || '',
           }))
