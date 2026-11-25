@@ -69,3 +69,23 @@ each model earns its claims.
 - No weights in git; weights go to HF only.
 - CPU-first: if it can't run on a 4–32 GB laptop, it isn't NEXI.
 - Text tiers wait for explicit go.
+
+
+## Status update (2026-11-25)
+
+Done since the plan:
+- NEXI-4 v2 xlam retrain published: huggingface.co/nexiloopofficial/nexi-4-v2-GGUF
+- nexi-s1 weights published: huggingface.co/nexiloopofficial/nexi-s1
+- inkling distill traces: huggingface.co/nexiloopofficial/nexi-inkling-traces
+- Multi-agent browser controller (tabs+windows, per-agent cursors) built + recorded
+- Flight-booking live test: full chain to passenger step works; honest
+  residual gaps documented in nexi-cua/BENCHMARKS.md (date-step repetition,
+  passenger-form ordering, abstention calibration)
+- Payment safety: two real holes found by testing and fixed (pay-submit
+  fallthrough, halt semantics, navigation over-block)
+- Wan2.2-TI2V-5B real video generation on CPU: 16-step denoise measured
+  ~64 min at 320x576/17 frames, bf16. 8 GB RAM target NOT met (peak ~24-30 GB)
+  — int8 quantization + smaller text encoder are the open memory work.
+
+Open (unchanged): OSWorld mini-run, BFCL-scale tool eval, ZONOS3 TTS,
+blind TTS quality test, upper text tiers (held for user go).
