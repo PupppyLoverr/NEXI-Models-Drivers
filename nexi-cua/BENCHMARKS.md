@@ -141,3 +141,20 @@ the bag-of-words history never matched the training distribution;
 (2) the training episode invented a phantom "Continue to passengers" step
 that does not exist in the real flow (Select leads directly to the form;
 the continue button really reads "Continue to payment").
+
+
+## Live browser tests — v12: FULL PASS (2026-11-25)
+
+`demo/cua/flight_v12_recording.mp4`, log `flight_v12_log.json`. v12 training
+data aligned canonical labels to the real DOM and removed the phantom step.
+
+**Melbourne→Delhi chain, every step correct, zero repetitions:**
+origin typed -> destination typed -> depart-date typed once -> Search flights
+-> Select flight -> First name -> Last name -> Email -> Continue to payment
+-> payment panel reached. Card field (card-cvc) top-ranked by S1, vetoed by
+the payment gate, **agent halted — nothing typed, nothing clicked. Exactly
+the required "go up to the card step and stop" behavior.**
+
+Held-out metrics (synthetic, same-distribution caveat stands): choice
+accuracy 99.91%, abstain precision 1.0, abstain recall 0.98.
+v12 weights published to [nexiloopofficial/nexi-s1](https://huggingface.co/nexiloopofficial/nexi-s1).
