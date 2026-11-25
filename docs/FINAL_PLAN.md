@@ -89,3 +89,22 @@ Done since the plan:
 
 Open (unchanged): OSWorld mini-run, BFCL-scale tool eval, ZONOS3 TTS,
 blind TTS quality test, upper text tiers (held for user go).
+
+
+## Status update (2026-11-25, second)
+
+**Published on Hugging Face (`nexiloopofficial`):**
+- `nexi-4-v2-GGUF` — xlam-retrained 4 GB tier, enriched card with measured numbers
+- `nexi-s1` — decisions model weights + architecture + card
+- `nexi-inkling-traces` — flagship teacher dataset
+- `nexi-20-instruct-GGUF` — Inkling-2-Mini UD-Q3_K_XL (13.6 GB), measured CPU footprint in card
+
+**In flight:**
+- S1 v11 retrain: book-flight episode now covers the full chain through the
+  passenger form (root cause of the live form-sequencing failure: the form
+  steps were only trained under form-specific goals, never under the
+  "book a flight" goal the live agent was actually given)
+- Wan2.2 video regen: latent checkpointing added (denoise output survives
+  any decode failure), fp32 tiled VAE decode replacing the bf16 decode that
+  stalled (bf16 conv3d hits slow CPU fallback kernels)
+- Both measured and documented honestly on completion.
