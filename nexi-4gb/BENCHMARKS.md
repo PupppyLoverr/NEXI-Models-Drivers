@@ -78,3 +78,19 @@ Berkeley-Function-Calling leaderboard level. A BFCL-style run is open
 work. Speed dropped slightly vs v1 (15.1 vs 18.2 tok/s) — same quant,
 likely noise from a busier box plus longer prompt; not a regression in
 capability.
+
+## v3 (xlam ×15 + 20 Inkling reasoning traces, 500 steps) — measured 2026-11-25
+
+GGUF Q4_K_M: 1.29 GB file, 2.07 GB peak RSS, load 1.0 s, 24.7 tok/s (uncontended; v2 measured 15.1 tok/s under load).
+
+Strict 12-task suite (execution-verified), with final-answer extraction for reasoning-style outputs:
+
+| category | v2 | v3 |
+|---|---|---|
+| coding | 3/4 | 2/4 |
+| math | 1/3 | **3/3** |
+| format | 3/3 | 2/3 |
+| knowledge | 2/2 | 2/2 |
+| **total** | **9/12** | **9/12** |
+
+Honest read: the distillation target hit — math went 1/3 → 3/3 (v3 now reasons before answering, Inkling-style). Regressions: fib off-by-one (genuine bug), fmt-json/toolcall only pass with reasoning-noise extraction, fmt-bullets truncated mid-reasoning. csv failure unchanged (treats CSV text as a filepath — data gap). Net: same total, better reasoning composition, worse output discipline. v3 teaches us reasoning transfers; v4 needs reasoning traces that END with clean final answers.

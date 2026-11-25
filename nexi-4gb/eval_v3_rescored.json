@@ -1,0 +1,85 @@
+{
+ "rescored": [
+  {
+   "id": "code-fib",
+   "cat": "coding",
+   "pass": false,
+   "note": "exec fail: AssertionError: "
+  },
+  {
+   "id": "code-revwords",
+   "cat": "coding",
+   "pass": true,
+   "note": "pass"
+  },
+  {
+   "id": "code-twosum",
+   "cat": "coding",
+   "pass": true,
+   "note": "pass"
+  },
+  {
+   "id": "code-csv",
+   "cat": "coding",
+   "pass": false,
+   "note": "exec fail: FileNotFoundError: [Errno 2] No such file or directory: 'name,value\\na,3\\nb,7\\nc,5'"
+  },
+  {
+   "id": "math-gsm",
+   "cat": "math",
+   "pass": true,
+   "note": "found '100'"
+  },
+  {
+   "id": "math-logic",
+   "cat": "math",
+   "pass": true,
+   "note": "found 'dave'"
+  },
+  {
+   "id": "math-pct",
+   "cat": "math",
+   "pass": true,
+   "note": "found '60'"
+  },
+  {
+   "id": "fmt-json",
+   "cat": "format",
+   "pass": true,
+   "note": "pass (last-json extraction)"
+  },
+  {
+   "id": "fmt-bullets",
+   "cat": "format",
+   "pass": false,
+   "note": "9 bullets"
+  },
+  {
+   "id": "fmt-toolcall",
+   "cat": "format",
+   "pass": true,
+   "note": "pass (last-json extraction)"
+  },
+  {
+   "id": "know-capital",
+   "cat": "knowledge",
+   "pass": true,
+   "note": "found 'canberra'"
+  },
+  {
+   "id": "know-physics",
+   "cat": "knowledge",
+   "pass": true,
+   "note": "found 'photon'"
+  }
+ ],
+ "total_pass": 9,
+ "by_cat": {
+  "coding": "2/4",
+  "math": "3/3",
+  "format": "2/3",
+  "knowledge": "2/2"
+ },
+ "tok_s": 24.71,
+ "peak_rss_gb": 2.07
+}
