@@ -1,0 +1,115 @@
+{
+  "model": "nexi-20-instruct",
+  "gguf": "/home/ubuntu/models/Inkling-2-Mini-UD-Q3_K_XL.gguf",
+  "load_s": 8.7,
+  "peak_rss_gb": 15.27,
+  "total_pass": 9,
+  "total": 12,
+  "by_cat": {
+    "coding": "4/4",
+    "math": "3/3",
+    "format": "0/3",
+    "knowledge": "2/2"
+  },
+  "gen_tokens": 2645,
+  "gen_s": 1477.8,
+  "tok_s": 1.79,
+  "results": [
+    {
+      "id": "code-fib",
+      "cat": "coding",
+      "pass": true,
+      "note": "pass",
+      "s": 1141.2,
+      "out": "The user wants a Python function fib(n) returning nth Fibonacci number with fib(0)=0, fib(1)=1. Output ONLY a python code block. Need ensure no extra text. Need decide implementation. Could use iterative to avoid recursion limits. Need handle negative n? Problem doesn't specify. Could raise ValueError for negative. Need output only code block. Code block can contain function. Need be careful: \"Output ONLY a python code block\" means final should be ```python ... ``` and nothing else.\n\nNeed produce valid Python. Simple:\n\ndef fib(n):\n    if n < 0:\n        raise ValueError(\"n must be non-negative\")\n    a, b = 0, 1\n    for _ in range(n):\n        a, b = b, a + b\n    return a\n\nCheck: n=0 -> loop 0 times return 0. n=1 -> one iteration a=1,b=1 return 1. n=2 -> a=1,b=2? Let's trace: start a=0,b=1. iter1: a=1,b=1. iter2: a=1,b=2 return 1? Wait for n=2, loop range(2): iter1 a=1,b=1; iter2 a=1,b=2; return a=1. But fib(2)=1 yes. n=3: iter3 a=2,b=3 return 2 yes. Good.\n\nAlternatively use lru_cache. Iterative is fine. Need maybe support negative via identity fib(-n)=(-1)^(n+1) fib(n)? Not required. Raising ValueError is reasonable. But if tests expect negative? Usually nth Fibonacci with fib(0), fib(1), n nonnegative. Fine.\n\nNeed final only code block. No explanation. Ensure no markdown outside. Done.```python\ndef fib(n):\n    if n < 0:\n        raise ValueError(\"n must be non-negative\")\n    a, b = 0, 1\n    for _ in range(n):\n        a, b = b, a + b\n    return a\n```"
+    },
+    {
+      "id": "code-revwords",
+      "cat": "coding",
+      "pass": true,
+      "note": "pass",
+      "s": 31.0,
+      "out": "The user wants a Python function `rev_words(s)` that reverses the order of words in a string, collapsing whitespace. Example: 'the  sky is' -> 'is sky the'. Output ONLY a python code block.\n\nNeed to output only a python code block. No extra text.\n\nImplementation: split on whitespace (which collapses multiple spaces and handles leading/trailing), reverse, join with single space.\n\n```python\ndef rev_words(s):\n    return ' '.join(s.split()[::-1])\n```\n\nThat's it. Need output only code block. Ensure no explanation.```python\ndef rev_words(s):\n    return ' '.join(s.split()[::-1])\n```"
+    },
+    {
+      "id": "code-twosum",
+      "cat": "coding",
+      "pass": true,
+      "note": "pass",
+      "s": 64.3,
+      "out": "The user wants a Python function `two_sum(nums, target)` returning indices of the two numbers that add to target, as a tuple. Output ONLY a python code block.\n\nNeed to consider edge cases: no solution? The problem statement doesn't specify. Common LeetCode two sum assumes exactly one solution. Return tuple of indices. Could raise ValueError if none. Need output only code block.\n\nNeed ensure indices are tuple. Implementation using dict mapping value to index. Iterate, check complement. If found return (j, i) where j is earlier index, i current. Else store. If no solution, raise ValueError. That's reasonable.\n\nNeed output only python code block, no extra text. Code block with python. Ensure no explanation.\n\nPotential issue: duplicate numbers. Using dict storing first index; if complement found, return (stored_index, current_index). If same value and need two occurrences, e.g. nums=[3,3], target=6: i=0 store 3->0. i=1 complement=3, found j=0, return (0,1). Good. If nums=[3,2,3], target=6: i=0 store 3->0; i=1 complement=4 no; i=2 complement=3 found j=0 return (0,2). Good.\n\nNeed maybe return (i,j) sorted? Tuple of indices; order not specified. Returning earlier, later is fine.\n\nFinal only code block.```python\ndef two_sum(nums, target):\n    seen = {}\n    for i, x in enumerate(nums):\n        need = target - x\n        if need in seen:\n            return (seen[need], i)\n        seen[x] = i\n    raise ValueError(\"No two numbers add up to target\")\n```"
+    },
+    {
+      "id": "code-csv",
+      "cat": "coding",
+      "pass": true,
+      "note": "pass",
+      "s": 78.1,
+      "out": "The user wants a Python function `max_value(csv_text)` that parses CSV text with a header row and returns the maximum numeric value in the 'value' column. Output ONLY a python code block.\n\nNeed to consider edge cases: empty CSV, missing 'value' column, non-numeric values? The prompt says returns maximum numeric value in the 'value' column. We should parse CSV using csv module. Need to handle header row. Numeric value could be float/int. Use float(value) maybe. If missing column, raise KeyError? Better to raise ValueError? The prompt doesn't specify. We can implement robustly.\n\nNeed output only a python code block. No explanation.\n\nLet's craft:\n\n```python\nimport csv\nimport io\n\ndef max_value(csv_text):\n    reader = csv.DictReader(io.StringIO(csv_text))\n    if 'value' not in (reader.fieldnames or []):\n        raise ValueError(\"CSV must contain a 'value' column\")\n    max_val = None\n    for row in reader:\n        raw = row.get('value')\n        if raw is None:\n            continue\n        raw = raw.strip()\n        if raw == '':\n            continue\n        try:\n            num = float(raw)\n        except ValueError:\n            continue  # or raise?\n        if max_val is None or num > max_val:\n            max_val = num\n    if max_val is None:\n        raise ValueError(\"No numeric values found in 'value' column\")\n    return max_val\n```\n\nShould we skip non-numeric or raise? \"returns the maximum numeric value\" suggests only numeric values considered. Skipping non-numeric is reasonable."
+    },
+    {
+      "id": "math-gsm",
+      "cat": "math",
+      "pass": true,
+      "note": "found '100'",
+      "s": 15.2,
+      "out": "The user wants just the number. Compute average speed = total distance / total time. Total distance = 120 + 80 = 200 km. Total time = 1.5 + 0.5 = 2.0 hours. Average speed = 200/2 = 100 km/h. Answer just number: 100.100"
+    },
+    {
+      "id": "math-logic",
+      "cat": "math",
+      "pass": true,
+      "note": "found 'dave'",
+      "s": 12.1,
+      "out": "We need answer just name. Need reason. Alice older than Bob. Bob older than Carol. Dave younger than Carol. So order oldest to youngest: Alice > Bob > Carol > Dave. Youngest Dave. Need final just name. Ensure no extra.Dave"
+    },
+    {
+      "id": "math-pct",
+      "cat": "math",
+      "pass": true,
+      "note": "found '60'",
+      "s": 11.6,
+      "out": "The shirt costs $45 after a 25% discount. So $45 is 75% of the original price.\n\nOriginal price \u00d7 0.75 = 45\nOriginal price = 45 / 0.75 = 60\n\nAnswer: 6060"
+    },
+    {
+      "id": "fmt-json",
+      "cat": "format",
+      "pass": false,
+      "note": "json parse fail: Expecting value: line 1 column 1 (char 0)",
+      "s": 58.4,
+      "out": "The user wants a JSON object with keys \"city\", \"country\", \"population_m\" for Tokyo. Need output only valid JSON, no markdown fences. Need decide population_m. Tokyo population: metropolitan area ~37.4 million (2023/2024), city proper ~13.9 million. Key \"population_m\" ambiguous. For Tokyo, commonly population of Tokyo (metropolitan area) around 37.4 million; city of Tokyo ~13.96 million. The prompt says for Tokyo, likely expects city population. Need provide a number. Since no browsing, use approximate. Need ensure valid JSON only. Could use 37.4 for metropolitan area? Let's reason.\n\nThe key \"population_m\" suggests millions. For Tokyo, many datasets list population 13.96 million (city proper) or 37.4 million metropolitan. If asked \"for Tokyo\" in a generic factual context, often city population is ~13.9M. But \"Tokyo\" can refer to metropolitan area. Need choose. The safest is to use city proper population: Tokyo, Japan, 13.9 million. However, many trivia/geo datasets (e.g., Wikipedia) list Tokyo as 13.96 million (2023), metropolitan 37.4. The key city/country/population_m resembles a dataset schema for cities; population_m likely city population. Use 13.9.\n\nNeed output only JSON. No extra text. Ensure no markdown fences. Use number not string. Could use 13.9. Country \"Japan\". City \"Tokyo\".\n\nNeed final only JSON.{\"city\":\"Tokyo\",\"country\":\"Japan\",\"population_m\":13.9}"
+    },
+    {
+      "id": "fmt-bullets",
+      "cat": "format",
+      "pass": false,
+      "note": "5 bullets",
+      "s": 17.2,
+      "out": "The user wants exactly 3 colors as bullet points, lines starting with '- ', no other text. Need ensure final only contains 3 lines. Colors can be any. Need no extra explanation. Use simple color names. Ensure exactly 3 bullet lines. No other text. Final should be exactly:\n- red\n- blue\n- green\nThat's 3 colors. Need consider if 'colors' could include named colors; fine. No other text.- red\n- blue\n- green"
+    },
+    {
+      "id": "fmt-toolcall",
+      "cat": "format",
+      "pass": false,
+      "note": "json parse fail: Expecting value: line 1 column 1 (char 0)",
+      "s": 25.3,
+      "out": "The user wants a tool call formatted as JSON object with keys \"name\" and \"arguments\". Need output only valid JSON. Need decide arguments format. Function get_weather(city, units). Likely arguments should be object with city and units. Need ensure valid JSON only, no markdown. So final should be exactly JSON. Need no extra text.\n\nNeed consider if \"tool call\" format maybe {\"name\":\"get_weather\",\"arguments\":{\"city\":\"Paris\",\"units\":\"metric\"}}. Yes.\n\nNeed final only valid JSON. Ensure no trailing commas.{\"name\":\"get_weather\",\"arguments\":{\"city\":\"Paris\",\"units\":\"metric\"}}"
+    },
+    {
+      "id": "know-capital",
+      "cat": "knowledge",
+      "pass": true,
+      "note": "found 'canberra'",
+      "s": 8.0,
+      "out": "The user asks for the capital of Australia, answer with just the city name. Need answer only city name. Fact: Australia's capital is Canberra. Need final just \"Canberra\". Ensure no extra words.Canberra"
+    },
+    {
+      "id": "know-physics",
+      "cat": "knowledge",
+      "pass": true,
+      "note": "found 'photon'",
+      "s": 15.5,
+      "out": "The user asks: What particle carries the electromagnetic force? Answer with just the particle name.\n\nThis is a straightforward physics question. The electromagnetic force is carried by the photon (a gauge boson). Need answer just particle name. Final should be just \"Photon\" maybe lowercase? Just particle name. Ensure no extra words.\n\nNeed consider if \"photon\" is correct. In QED, electromagnetic force mediated by photon. Yes.\n\nFinal only particle name.Photon"
+    }
+  ]
+}

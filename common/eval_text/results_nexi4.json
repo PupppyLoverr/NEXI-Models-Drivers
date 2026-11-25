@@ -1,0 +1,115 @@
+{
+  "model": "nexi-4-v2",
+  "gguf": "/home/ubuntu/models/nexi-4-v2-Q4_K_M.gguf",
+  "load_s": 2.1,
+  "peak_rss_gb": 2.07,
+  "total_pass": 9,
+  "total": 12,
+  "by_cat": {
+    "coding": "3/4",
+    "math": "1/3",
+    "format": "3/3",
+    "knowledge": "2/2"
+  },
+  "gen_tokens": 335,
+  "gen_s": 1068.1,
+  "tok_s": 0.31,
+  "results": [
+    {
+      "id": "code-fib",
+      "cat": "coding",
+      "pass": true,
+      "note": "pass",
+      "s": 246.7,
+      "out": "```python\ndef fib(n):\n    if n == 0:\n        return 0\n    elif n == 1:\n        return 1\n    else:\n        a, b = 0, 1\n        for i in range(2, n + 1):\n            a, b = b, a + b\n        return b\n```"
+    },
+    {
+      "id": "code-revwords",
+      "cat": "coding",
+      "pass": true,
+      "note": "pass",
+      "s": 84.4,
+      "out": "```python\ndef rev_words(s):\n    words = s.split()\n    return ' '.join(words[::-1])\n```"
+    },
+    {
+      "id": "code-twosum",
+      "cat": "coding",
+      "pass": true,
+      "note": "pass",
+      "s": 205.9,
+      "out": "```python\ndef two_sum(nums, target):\n    hash_map = {}\n    for i, num in enumerate(nums):\n        complement = target - num\n        if complement in hash_map:\n            return (hash_map[complement], i)\n        hash_map[num] = i\n    return None\n```"
+    },
+    {
+      "id": "code-csv",
+      "cat": "coding",
+      "pass": false,
+      "note": "exec fail: FileNotFoundError: [Errno 2] No such file or directory: 'name,value\\na,3\\nb,7\\nc,5'",
+      "s": 262.9,
+      "out": "```python\nimport csv\n\ndef max_value(csv_text):\n    max_value = None\n    with open(csv_text, newline='') as csvfile:\n        reader = csv.reader(csvfile)\n        for row in reader:\n            if len(row) > 0 and row[0] == 'value':\n                max_value = max(max_value, float(row[1]))\n    return max_value\n```"
+    },
+    {
+      "id": "math-gsm",
+      "cat": "math",
+      "pass": true,
+      "note": "found '100'",
+      "s": 12.4,
+      "out": "100"
+    },
+    {
+      "id": "math-logic",
+      "cat": "math",
+      "pass": false,
+      "note": "missing 'dave'",
+      "s": 7.1,
+      "out": "Carol"
+    },
+    {
+      "id": "math-pct",
+      "cat": "math",
+      "pass": false,
+      "note": "missing '60'",
+      "s": 12.6,
+      "out": "180"
+    },
+    {
+      "id": "fmt-json",
+      "cat": "format",
+      "pass": true,
+      "note": "json ok",
+      "s": 71.9,
+      "out": "{\"city\":\"Tokyo\",\"country\":\"Japan\",\"population_m\":13927276}"
+    },
+    {
+      "id": "fmt-bullets",
+      "cat": "format",
+      "pass": true,
+      "note": "3 bullets",
+      "s": 28.9,
+      "out": "- Red\n- Blue\n- Green"
+    },
+    {
+      "id": "fmt-toolcall",
+      "cat": "format",
+      "pass": true,
+      "note": "json ok",
+      "s": 118.5,
+      "out": "{\n  \"name\": \"get_weather\",\n  \"arguments\": {\n    \"city\": \"Paris\",\n    \"units\": \"metric\"\n  }\n}"
+    },
+    {
+      "id": "know-capital",
+      "cat": "knowledge",
+      "pass": true,
+      "note": "found 'canberra'",
+      "s": 9.8,
+      "out": "Canberra"
+    },
+    {
+      "id": "know-physics",
+      "cat": "knowledge",
+      "pass": true,
+      "note": "found 'photon'",
+      "s": 7.0,
+      "out": "Photon"
+    }
+  ]
+}
