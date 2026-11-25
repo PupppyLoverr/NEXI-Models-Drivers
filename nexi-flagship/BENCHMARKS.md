@@ -61,3 +61,17 @@ possible ("requantizing from q8_0 is disabled"). Q3_K_XL is now the
 default ship recommendation for the 20 GB tier; Q4_K_M stays the
 higher-fidelity option. Distill-trace generation for the small tiers is
 the remaining Inkling item.
+
+## UD-Q2_K_XL (8.7 GB) — first measurements 2026-11-26
+
+The 6-8 GB Inkling build people reference exists: `unsloth/Inkling-2-Mini-GGUF`
+`UD-Q2_K_XL` = 8.7 GB file (also `IQ2_XXS` = 7.0 GB). Verified in
+llama-cpp-python 0.3.38: loads in ~1.4 s, correct outputs (capital/math/code
+spot checks pass).
+
+**Honest speed warning:** first measured run — while sharing the box with a
+training job — came out at 0.13 tok/s, an order of magnitude below Q3_K_XL's
+contended numbers. Either memory-bandwidth contention hits the smaller quant
+harder, or the dynamic-quant tensor mix falls onto slow CPU kernel paths in
+current llama.cpp builds. Clean uncontended measurement queued for when v4
+training finishes; the Q3_K_XL build remains the recommended ship until then.
