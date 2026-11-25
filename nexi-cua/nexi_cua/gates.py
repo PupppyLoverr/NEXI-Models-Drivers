@@ -9,8 +9,8 @@ from __future__ import annotations
 import re
 
 _PASSWORD = re.compile(r"password|passwd", re.I)
-_PAYMENT = re.compile(r"card number|cvv|cvc|expiry|billing|payment|"
-                      r"credit card|debit card", re.I)
+_PAYMENT = re.compile(r"card number|cvv|cvc|expiry|billing address|"
+                      r"credit card|debit card|cardholder", re.I)
 _PAY_SUBMIT = re.compile(r"\bpay\b|place order|confirm (and )?pay|"
                          r"complete purchase|buy now|purchase", re.I)
 _DESTRUCTIVE = re.compile(r"delete|remove|erase|format|empty|"
