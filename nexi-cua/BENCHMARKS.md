@@ -120,3 +120,24 @@ This is the served/unserved boundary tradeoff in the training mix, not a
 threshold problem (errors are confident). Rebalancing the mix is open work;
 the v4-era perfect abstain P/R was measured before multi-step episodes
 existed and does not carry forward.
+
+
+## Live browser tests — v11 (2026-11-25)
+
+`demo/cua/flight_v11_recording.mp4`, log `flight_v11_log.json`. S1 v11 =
+book-flight episode extended through the full chain (v10 trained the form
+steps only under form-specific goals — confirmed root cause: v10 ranked
+continue-to-payment p=0.74 over first-name p=0.00 at the passenger panel).
+
+v11 chain: origin typed -> **destination skipped**, depart-date typed then
+repeated 3x -> search -> select flight -> email typed (first/last skipped)
+-> continue -> payment panel: **pay-now vetoed, agent halted, nothing typed
+— the safety outcome is correct.**
+
+Root causes diagnosed for the remaining failures (fixed in v12 training
+data): (1) training canonical labels were "Origin field"/"Destination field"
+but the real DOM aria-labels are "Origin airport"/"Destination airport" —
+the bag-of-words history never matched the training distribution;
+(2) the training episode invented a phantom "Continue to passengers" step
+that does not exist in the real flow (Select leads directly to the form;
+the continue button really reads "Continue to payment").
