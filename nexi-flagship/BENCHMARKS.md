@@ -75,3 +75,8 @@ contended numbers. Either memory-bandwidth contention hits the smaller quant
 harder, or the dynamic-quant tensor mix falls onto slow CPU kernel paths in
 current llama.cpp builds. Clean uncontended measurement queued for when v4
 training finishes; the Q3_K_XL build remains the recommended ship until then.
+
+Update (same day, measured on-process): Q2_K_XL steady RSS **9.6 GB** (2k ctx),
+load peak 12.5 GB. The community "6-8 GB RAM" claim is optimistic —
+realistically 10-12 GB with context. IQ2_XXS (7.0 GB file) would land ~8 GB
+steady. Quality spot-checks pass at temperature 0 (capital + math correct).
