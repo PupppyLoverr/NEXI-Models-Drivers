@@ -61,7 +61,7 @@ def main() -> int:
         lr_scheduler_type="cosine",
         warmup_steps=max(10, a.steps // 20),
         logging_steps=10,
-        save_steps=a.steps,
+        save_steps=100,
         report_to=[],
         bf16=False, fp16=False,
         dataloader_num_workers=0,
@@ -79,7 +79,9 @@ def main() -> int:
     trainer = Trainer(model=model, args=targs, train_dataset=ds,
                       data_collator=collate)
     t0 = time.time()
-    trainer.train()
+    import glob as _g
+    ckpts = sorted(_g.glob(f"{a.out}/checkpoint-*"), key=lambda p: int(p.rsplit("-", 1)[-1]))
+    trainer.train(resume_from_checkpoint=ckpts[-1] if ckpts else None)
     wall = time.time() - t0
 
     out = Path(a.out)
